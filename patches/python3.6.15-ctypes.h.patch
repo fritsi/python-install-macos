@@ -1,0 +1,10 @@
+--- original/Modules/_ctypes/ctypes.h	2021-09-04 05:49:41.000000000 +0200
++++ patched/Modules/_ctypes/ctypes.h	2022-09-12 20:21:32.658465657 +0200
+@@ -285,6 +285,7 @@
+ #define FUNCFLAG_PYTHONAPI 0x4
+ #define FUNCFLAG_USE_ERRNO 0x8
+ #define FUNCFLAG_USE_LASTERROR 0x10
++#define FUNCFLAG_VARIADIC 0x20
+ 
+ #define TYPEFLAG_ISPOINTER 0x100
+ #define TYPEFLAG_HASPOINTER 0x200

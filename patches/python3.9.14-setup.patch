@@ -1,0 +1,22 @@
+--- Modules/Setup	2022-09-06 19:26:16.000000000 +0200
++++ Modules/Setup.patched	2022-09-12 16:37:42.934287718 +0200
+@@ -207,14 +207,14 @@
+ #_csv _csv.c
+ 
+ # Socket module helper for socket(2)
+-#_socket socketmodule.c
++_socket socketmodule.c
+ 
+ # Socket module helper for SSL support; you must comment out the other
+ # socket line above, and possibly edit the SSL variable:
+-#SSL=/usr/local/ssl
+-#_ssl _ssl.c \
+-#	-DUSE_SSL -I$(SSL)/include -I$(SSL)/include/openssl \
+-#	-L$(SSL)/lib -lssl -lcrypto
++SSL=__openssl_install_dir__
++_ssl _ssl.c \
++    -DUSE_SSL -I$(SSL)/include -I$(SSL)/include/openssl \
++    -L$(SSL)/lib -lssl -lcrypto
+ 
+ # The crypt module is now disabled by default because it breaks builds
+ # on many systems (where -lcrypt is needed), e.g. Linux (I believe).

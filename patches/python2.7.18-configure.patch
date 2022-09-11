@@ -1,0 +1,12 @@
+--- original/configure	2020-04-19 23:13:39.000000000 +0200
++++ patched/configure	2022-09-12 18:23:19.883951193 +0200
+@@ -8474,6 +8474,9 @@
+     	ppc)
+     		MACOSX_DEFAULT_ARCH="ppc64"
+     		;;
++    	arm64)
++    		MACOSX_DEFAULT_ARCH="arm64"
++    		;;
+     	*)
+     		as_fn_error $? "Unexpected output of 'arch' on OSX" "$LINENO" 5
+     		;;

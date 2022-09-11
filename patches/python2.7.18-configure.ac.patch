@@ -1,0 +1,12 @@
+--- original/configure.ac	2020-04-19 23:13:39.000000000 +0200
++++ patched/configure.ac	2022-09-12 18:23:19.886100364 +0200
+@@ -2066,6 +2066,9 @@
+     	ppc) 
+     		MACOSX_DEFAULT_ARCH="ppc64" 
+     		;;
++    	arm64) 
++    		MACOSX_DEFAULT_ARCH="arm64" 
++    		;;
+     	*)
+     		AC_MSG_ERROR([Unexpected output of 'arch' on OSX])
+     		;;

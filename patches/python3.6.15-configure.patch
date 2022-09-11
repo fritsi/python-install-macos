@@ -1,0 +1,43 @@
+--- original/configure	2021-09-04 05:49:41.000000000 +0200
++++ patched/configure	2022-09-13 00:25:54.310694329 +0200
+@@ -3375,7 +3375,7 @@
+   # has no effect, don't bother defining them
+   Darwin/[6789].*)
+     define_xopen_source=no;;
+-  Darwin/1[0-9].*)
++  Darwin/[12][0-9].*)
+     define_xopen_source=no;;
+   # On AIX 4 and 5.1, mbstate_t is defined only when _XOPEN_SOURCE == 500 but
+   # used in wcsnrtombs() and mbsnrtowcs() even if _XOPEN_SOURCE is not defined
+@@ -5203,9 +5203,6 @@
+ fi
+ 
+ 
+-MULTIARCH=$($CC --print-multiarch 2>/dev/null)
+-
+-
+ { $as_echo "$as_me:${as_lineno-$LINENO}: checking for the platform triplet based on compiler characteristics" >&5
+ $as_echo_n "checking for the platform triplet based on compiler characteristics... " >&6; }
+ cat >> conftest.c <<EOF
+@@ -5334,6 +5331,11 @@
+ fi
+ rm -f conftest.c conftest.out
+ 
++if test x$PLATFORM_TRIPLET != xdarwin; then
++  MULTIARCH=$($CC --print-multiarch 2>/dev/null)
++fi
++
++
+ if test x$PLATFORM_TRIPLET != x && test x$MULTIARCH != x; then
+   if test x$PLATFORM_TRIPLET != x$MULTIARCH; then
+     as_fn_error $? "internal configure error for the platform triplet, please file a bug report" "$LINENO" 5
+@@ -9230,6 +9232,9 @@
+     	ppc)
+     		MACOSX_DEFAULT_ARCH="ppc64"
+     		;;
++    	arm64)
++    		MACOSX_DEFAULT_ARCH="arm64"
++    		;;
+     	*)
+     		as_fn_error $? "Unexpected output of 'arch' on OSX" "$LINENO" 5
+     		;;
