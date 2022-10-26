@@ -3,11 +3,12 @@
 set -euo pipefail
 
 # The directory in which this script lives in
-_scripts_dir="$(cd "$(dirname "$0")" && pwd)"
+SCRIPTS_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-export _temp_dir="/tmp/openssl-1.0.2u"
+WORKING_DIR="$(cd "$TMPDIR" && pwd)/openssl-1.0.2u-temp"
+export WORKING_DIR
 
-_install_dir="$HOME/Library/openssl-1.0.2u"
+INSTALL_DIR="$HOME/Library/openssl-1.0.2u"
 
 ####################################################################################################
 ############################################ DESCRIPTION ###########################################
@@ -32,9 +33,9 @@ fi
 
 # Checking the architecture type (Intel vs. Apple Silicon)
 if [[ "$(uname -m)" == "x86_64" ]]; then
-    _is_apple_silicon=0
+    IS_APPLE_SILICON=0
 elif [[ "$(uname -m)" == "arm64" ]]; then
-    _is_apple_silicon=1
+    IS_APPLE_SILICON=1
 else
     echo >&2 "[ERROR] Unsupported OS: $(uname) ($(uname -m))"
     echo >&2 ""
@@ -45,9 +46,9 @@ fi
 # This will eventually delete our temporary directory
 function deleteTempDirectory() {
     echo ""
-    echo "[EXIT] Deleting $_temp_dir"
+    echo "[EXIT] Deleting $WORKING_DIR"
 
-    rm -rf "$_temp_dir"
+    rm -rf "$WORKING_DIR"
 }
 
 export -f deleteTempDirectory
@@ -55,20 +56,20 @@ export -f deleteTempDirectory
 trap "deleteTempDirectory" EXIT
 
 # Working directory already exists, deleting it
-if [[ -d "$_temp_dir" ]]; then
-    rm -rf "$_temp_dir"
+if [[ -d "$WORKING_DIR" ]]; then
+    rm -rf "$WORKING_DIR"
 fi
 
 # Creating the temporary folder where we'll download the source and do the compilation
-mkdir -p "$_temp_dir"
+mkdir -p "$WORKING_DIR"
 
 echo "[install-openssl-1.0] Downloading the OpenSSL 1.0 source code"
 echo ""
 
 # Downloading the OpenSSL source code
-wget "https://www.openssl.org/source/old/1.0.2/openssl-1.0.2u.tar.gz" -O "$_temp_dir/openssl-1.0.2u.tar.gz"
+wget "https://www.openssl.org/source/old/1.0.2/openssl-1.0.2u.tar.gz" -O "$WORKING_DIR/openssl-1.0.2u.tar.gz"
 
-cd "$_temp_dir"
+cd "$WORKING_DIR"
 
 echo "[install-openssl-1.0] Extracting the OpenSSL 1.0 source code"
 echo ""
@@ -81,14 +82,14 @@ echo ""
 cd "openssl-1.0.2u"
 
 # Creating the destination directory
-mkdir -p "$_install_dir"
+mkdir -p "$INSTALL_DIR"
 
 # This is not a Python compilation (needed for search-libraries.sh)
 # shellcheck disable=SC2034
-_python_compile=0
+G_PYTHON_COMPILE=0
 
 # Searching for the necessary libraries to compile Python
-source "$_scripts_dir/search-libraries.sh"
+source "$SCRIPTS_DIR/search-libraries.sh"
 
 # These are needed, so the gcc coming from brew does not get picked-up
 export CC="/usr/bin/gcc"
@@ -96,14 +97,14 @@ export CXX="/usr/bin/g++"
 export LD="/usr/bin/g++"
 
 # OpenSSL 1.0 does not have Apple Silicon support by default, so let's add it
-if [[ "$_is_apple_silicon" -eq 1 ]]; then
+if [[ "$IS_APPLE_SILICON" -eq 1 ]]; then
     echo "[install-openssl-1.0] Patching Configure"
     echo ""
 
     cp Configure Configure.patched
 
     # Applying the patch file
-    patch Configure.patched < "$_scripts_dir/patches/openssl-1.0.2u-Configure.patch"
+    patch Configure.patched < "$SCRIPTS_DIR/patches/openssl-1.0.2u-Configure.patch"
 
     echo "[install-openssl-1.0] Patch content for Configure:"
     echo ""
@@ -118,16 +119,16 @@ if [[ "$_is_apple_silicon" -eq 1 ]]; then
 
     mv Configure.patched Configure
 
-    _openssl_arch="darwin64-arm64-cc"
+    OPENSSL_ARCH="darwin64-arm64-cc"
 else
-    _openssl_arch="darwin64-x86_64-cc"
+    OPENSSL_ARCH="darwin64-x86_64-cc"
 fi
 
 echo "[install-openssl-1.0] Configuring OpenSSL"
 echo ""
 
 # Configuring OpenSSL
-./Configure "$_openssl_arch" "--prefix=$_install_dir" "--openssldir=$_install_dir" shared zlib
+./Configure "$OPENSSL_ARCH" "--prefix=$INSTALL_DIR" "--openssldir=$INSTALL_DIR" shared zlib
 
 echo ""
 

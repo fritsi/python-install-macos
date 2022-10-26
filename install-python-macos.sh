@@ -3,11 +3,11 @@
 set -euo pipefail
 
 # The directory in which this script lives in
-_scripts_dir="$(cd "$(dirname "$0")" && pwd)"
+SCRIPTS_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-_supported_versions=("2.7.18" "3.6.15" "3.7.14" "3.8.14" "3.9.14" "3.10.7")
+SUPPORTED_VERSIONS=("2.7.18" "3.6.15" "3.7.15" "3.8.15" "3.9.15" "3.10.8" "3.11.0")
 
-_supported_versions_text="$(versions="${_supported_versions[*]}"; echo "${versions// /, }")"
+SUPPORTED_VERSIONS_TEXT="$(versions="${SUPPORTED_VERSIONS[*]}" && echo "${versions// /, }")"
 
 function printUsage() {
     echo -e "\033[1m\033[4mUsage:\033[0m ./install-python-macos.sh {pythonVersion} {installBaseDir}"
@@ -16,15 +16,35 @@ function printUsage() {
     echo -e ""
     echo -e "\033[1m\033[4mNOTE:\033[0m Currently only macOS is supported!"
     echo -e ""
-    echo -e "\033[1m\033[4mSupported Python versions:\033[0m $_supported_versions_text"
+    echo -e "\033[1m\033[4mSupported Python versions:\033[0m $SUPPORTED_VERSIONS_TEXT"
     echo -e ""
-    echo -e "The given \033[3m'installBaseDir'\033[0m will not be the final install directory, but a sub-directory in that."
-    echo -e "For example in case of Python 3.8 it will be \033[1m\033[3m\033[4m{installBaseDir}/Python3.8-compiled\033[0m"
+    echo -e "The given \033[3m'installBaseDir'\033[0m will not be the final install directory, but a subdirectory in that."
+    echo -e "For example in case of Python 3.8 it will be \033[1m\033[3m\033[4m{installBaseDir}/python-3.8\033[0m"
+    echo -e ""
+    echo -e "The script will ask you whether you want to run the Python tests or not."
+    echo -e "This can be used to check whether everything is okay with the compiled Python or not."
+    echo -e ""
+    echo -e "\033[1mIf you followed the instructions, you should have no failures.\033[0m"
+    echo -e ""
+    echo -e "If there are test failures, the script will stop and ask you if you'd like to continue."
+    echo -e ""
+    echo -e "\033[1m\033[4mNOTE:\033[0m In case of non-interactive mode, the script will always run these tests."
+    echo -e ""
+    echo -e "\033[1m\033[4mNOTE 2:\033[0m While running the tests, you might see a pop-up window asking you to allow Python to connect to the network."
+    echo -e "These are for the socket/ssl related tests. It's safe to allow."
+    echo -e ""
+    echo -e "\033[1m\033[4mNOTE 3:\033[0m Currently the UI (Tkinter) related tests are deliberately skipped as they are unstable."
     echo -e ""
     echo -e "\033[1m\033[4mOptional arguments:\033[0m"
-    echo -e "    --non-interactive - If given then we won't ask for confirmations"
-    echo -e "    --extra-links - In case of Python 3 besides the pip3.x, python3.x and virtualenv3.x symbolic links,"
-    echo -e "                    this will also create the pip3, python3 and virtualenv3 links"
+    echo -e ""
+    echo -e "    \033[1m--non-interactive\033[0m - If given then we won't ask for confirmations."
+    echo -e ""
+    echo -e "    \033[1m--extra-links\033[0m - In case of Python 3 besides the pip3.x, python3.x and virtualenv3.x symbolic links,"
+    echo -e "                    this will also create the pip3, python3 and virtualenv3 links."
+    echo -e ""
+    echo -e "    \033[1m--keep-working-dir\033[0m - We'll keep the working directory after the script finished / exited."
+    echo -e ""
+    echo -e "    \033[1m--keep-test-results\033[0m - We'll keep the test log and test result xml files even in case everything passed."
     echo -e ""
 }
 
@@ -42,9 +62,9 @@ fi
 
 # Checking the architecture type (Intel vs. Apple Silicon)
 if [[ "$(uname -m)" == "x86_64" ]]; then
-    _is_apple_silicon=0
+    IS_APPLE_SILICON=0
 elif [[ "$(uname -m)" == "arm64" ]]; then
-    _is_apple_silicon=1
+    IS_APPLE_SILICON=1
 else
     echo >&2 "[ERROR] Unsupported OS: $(uname) ($(uname -m))"
     echo >&2 ""
@@ -62,10 +82,10 @@ echo ""
 echo "    * We also suggest adding the gnu tar, and wget to the PATH as that's what we've tested this script with"
 echo ""
 
-read -r -p "[install-python-macos] Did you perform the above? [y/N] " response
+read -r -p "[install-python-macos] Did you perform the above? ([y]/N) " response
 
 case "$response" in
-    [yY][eE][sS]|[yY])
+    "" | [yY][eE][sS] | [yY])
         echo ""
         ;;
     *)
@@ -84,26 +104,40 @@ PYTHON_INSTALL_BASE="$2"
 
 shift 2
 
-_non_interactive=0
-_extra_links=0
+P_NON_INTERACTIVE=0
+P_EXTRA_LINKS=0
+P_KEEP_WORKING_DIR=0
+P_KEEP_TEST_RESULTS=0
 
 # Checking the rest of the arguments
-for arg in "$@"; do
-    case "$arg" in
+while [[ "$#" -gt 0 ]]; do
+    # Getting the next argument
+    argument="$1"
+    shift
+
+    case "$argument" in
         --non-interactive)
-            _non_interactive=1
+            P_NON_INTERACTIVE=1
             ;;
         --extra-links)
-            _extra_links=1
+            P_EXTRA_LINKS=1
+            ;;
+        --keep-working-dir)
+            P_KEEP_WORKING_DIR=1
+            ;;
+        --keep-test-results)
+            P_KEEP_TEST_RESULTS=1
             ;;
         *)
-            echo >&2 "[ERROR] Unrecognized argument: '$arg'"
+            echo >&2 "[ERROR] Unrecognized argument: '$argument'"
             echo >&2 ""
             exit 1
             ;;
     esac
-    shift
 done
+
+# Exporting this as we need to use it in "trap"
+export P_KEEP_WORKING_DIR
 
 # Validating the installation base directory
 if [[ ! -d "$PYTHON_INSTALL_BASE" ]]; then
@@ -114,31 +148,31 @@ fi
 
 # Checking whether the version provided to the script is a valid version or not
 _is_valid_version=0
-for supported_version in "${_supported_versions[@]}"; do
+for supported_version in "${SUPPORTED_VERSIONS[@]}"; do
     if [[ "$supported_version" == "$PYTHON_VERSION" ]]; then
         _is_valid_version=1
         break
     fi
 done
 if [[ "$_is_valid_version" -ne 1 ]]; then
-    echo >&2 "[ERROR] Invalid Python versions: '$PYTHON_VERSION'. Supported versions are: $_supported_versions_text"
+    echo >&2 "[ERROR] Invalid Python versions: '$PYTHON_VERSION'. Supported versions are: $SUPPORTED_VERSIONS_TEXT"
     echo >&2 ""
     exit 1
 fi
 
 # Keeping only the major and minor version
 # E.g.: '3.9.14' becomes '3.9'
-PY_POSTFIX="$(IFS='.' read -ra parts <<< "$PYTHON_VERSION"; echo "${parts[0]}.${parts[1]}")"
+PY_POSTFIX="$(IFS='.' read -ra parts <<< "$PYTHON_VERSION" && echo "${parts[0]}.${parts[1]}")"
 
 # Validating the --extra-links argument's purpose
-if [[ "$_extra_links" -eq 1 ]] && [[ "$PY_POSTFIX" == "2.7" ]]; then
+if [[ "$P_EXTRA_LINKS" -eq 1 ]] && [[ "$PY_POSTFIX" == "2.7" ]]; then
     echo >&2 "[ERROR] --extra-links can only be used with Python 3"
     echo >&2 ""
     exit 1
 fi
 
 # Assembling the final installation directory
-PYTHON_INSTALL_DIR="$PYTHON_INSTALL_BASE/Python$PY_POSTFIX-compiled"
+PYTHON_INSTALL_DIR="$PYTHON_INSTALL_BASE/python-$PY_POSTFIX"
 
 # Function to check whether a given path is not a file/directory/link
 function checkNotExists() {
@@ -148,6 +182,12 @@ function checkNotExists() {
         return 1
     fi
 }
+
+WORKING_DIR="$(cd "$TMPDIR" && pwd)/python-$PYTHON_VERSION-temp"
+export WORKING_DIR
+
+checkNotExists "$WORKING_DIR/Python-$PYTHON_VERSION.tgz"
+checkNotExists "$WORKING_DIR/Python-$PYTHON_VERSION"
 
 checkNotExists "$PYTHON_INSTALL_DIR"
 
@@ -161,26 +201,24 @@ else
     checkNotExists "$PYTHON_INSTALL_BASE/virtualenv$PY_POSTFIX"
 
     # If --extra-links was given, then we also need to validate that those do not exist
-    if [[ "$_extra_links" -eq 1 ]]; then
+    if [[ "$P_EXTRA_LINKS" -eq 1 ]]; then
         checkNotExists "$PYTHON_INSTALL_BASE/python3"
         checkNotExists "$PYTHON_INSTALL_BASE/pip3"
         checkNotExists "$PYTHON_INSTALL_BASE/virtualenv3"
     fi
 fi
 
-export WORKING_DIR="/tmp/Python-$PYTHON_VERSION"
-
-echo "[install-python-macos] Will install Python version: $PYTHON_VERSION into $PYTHON_INSTALL_DIR"
+echo -e "[install-python-macos] Will install Python version: \033[1m$PYTHON_VERSION\033[0m into \033[1m$PYTHON_INSTALL_DIR\033[0m"
 echo ""
 
-echo "[install-python-macos] Using working directory: $WORKING_DIR"
+echo -e "[install-python-macos] Using working directory: \033[1m$WORKING_DIR\033[0m"
 echo ""
 
-if [[ "$_non_interactive" -ne 1 ]]; then
-    read -r -p "[install-python-macos] Do you want to continue? [y/N] " response
+if [[ "$P_NON_INTERACTIVE" -ne 1 ]]; then
+    read -r -p "[install-python-macos] Do you want to continue? ([y]/N) " response
 
     case "$response" in
-        [yY][eE][sS]|[yY])
+        "" | [yY][eE][sS] | [yY])
             echo ""
             ;;
         *)
@@ -201,168 +239,111 @@ mkdir -p "$WORKING_DIR"
 # This will eventually delete our temporary directory
 function deleteWorkingDirectory() {
     echo ""
-    echo "[EXIT] Deleting $WORKING_DIR"
 
-    rm -rf "$WORKING_DIR"
+    if [[ "$P_KEEP_WORKING_DIR" -ne 1 ]]; then
+        echo "[EXIT] Deleting $WORKING_DIR"
+        rm -rf "$WORKING_DIR"
+    else
+        echo "[EXIT] Keeping $WORKING_DIR"
+    fi
 }
 
 export -f deleteWorkingDirectory
 
 trap "deleteWorkingDirectory" EXIT
 
-export PYTHONHTTPSVERIFY=0
-
 # We are compiling Python here (needed for search-libraries.sh)
 # shellcheck disable=SC2034
-_python_compile=1
+G_PYTHON_COMPILE=1
 
 # Searching for the necessary libraries to compile Python
-source "$_scripts_dir/search-libraries.sh"
+source "$SCRIPTS_DIR/search-libraries.sh"
 
 # Begin installation
 
 echo "[install-python-macos] Downloading https://www.python.org/ftp/python/$PYTHON_VERSION/Python-$PYTHON_VERSION.tgz into $WORKING_DIR/Python-$PYTHON_VERSION.tgz"
 echo ""
 
-wget --no-check-certificate "https://www.python.org/ftp/python/$PYTHON_VERSION/Python-$PYTHON_VERSION.tgz" -O "$WORKING_DIR/Python-$PYTHON_VERSION.tgz"
+wget --no-verbose --no-check-certificate "https://www.python.org/ftp/python/$PYTHON_VERSION/Python-$PYTHON_VERSION.tgz" -O "$WORKING_DIR/Python-$PYTHON_VERSION.tgz"
 
 cd "$WORKING_DIR"
 
+echo ""
 echo "[install-python-macos] Extracting Python-$PYTHON_VERSION.tgz"
 echo ""
 
-tar xzvf "Python-$PYTHON_VERSION.tgz"
-
-echo ""
+tar xzf "Python-$PYTHON_VERSION.tgz"
 
 cd "$WORKING_DIR/Python-$PYTHON_VERSION"
 
-# This function will apply a patch to the given file, and display the diff between the patched and the original file
-function applyPatch() {
-    local _file_name
-    local _patch_file
-    local _no_confirmation
+echo "[install-python-macos] Applying the patch file onto the Python source code"
 
-    _file_name="$1"
-    _patch_file="$_scripts_dir/patches/python$PYTHON_VERSION-$2"
-    _no_confirmation=0
+# Copying the patch file to our working directory as we need to replace '__openssl_install_dir__' in it
+cp "$SCRIPTS_DIR/patches/Python-$PYTHON_VERSION.patch" "$WORKING_DIR/Python-$PYTHON_VERSION.patch"
 
-    if [[ "$#" -eq 3 ]] && [[ "$3" == "--no-confirm" ]]; then
-        _no_confirmation=1
-    fi
+# Function to replace variables with a value in the patch file
+function substituteVariableInPatch() {
+    local variableName
+    local variableValue
 
-    if [[ ! -f "$_file_name" ]]; then
-        echo >&2 "[ERROR] The file we wanted to patch does not exist: $_file_name"
-        echo >&2 ""
-        exit 1
-    fi
+    variableName="$1"
+    variableValue="$2"
 
-    if [[ ! -f "$_patch_file" ]]; then
-        echo >&2 "[ERROR] The patch file does not exist: $_patch_file"
-        echo >&2 ""
-        exit 1
-    fi
+    echo "[install-python-macos] Substituting '$variableName' with '$variableValue' in the patch file"
 
-    echo "[install-python-macos] Patching file '$_file_name'"
-
-    if [[ "$_no_confirmation" -ne 1 ]]; then
-        echo ""
-    fi
-
-    # Creating a copy of the original file
-    cp "$_file_name" "$_file_name.patched"
-
-    # Applying the patch on the copy
-    patch --quiet "$_file_name.patched" < "$_patch_file"
-
-    # In case we are patching the Setup file, we also replace the OpenSSL home directory
-    if [[ "$_file_name" == "Modules/Setup" ]] || [[ "$_file_name" == "Modules/Setup.dist" ]]; then
-        # shellcheck disable=SC2154
-        sed -i "s/__openssl_install_dir__/$(echo "$_openssl_base" | sed 's/\//\\\//g' | sed 's/\./\\\./g')/g" "$_file_name.patched"
-    fi
-
-    if [[ "$_no_confirmation" -ne 1 ]]; then
-        echo "[install-python-macos] Patch content for file '$_file_name':"
-        echo ""
-
-        # Displaying the diff between the original and the patch file
-        echo "================================================================================"
-        diff --color -u "$_file_name" "$_file_name.patched" || true
-        echo "================================================================================"
-
-        echo ""
-
-        if [[ "$_non_interactive" -ne 1 ]]; then
-            read -r -p "Press [ENTER] to continue " && echo ""
-        fi
-    fi
-
-    # Renaming the patched file to the original one
-    mv "$_file_name.patched" "$_file_name"
+    sed -i "s/$variableName/$(echo "$variableValue" | sed 's/\//\\\//g' | sed 's/\./\\\./g')/g" "$WORKING_DIR/Python-$PYTHON_VERSION.patch"
 }
 
-# Patching the Setup file
-if [[ -f "Modules/Setup" ]]; then
-    applyPatch "Modules/Setup" "setup.patch"
-elif [[ -f "Modules/Setup.dist" ]]; then
-    applyPatch "Modules/Setup.dist" "setup.patch"
-else
-    echo >&2 "[ERROR] Could not find neither Modules/Setup nor Modules/Setup.dist"
-    echo >&2 ""
-    exit 1
+echo ""
+
+# Substituting some variable in the patch file
+substituteVariableInPatch "__openssl_install_dir__" "$L_OPENSSL_BASE"
+substituteVariableInPatch "__readline_install_dir__" "$L_READLINE_BASE"
+substituteVariableInPatch "__tcl_tk_install_dir__" "$L_TCL_TK_BASE"
+substituteVariableInPatch "__zlib_install_dir__" "$L_ZLIB_BASE"
+
+echo ""
+
+# Applying the patch file
+patch -p1 < "$WORKING_DIR/Python-$PYTHON_VERSION.patch"
+
+echo ""
+
+# But after all files have been patched, we do ask for one if we need to
+if [[ "$P_NON_INTERACTIVE" -ne 1 ]]; then
+    read -r -p "Press [ENTER] to continue " && echo ""
 fi
 
-# This function simply asks for a final confirmation after all patches have been applied,
-# but only if we are in interactive mode
-function afterPatchConfirmation() {
+# Prints a command line and then executes it
+function echoAndExec() {
+    local param
+    local index
+    index=0
+
+    echo -n ">> "
+
+    # First item (assuming it's the executable) will be printed without quotes
+    # The rest of the parameters with quotes
+    for param in "$@"; do
+        if [[ "$index" -eq 0 ]]; then
+            echo -n "$param"
+        else
+            echo -n " \"$param\""
+        fi
+        index=$((index + 1))
+    done
+
+    echo ""
     echo ""
 
-    # But after all files have been patched, we do ask for one if we need to
-    if [[ "$_non_interactive" -ne 1 ]]; then
-        read -r -p "Press [ENTER] to continue " && echo ""
+    if [[ "$P_NON_INTERACTIVE" -ne 1 ]]; then
+        read -r -p "Press [ENTER] to execute the above command " && echo ""
     fi
+
+    "$@"
 }
 
-# Applying extra patches
-case "$PY_POSTFIX" in
-
-    2.7)
-        applyPatch "configure" "configure.patch" --no-confirm
-        applyPatch "configure.ac" "configure.ac.patch" --no-confirm
-        applyPatch "Mac/Modules/qt/setup.py" "qt-setup.py.patch" --no-confirm
-        applyPatch "Mac/Tools/pythonw.c" "pythonw.c.patch" --no-confirm
-        applyPatch "setup.py" "setup.py.patch" --no-confirm
-
-        afterPatchConfirmation
-        ;;
-
-    3.6)
-        applyPatch "configure" "configure.patch" --no-confirm
-        applyPatch "configure.ac" "configure.ac.patch" --no-confirm
-        applyPatch "Lib/test/test_unicode.py" "test_unicode.py.patch" --no-confirm
-        applyPatch "Modules/_ctypes/_ctypes.c" "ctypes.c.patch" --no-confirm
-        applyPatch "Modules/_ctypes/callproc.c" "callproc.c.patch" --no-confirm
-        applyPatch "Modules/_ctypes/ctypes.h" "ctypes.h.patch" --no-confirm
-        applyPatch "Modules/_decimal/libmpdec/mpdecimal.h" "mpdecimal.h.patch" --no-confirm
-        applyPatch "Modules/posixmodule.c" "posixmodule.c.patch" --no-confirm
-        applyPatch "Python/random.c" "random.c.patch" --no-confirm
-        applyPatch "setup.py" "setup.py.patch" --no-confirm
-
-        afterPatchConfirmation
-        ;;
-
-    3.7)
-        applyPatch "Lib/test/test_unicode.py" "test_unicode.py.patch" --no-confirm
-        applyPatch "Modules/_ctypes/_ctypes.c" "ctypes.c.patch" --no-confirm
-        applyPatch "Modules/_ctypes/callproc.c" "callproc.c.patch" --no-confirm
-        applyPatch "Modules/_ctypes/ctypes.h" "ctypes.h.patch" --no-confirm
-        applyPatch "Modules/_decimal/libmpdec/mpdecimal.h" "mpdecimal.h.patch" --no-confirm
-        applyPatch "setup.py" "setup.py.patch" --no-confirm
-
-        afterPatchConfirmation
-        ;;
-
-esac
+export -f echoAndExec
 
 echo "[install-python-macos] Configuring the Compiler"
 echo ""
@@ -372,45 +353,162 @@ export CC="/usr/bin/gcc"
 export CXX="/usr/bin/g++"
 export LD="/usr/bin/g++"
 
-# Configuring Python
-if [[ "$PY_POSTFIX" == "2.7" ]] || [[ "$PY_POSTFIX" == "3.6" ]]; then
-    ./configure "--prefix=$PYTHON_INSTALL_DIR" --enable-optimizations --with-ensurepip=install 2>&1
-elif [[ "$_is_apple_silicon" -eq 1 ]]; then
-    ./configure "--prefix=$PYTHON_INSTALL_DIR" --enable-optimizations --with-ensurepip=install "--with-openssl=$_openssl_base" 2>&1
-else
-    ./configure "--prefix=$PYTHON_INSTALL_DIR" --enable-optimizations --with-ensurepip=install "--with-openssl=$_openssl_base" --enable-universalsdk --with-universal-archs=intel-64 2>&1
+# Parameters used for ./configure
+CONFIGURE_PARAMS=(
+    "--prefix=$PYTHON_INSTALL_DIR"
+    "--with-ensurepip=install"
+    "--enable-optimizations"
+)
+
+# --with-openssl is only available from Python 3.7
+if [[ "$PY_POSTFIX" != "2.7" ]] && [[ "$PY_POSTFIX" != "3.6" ]]; then
+    CONFIGURE_PARAMS+=("--with-openssl=$L_OPENSSL_BASE")
 fi
+
+# --with-tcltk-includes and --with-tcltk-libs is NOT available since Python 3.11
+if [[ "$PY_POSTFIX" != "3.11" ]]; then
+    CONFIGURE_PARAMS+=("--with-tcltk-includes=-I$L_TCL_TK_BASE/include")
+    CONFIGURE_PARAMS+=("--with-tcltk-libs=-L$L_TCL_TK_BASE/lib -ltk8.6 -ltcl8.6 -DWITH_APPINIT")
+fi
+
+# On non Apple-Silicon machines if the Python version is >= 3.7, then
+# we add --enable-universalsdk and --with-universal-archs=intel-64 as well
+if [[ "$IS_APPLE_SILICON" -ne 1 ]] && [[ "$PY_POSTFIX" != "2.7" ]] && [[ "$PY_POSTFIX" != "3.6" ]]; then
+    CONFIGURE_PARAMS+=("--enable-universalsdk")
+    CONFIGURE_PARAMS+=("--with-universal-archs=intel-64")
+fi
+
+# Configuring Python
+echoAndExec ./configure "${CONFIGURE_PARAMS[@]}" 2>&1
 
 echo ""
 
-if [[ "$_non_interactive" -ne 1 ]]; then
+if [[ "$P_NON_INTERACTIVE" -ne 1 ]]; then
     read -r -p "Press [ENTER] to continue " && echo ""
 fi
+
+# Saving the number of processors
+PROC_COUNT="$(nproc)"
 
 echo "[install-python-macos] Compiling Python"
 echo ""
 
 # Compiling Python
-make -j 8 2>&1
+# We'll be using half the available cores for make
+echoAndExec make -j "$((PROC_COUNT / 2))" 2>&1
 
 echo ""
 
-if [[ "$_non_interactive" -ne 1 ]]; then
+if [[ "$P_NON_INTERACTIVE" -ne 1 ]]; then
     read -r -p "Press [ENTER] to continue " && echo ""
+fi
+
+function runTests() {
+    local test_log_file
+    local test_result_xml_file
+
+    test_log_file="$PYTHON_INSTALL_BASE/python-$PYTHON_VERSION-tests.log"
+    test_result_xml_file="$PYTHON_INSTALL_BASE/python-$PYTHON_VERSION-test-results.xml"
+
+    # Turning off exit in case of a failure, so we can explicitly check the exit code of the python -m test command
+    set +euo pipefail
+
+    (
+        set -o pipefail
+
+        # Needed for some of the tests
+        export LC_ALL="en_US.UTF-8"
+        export LANG="en_US.UTF-8"
+
+        # unsetting these as they would mess with the tests
+        unset PYTHONHTTPSVERIFY DISPLAY
+
+        # Getting rid of some warnings in the tests
+        export TK_SILENCE_DEPRECATION=1
+
+        # We don't want to run the Tkinter related tests as they are too unstable
+        export UI_TESTS_ENABLED=0
+
+        # --junit-xml is not available for Python 2.7
+        EXTRA_TEST_ARGS=()
+        if [[ "$PY_POSTFIX" != "2.7" ]]; then
+            EXTRA_TEST_ARGS+=("--junit-xml=$test_result_xml_file")
+        fi
+
+        # Running the tests
+        #
+        # * We'll be using half the available cores for the tests
+        #
+        # * Deliberately not running this on multiple processes with -j,
+        # because in that case some of the tests might get skipped
+        #
+        # * Yes, in its native compiled-only state, it's python.exe :D
+        echoAndExec ./python.exe -W default -bb -m test -j "$((PROC_COUNT / 2))" -u all -w "${EXTRA_TEST_ARGS[@]}" 2>&1 | tee "$test_log_file"
+    )
+
+    # shellcheck disable=SC2181
+    if [[ "$?" -eq 0 ]]; then
+        # Waiting for the user's confirmation
+        if [[ "$P_NON_INTERACTIVE" -ne 1 ]]; then
+            echo ""
+            read -r -p "Press [ENTER] to continue "
+        fi
+
+        # Turning on exit code check again
+        set -euo pipefail
+
+        # Deleting the test log and test result xml files if we don't want to keep them
+        if [[ "$P_KEEP_TEST_RESULTS" -ne 1 ]]; then
+            rm -rf "$test_log_file" "$test_result_xml_file"
+        fi
+
+        # Nothing else to do here
+        return 0
+    else
+        echo >&2 ""
+        echo >&2 "[ERROR] THERE WERE TEST FAILURES"
+        if [[ -f "$test_result_xml_file" ]]; then
+            echo >&2 "[ERROR] PLEASE CHECK THE FOLLOWING LOG FILE FOR MORE INFORMATION: $test_log_file,"
+            echo >&2 "[ERROR] OR THE TEST RESULT XML FILE: $test_result_xml_file"
+        else
+            echo >&2 "[ERROR] PLEASE CHECK THE FOLLOWING LOG FILE FOR MORE INFORMATION: $test_log_file"
+        fi
+        echo >&2 ""
+
+        # Ask the user if they want to continue
+        read -r -p "[install-python-macos] Would you like to continue? ([y]/N) " response
+
+        # If not, then we exit
+        if [[ "$response" != "" ]] && [[ ! "$response" =~ ^(([yY][eE][sS])|([yY]))$ ]]; then
+            exit 1
+        fi
+    fi
+}
+
+if [[ "$P_NON_INTERACTIVE" -eq 1 ]]; then
+    # In non-interactive mode we run the tests
+    runTests && echo ""
+else
+    # In interactive mode we ask the user whether they want to run the tests or not
+    read -r -p "[install-python-macos] Do you want to run the tests? ([y]/N) " response && echo ""
+
+    if [[ "$response" == "" ]] || [[ "$response" =~ ^(([yY][eE][sS])|([yY]))$ ]]; then
+        runTests && echo ""
+    fi
 fi
 
 echo "[install-python-macos] Installing Python into $PYTHON_INSTALL_DIR"
 echo ""
 
 # Installing Python to the destination directory
-make install 2>&1
+echoAndExec make install 2>&1
 
 # Unsetting the compiler arguments
 unset LDFLAGS CPPFLAGS LD_LIBRARY_PATH CC CXX LD
 
 echo ""
 
-if [[ "$_non_interactive" -ne 1 ]]; then
+if [[ "$P_NON_INTERACTIVE" -ne 1 ]]; then
     read -r -p "Press [ENTER] to continue " && echo ""
 fi
 
@@ -426,7 +524,7 @@ else
     ln -s "$PYTHON_INSTALL_DIR/bin/pip3" "$PYTHON_INSTALL_BASE/pip$PY_POSTFIX"
 
     # If --extra-links was given, then we also create the python3 and pip3 symbolic links
-    if [[ "$_extra_links" -eq 1 ]]; then
+    if [[ "$P_EXTRA_LINKS" -eq 1 ]]; then
         ln -s "$PYTHON_INSTALL_DIR/bin/python3" "$PYTHON_INSTALL_BASE/python3"
         ln -s "$PYTHON_INSTALL_DIR/bin/pip3" "$PYTHON_INSTALL_BASE/pip3"
     fi
@@ -444,7 +542,7 @@ else
     echo "    * pip$PY_POSTFIX: $(which "pip$PY_POSTFIX")"
 
     # If --extra-links was given, then we also print the python3 and pip3 links
-    if [[ "$_extra_links" -eq 1 ]]; then
+    if [[ "$P_EXTRA_LINKS" -eq 1 ]]; then
         echo "    * python3: $(which "python3")"
         echo "    * pip3: $(which "pip3")"
     fi
@@ -489,14 +587,14 @@ else
     ln -s "$PYTHON_INSTALL_DIR/bin/virtualenv" "$PYTHON_INSTALL_BASE/virtualenv$PY_POSTFIX"
 
     # If --extra-links was given, then we also create the virtualenv3 symbolic link
-    if [[ "$_extra_links" -eq 1 ]]; then
+    if [[ "$P_EXTRA_LINKS" -eq 1 ]]; then
         ln -s "$PYTHON_INSTALL_DIR/bin/virtualenv" "$PYTHON_INSTALL_BASE/virtualenv3"
     fi
 fi
 
 echo ""
-echo "It is recommended that you add $PYTHON_INSTALL_BASE to your PATH"
-echo "For that execute: export PATH=\"$PYTHON_INSTALL_BASE:\$PATH\""
+echo "[install-python-macos] It is recommended that you add $PYTHON_INSTALL_BASE to your PATH"
+echo "[install-python-macos] For that execute: export PATH=\"$PYTHON_INSTALL_BASE:\$PATH\""
 
 echo ""
-echo "Python $PY_POSTFIX successfully completed :)"
+echo "[install-python-macos] Python $PY_POSTFIX successfully completed :)"

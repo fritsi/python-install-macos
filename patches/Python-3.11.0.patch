@@ -1,0 +1,229 @@
+From 318bacb02ec72a7e67a514aa26ccfaa6115261df Mon Sep 17 00:00:00 2001
+From: Daniel Fritsi <ffddani@gmail.com>
+Date: Fri, 28 Oct 2022 10:45:35 +0200
+Subject: [PATCH] Python 3.11.0 patching
+
+---
+ Lib/test/support/__init__.py | 27 ++++++++++++++++++---------
+ Lib/test/test_gdb.py         |  2 +-
+ Lib/test/test_posix.py       |  8 ++++----
+ Makefile.pre.in              |  7 ++++---
+ Modules/Setup                | 20 +++++++++++++++-----
+ Modules/getaddrinfo.c        |  1 +
+ Modules/getnameinfo.c        |  1 +
+ Modules/socketmodule.c       |  1 +
+ Modules/socketmodule.h       |  1 +
+ 9 files changed, 46 insertions(+), 22 deletions(-)
+
+diff --git a/Lib/test/support/__init__.py b/Lib/test/support/__init__.py
+index 46087a9..aa04d3e 100644
+--- a/Lib/test/support/__init__.py
++++ b/Lib/test/support/__init__.py
+@@ -216,8 +216,16 @@ def _force_run(path, func, *args):
+ def _is_gui_available():
+     if hasattr(_is_gui_available, 'result'):
+         return _is_gui_available.result
++
++    if os.environ.get("UI_TESTS_ENABLED", "") != "1":
++        _is_gui_available.reason = "UI tests are disabled, because the 'UI_TESTS_ENABLED' environment variable is not set to '1'"
++        _is_gui_available.result = False
++        return _is_gui_available.result
++
+     import platform
++
+     reason = None
++
+     if sys.platform.startswith('win') and platform.win32_is_iot():
+         reason = "gui is not available on Windows IoT Core"
+     elif sys.platform.startswith('win'):
+@@ -260,15 +268,15 @@ def _is_gui_available():
+ 
+         if app_services.CGMainDisplayID() == 0:
+             reason = "gui tests cannot run without OS X window manager"
+-        else:
+-            class ProcessSerialNumber(Structure):
+-                _fields_ = [("highLongOfPSN", c_int),
+-                            ("lowLongOfPSN", c_int)]
+-            psn = ProcessSerialNumber()
+-            psn_p = pointer(psn)
+-            if (  (app_services.GetCurrentProcess(psn_p) < 0) or
+-                  (app_services.SetFrontProcess(psn_p) < 0) ):
+-                reason = "cannot run without OS X gui process"
++        # else:
++        #     class ProcessSerialNumber(Structure):
++        #         _fields_ = [("highLongOfPSN", c_int),
++        #                     ("lowLongOfPSN", c_int)]
++        #     psn = ProcessSerialNumber()
++        #     psn_p = pointer(psn)
++        #     if (  (app_services.GetCurrentProcess(psn_p) < 0) or
++        #           (app_services.SetFrontProcess(psn_p) < 0) ):
++        #         reason = "cannot run without OS X gui process"
+ 
+     # check on every platform whether tkinter can actually do anything
+     if not reason:
+@@ -278,6 +286,7 @@ def _is_gui_available():
+             root.withdraw()
+             root.update()
+             root.destroy()
++            root.quit()
+         except Exception as e:
+             err_string = str(e)
+             if len(err_string) > 50:
+diff --git a/Lib/test/test_gdb.py b/Lib/test/test_gdb.py
+index 0f39b8f..04e8e34 100644
+--- a/Lib/test/test_gdb.py
++++ b/Lib/test/test_gdb.py
+@@ -140,7 +140,7 @@ HAS_PYUP_PYDOWN = gdb_has_frame_select()
+ 
+ BREAKPOINT_FN='builtin_id'
+ 
+-@unittest.skipIf(support.PGO, "not useful for PGO")
++@unittest.skipIf(True, "gdb requires code signing on MacOS")
+ class DebuggerTests(unittest.TestCase):
+ 
+     """Test that the debugger can debug Python."""
+diff --git a/Lib/test/test_posix.py b/Lib/test/test_posix.py
+index e643d8e..b201941 100644
+--- a/Lib/test/test_posix.py
++++ b/Lib/test/test_posix.py
+@@ -1072,7 +1072,7 @@ class PosixTester(unittest.TestCase):
+     @unittest.skipUnless(hasattr(os, 'popen'), "test needs os.popen()")
+     @support.requires_subprocess()
+     def test_getgroups(self):
+-        with os.popen('id -G 2>/dev/null') as idg:
++        with os.popen('/usr/bin/id -G 2>/dev/null') as idg:
+             groups = idg.read().strip()
+             ret = idg.close()
+ 
+@@ -1080,8 +1080,8 @@ class PosixTester(unittest.TestCase):
+             idg_groups = set(int(g) for g in groups.split())
+         except ValueError:
+             idg_groups = set()
+-        if ret is not None or not idg_groups:
+-            raise unittest.SkipTest("need working 'id -G'")
++        self.assertTrue(ret is None and idg_groups,
++                        "need working '/usr/bin/id -G'")
+ 
+         # Issues 16698: OS X ABIs prior to 10.6 have limits on getgroups()
+         if sys.platform == 'darwin':
+@@ -1090,7 +1090,7 @@ class PosixTester(unittest.TestCase):
+             if tuple(int(n) for n in dt.split('.')[0:2]) < (10, 6):
+                 raise unittest.SkipTest("getgroups(2) is broken prior to 10.6")
+ 
+-        # 'id -G' and 'os.getgroups()' should return the same
++        # '/usr/bin/id -G' and 'os.getgroups()' should return the same
+         # groups, ignoring order, duplicates, and the effective gid.
+         # #10822/#26944 - It is implementation defined whether
+         # posix.getgroups() includes the effective gid.
+diff --git a/Makefile.pre.in b/Makefile.pre.in
+index 8fbcd7a..7058d0d 100644
+--- a/Makefile.pre.in
++++ b/Makefile.pre.in
+@@ -210,9 +210,10 @@ LIBMPDEC_A= Modules/_decimal/libmpdec/libmpdec.a
+ LIBEXPAT_A= Modules/expat/libexpat.a
+ 
+ # OpenSSL options for setup.py so sysconfig can pick up AC_SUBST() vars.
+-OPENSSL_INCLUDES=@OPENSSL_INCLUDES@
+-OPENSSL_LIBS=@OPENSSL_LIBS@
+-OPENSSL_LDFLAGS=@OPENSSL_LDFLAGS@
++OPENSSL=__openssl_install_dir__
++OPENSSL_INCLUDES=-I$(OPENSSL)/include
++OPENSSL_LIBS=-L$(OPENSSL)/lib
++OPENSSL_LDFLAGS=
+ OPENSSL_RPATH=@OPENSSL_RPATH@
+ 
+ # Module state, compiler flags and linker flags
+diff --git a/Modules/Setup b/Modules/Setup
+index d3647ec..0791668 100644
+--- a/Modules/Setup
++++ b/Modules/Setup
+@@ -205,15 +205,22 @@ PYTHONPATH=$(COREPYTHONPATH)
+ #_gdbm _gdbmmodule.c -lgdbm
+ #_lzma _lzmamodule.c -llzma
+ #_uuid _uuidmodule.c -luuid
+-#zlib  zlibmodule.c -lz
++
++zlib zlibmodule.c \
++    -I__zlib_install_dir__/include \
++    -L__zlib_install_dir__/lib \
++    -lz
+ 
+ # The readline module also supports libeditline (-leditline).
+ # Some systems may require -ltermcap or -ltermlib.
+-#readline readline.c -lreadline -ltermcap
++readline readline.c \
++    -I__readline_install_dir__/include \
++    -L__readline_install_dir__/lib \
++    -lreadline -ltermcap
+ 
+ # OpenSSL bindings
+-#_ssl _ssl.c $(OPENSSL_INCLUDES) $(OPENSSL_LDFLAGS) $(OPENSSL_LIBS)
+-#_hashlib _hashopenssl.c $(OPENSSL_INCLUDES) $(OPENSSL_LDFLAGS) -lcrypto
++_ssl _ssl.c $(OPENSSL_INCLUDES) $(OPENSSL_LDFLAGS) $(OPENSSL_LIBS) -lssl -lcrypto
++_hashlib _hashopenssl.c $(OPENSSL_INCLUDES) $(OPENSSL_LDFLAGS) -lcrypto
+ 
+ # To statically link OpenSSL:
+ # _ssl _ssl.c $(OPENSSL_INCLUDES) $(OPENSSL_LDFLAGS) \
+@@ -234,7 +241,10 @@ PYTHONPATH=$(COREPYTHONPATH)
+ # every system.
+ 
+ # *** Always uncomment this (leave the leading underscore in!):
+-#_tkinter _tkinter.c tkappinit.c -DWITH_APPINIT $(TCLTK_INCLUDES) $(TCLTK_LIBS) \
++_tkinter _tkinter.c tkappinit.c -DWITH_APPINIT \
++    -L__tcl_tk_install_dir__/lib \
++    -I__tcl_tk_install_dir__/include \
++    -ltk8.6 -ltcl8.6
+ # *** Uncomment and edit to reflect where your Tcl/Tk libraries are:
+ #	-L/usr/local/lib \
+ # *** Uncomment and edit to reflect where your Tcl/Tk headers are:
+diff --git a/Modules/getaddrinfo.c b/Modules/getaddrinfo.c
+index 0b4620e..9405328 100644
+--- a/Modules/getaddrinfo.c
++++ b/Modules/getaddrinfo.c
+@@ -43,6 +43,7 @@
+ #include <sys/param.h>
+ #include <sys/sysctl.h>
+ #include <sys/socket.h>
++#define __APPLE_USE_RFC_3542 1
+ #include <netinet/in.h>
+ #include <arpa/inet.h>
+ #include <arpa/nameser.h>
+diff --git a/Modules/getnameinfo.c b/Modules/getnameinfo.c
+index 335021f..b2c2e4a 100644
+--- a/Modules/getnameinfo.c
++++ b/Modules/getnameinfo.c
+@@ -37,6 +37,7 @@
+ #if 0
+ #include <sys/types.h>
+ #include <sys/socket.h>
++#define __APPLE_USE_RFC_3542 1
+ #include <netinet/in.h>
+ #include <arpa/inet.h>
+ #include <arpa/nameser.h>
+diff --git a/Modules/socketmodule.c b/Modules/socketmodule.c
+index 14af496..69a8858 100644
+--- a/Modules/socketmodule.c
++++ b/Modules/socketmodule.c
+@@ -219,6 +219,7 @@ shutdown(how) -- shut down traffic in one or both directions\n\
+ #undef _XOPEN_SOURCE
+ #include <sys/socket.h>
+ #include <sys/types.h>
++#define __APPLE_USE_RFC_3542 1
+ #include <netinet/in.h>
+ #ifdef _SS_ALIGNSIZE
+ #define HAVE_GETADDRINFO 1
+diff --git a/Modules/socketmodule.h b/Modules/socketmodule.h
+index 1b35b11..61bc720 100644
+--- a/Modules/socketmodule.h
++++ b/Modules/socketmodule.h
+@@ -7,6 +7,7 @@
+ # else
+ #   include <sys/socket.h>
+ # endif
++#define __APPLE_USE_RFC_3542 1
+ # include <netinet/in.h>
+ # include <netinet/tcp.h>
+ 
+-- 
+2.23.0
+

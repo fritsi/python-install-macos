@@ -1,0 +1,225 @@
+From 87f9b7a5597e298314303bd5630a733fdf003a01 Mon Sep 17 00:00:00 2001
+From: Daniel Fritsi <ffddani@gmail.com>
+Date: Fri, 28 Oct 2022 10:45:11 +0200
+Subject: [PATCH] Python 3.9.15 patching
+
+---
+ Lib/test/support/__init__.py | 26 +++++++++++++++++---------
+ Lib/test/test_gdb.py         |  2 +-
+ Lib/test/test_posix.py       |  8 ++++----
+ Modules/Setup                | 25 +++++++++++++++++--------
+ Modules/getaddrinfo.c        |  1 +
+ Modules/getnameinfo.c        |  1 +
+ Modules/socketmodule.c       |  1 +
+ Modules/socketmodule.h       |  1 +
+ 8 files changed, 43 insertions(+), 22 deletions(-)
+
+diff --git a/Lib/test/support/__init__.py b/Lib/test/support/__init__.py
+index 6dc0813..6ce180e 100644
+--- a/Lib/test/support/__init__.py
++++ b/Lib/test/support/__init__.py
+@@ -481,7 +481,14 @@ def forget(modname):
+ def _is_gui_available():
+     if hasattr(_is_gui_available, 'result'):
+         return _is_gui_available.result
++
++    if os.environ.get("UI_TESTS_ENABLED", "") != "1":
++        _is_gui_available.reason = "UI tests are disabled, because the 'UI_TESTS_ENABLED' environment variable is not set to '1'"
++        _is_gui_available.result = False
++        return _is_gui_available.result
++
+     reason = None
++
+     if sys.platform.startswith('win') and platform.win32_is_iot():
+         reason = "gui is not available on Windows IoT Core"
+     elif sys.platform.startswith('win'):
+@@ -524,15 +531,15 @@ def _is_gui_available():
+ 
+         if app_services.CGMainDisplayID() == 0:
+             reason = "gui tests cannot run without OS X window manager"
+-        else:
+-            class ProcessSerialNumber(Structure):
+-                _fields_ = [("highLongOfPSN", c_int),
+-                            ("lowLongOfPSN", c_int)]
+-            psn = ProcessSerialNumber()
+-            psn_p = pointer(psn)
+-            if (  (app_services.GetCurrentProcess(psn_p) < 0) or
+-                  (app_services.SetFrontProcess(psn_p) < 0) ):
+-                reason = "cannot run without OS X gui process"
++        # else:
++        #     class ProcessSerialNumber(Structure):
++        #         _fields_ = [("highLongOfPSN", c_int),
++        #                     ("lowLongOfPSN", c_int)]
++        #     psn = ProcessSerialNumber()
++        #     psn_p = pointer(psn)
++        #     if (  (app_services.GetCurrentProcess(psn_p) < 0) or
++        #           (app_services.SetFrontProcess(psn_p) < 0) ):
++        #         reason = "cannot run without OS X gui process"
+ 
+     # check on every platform whether tkinter can actually do anything
+     if not reason:
+@@ -542,6 +549,7 @@ def _is_gui_available():
+             root.withdraw()
+             root.update()
+             root.destroy()
++            root.quit()
+         except Exception as e:
+             err_string = str(e)
+             if len(err_string) > 50:
+diff --git a/Lib/test/test_gdb.py b/Lib/test/test_gdb.py
+index b3aa855..2c5e7a6 100644
+--- a/Lib/test/test_gdb.py
++++ b/Lib/test/test_gdb.py
+@@ -137,7 +137,7 @@ HAS_PYUP_PYDOWN = gdb_has_frame_select()
+ 
+ BREAKPOINT_FN='builtin_id'
+ 
+-@unittest.skipIf(support.PGO, "not useful for PGO")
++@unittest.skipIf(True, "gdb requires code signing on MacOS")
+ class DebuggerTests(unittest.TestCase):
+ 
+     """Test that the debugger can debug Python."""
+diff --git a/Lib/test/test_posix.py b/Lib/test/test_posix.py
+index 3c0ddeb..71dce95 100644
+--- a/Lib/test/test_posix.py
++++ b/Lib/test/test_posix.py
+@@ -1031,7 +1031,7 @@ class PosixTester(unittest.TestCase):
+ 
+     @unittest.skipUnless(hasattr(os, 'getegid'), "test needs os.getegid()")
+     def test_getgroups(self):
+-        with os.popen('id -G 2>/dev/null') as idg:
++        with os.popen('/usr/bin/id -G 2>/dev/null') as idg:
+             groups = idg.read().strip()
+             ret = idg.close()
+ 
+@@ -1039,8 +1039,8 @@ class PosixTester(unittest.TestCase):
+             idg_groups = set(int(g) for g in groups.split())
+         except ValueError:
+             idg_groups = set()
+-        if ret is not None or not idg_groups:
+-            raise unittest.SkipTest("need working 'id -G'")
++        self.assertTrue(ret is None and idg_groups,
++                        "need working '/usr/bin/id -G'")
+ 
+         # Issues 16698: OS X ABIs prior to 10.6 have limits on getgroups()
+         if sys.platform == 'darwin':
+@@ -1049,7 +1049,7 @@ class PosixTester(unittest.TestCase):
+             if tuple(int(n) for n in dt.split('.')[0:2]) < (10, 6):
+                 raise unittest.SkipTest("getgroups(2) is broken prior to 10.6")
+ 
+-        # 'id -G' and 'os.getgroups()' should return the same
++        # '/usr/bin/id -G' and 'os.getgroups()' should return the same
+         # groups, ignoring order, duplicates, and the effective gid.
+         # #10822/#26944 - It is implementation defined whether
+         # posix.getgroups() includes the effective gid.
+diff --git a/Modules/Setup b/Modules/Setup
+index 02cfb67..7d806eb 100644
+--- a/Modules/Setup
++++ b/Modules/Setup
+@@ -164,7 +164,10 @@ _symtable symtablemodule.c
+ # it, depending on your system -- see the GNU readline instructions.
+ # It's okay for this to be a shared library, too.
+ 
+-#readline readline.c -lreadline -ltermcap
++readline readline.c \
++    -I__readline_install_dir__/include \
++    -L__readline_install_dir__/lib \
++    -lreadline -ltermcap
+ 
+ 
+ # Modules that should always be present (non UNIX dependent):
+@@ -207,14 +210,14 @@ _symtable symtablemodule.c
+ #_csv _csv.c
+ 
+ # Socket module helper for socket(2)
+-#_socket socketmodule.c
++_socket socketmodule.c
+ 
+ # Socket module helper for SSL support; you must comment out the other
+ # socket line above, and possibly edit the SSL variable:
+-#SSL=/usr/local/ssl
+-#_ssl _ssl.c \
+-#	-DUSE_SSL -I$(SSL)/include -I$(SSL)/include/openssl \
+-#	-L$(SSL)/lib -lssl -lcrypto
++SSL=__openssl_install_dir__
++_ssl _ssl.c \
++    -DUSE_SSL -I$(SSL)/include -I$(SSL)/include/openssl \
++    -L$(SSL)/lib -lssl -lcrypto
+ 
+ # The crypt module is now disabled by default because it breaks builds
+ # on many systems (where -lcrypt is needed), e.g. Linux (I believe).
+@@ -270,7 +273,10 @@ _symtable symtablemodule.c
+ # every system.
+ 
+ # *** Always uncomment this (leave the leading underscore in!):
+-# _tkinter _tkinter.c tkappinit.c -DWITH_APPINIT \
++_tkinter _tkinter.c tkappinit.c -DWITH_APPINIT \
++    -L__tcl_tk_install_dir__/lib \
++    -I__tcl_tk_install_dir__/include \
++    -ltk8.6 -ltcl8.6
+ # *** Uncomment and edit to reflect where your Tcl/Tk libraries are:
+ #	-L/usr/local/lib \
+ # *** Uncomment and edit to reflect where your Tcl/Tk headers are:
+@@ -338,7 +344,10 @@ _symtable symtablemodule.c
+ # Andrew Kuchling's zlib module.
+ # This require zlib 1.1.3 (or later).
+ # See http://www.gzip.org/zlib/
+-#zlib zlibmodule.c -I$(prefix)/include -L$(exec_prefix)/lib -lz
++zlib zlibmodule.c \
++    -I__zlib_install_dir__/include \
++    -L__zlib_install_dir__/lib \
++    -lz
+ 
+ # Interface to the Expat XML parser
+ # More information on Expat can be found at www.libexpat.org.
+diff --git a/Modules/getaddrinfo.c b/Modules/getaddrinfo.c
+index 5aaa6e7..5291c97 100644
+--- a/Modules/getaddrinfo.c
++++ b/Modules/getaddrinfo.c
+@@ -43,6 +43,7 @@
+ #include <sys/param.h>
+ #include <sys/sysctl.h>
+ #include <sys/socket.h>
++#define __APPLE_USE_RFC_3542 1
+ #include <netinet/in.h>
+ #include <arpa/inet.h>
+ #include <arpa/nameser.h>
+diff --git a/Modules/getnameinfo.c b/Modules/getnameinfo.c
+index f014c11..62f7433 100644
+--- a/Modules/getnameinfo.c
++++ b/Modules/getnameinfo.c
+@@ -37,6 +37,7 @@
+ #if 0
+ #include <sys/types.h>
+ #include <sys/socket.h>
++#define __APPLE_USE_RFC_3542 1
+ #include <netinet/in.h>
+ #include <arpa/inet.h>
+ #include <arpa/nameser.h>
+diff --git a/Modules/socketmodule.c b/Modules/socketmodule.c
+index 133470f..e95494e 100644
+--- a/Modules/socketmodule.c
++++ b/Modules/socketmodule.c
+@@ -249,6 +249,7 @@ http://cvsweb.netbsd.org/bsdweb.cgi/src/lib/libc/net/getaddrinfo.c.diff?r1=1.82&
+ #undef _XOPEN_SOURCE
+ #include <sys/socket.h>
+ #include <sys/types.h>
++#define __APPLE_USE_RFC_3542 1
+ #include <netinet/in.h>
+ #ifdef _SS_ALIGNSIZE
+ #define HAVE_GETADDRINFO 1
+diff --git a/Modules/socketmodule.h b/Modules/socketmodule.h
+index ba2c9f5..5e9822b 100644
+--- a/Modules/socketmodule.h
++++ b/Modules/socketmodule.h
+@@ -7,6 +7,7 @@
+ # else
+ #   include <sys/socket.h>
+ # endif
++#define __APPLE_USE_RFC_3542 1
+ # include <netinet/in.h>
+ # if !defined(__CYGWIN__)
+ #  include <netinet/tcp.h>
+-- 
+2.23.0
+
