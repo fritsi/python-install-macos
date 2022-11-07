@@ -1,33 +1,43 @@
 #!/usr/bin/env bash
 
+###################################################################################################
+############################################ DESCRIPTION ##########################################
+###################################################################################################
+###                                                                                             ###
+### Python 3.4 is NOT compatible with OpenSSL 1.1 hence we need to install Open SSL 1.0 for it  ###
+### Since Open SSL 1.0 is EOL, we cannot install it via brew                                    ###
+### However we can install it via this script                                                   ###
+###                                                                                             ###
+### The script will install OpenSSL 1.0 into $HOME/Library/openssl-1.0.2u                       ###
+### If you want to change this you have to manually edit the script and replace all occurrences ###
+###################################################################################################
+
 set -euo pipefail
+
+clear
+
+G_PROG_NAME="$(basename -s ".sh" "$0")"
+export G_PROG_NAME
 
 # The directory in which this script lives in
 SCRIPTS_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-WORKING_DIR="$(cd "$TMPDIR" && pwd)/openssl-1.0.2u-temp"
+# Importing basic functions
+source "$SCRIPTS_DIR/utils/print-func.sh"
+source "$SCRIPTS_DIR/utils/exec-func.sh"
+
+# Searching for GNU programs and adding them to the PATH
+source "$SCRIPTS_DIR/libraries/search-gnu-progs.sh"
+
+WORKING_DIR="$(cd "$TMPDIR" && pwd)/openssl-1.0.2u-temp.$(date "+%s")"
 export WORKING_DIR
 
 INSTALL_DIR="$HOME/Library/openssl-1.0.2u"
 
-####################################################################################################
-############################################ DESCRIPTION ###########################################
-####################################################################################################
-#
-# Python 3.4 is NOT compatible with OpenSSL 1.1 hence we need to install Open SSL 1.0 for it
-# Since Open SSL 1.0 is EOL, we cannot install it via brew
-# However we can install it via this script
-#
-# The script will install OpenSSL 1.0 into $HOME/Library/openssl-1.0.2u
-# If you want to change this you have to manually edit the script and replace all occurrences
-# After you've done that, you also have to replace the same string in search-libraries.sh
-#
-####################################################################################################
-
 # Checking whether we are running the script on macOS or not
 if [[ "$(uname)" != "Darwin" ]]; then
-    echo >&2 "[ERROR] This script must be run on macOS"
-    echo >&2 ""
+    sysout >&2 "[ERROR] This script must be run on macOS"
+    sysout >&2 ""
     exit 1
 fi
 
@@ -37,16 +47,16 @@ if [[ "$(uname -m)" == "x86_64" ]]; then
 elif [[ "$(uname -m)" == "arm64" ]]; then
     IS_APPLE_SILICON=1
 else
-    echo >&2 "[ERROR] Unsupported OS: $(uname) ($(uname -m))"
-    echo >&2 ""
+    sysout >&2 "[ERROR] Unsupported OS: $(uname) ($(uname -m))"
+    sysout >&2 ""
     exit 1
 fi
 
 # This method will be invoked when we exit from the script
 # This will eventually delete our temporary directory
 function deleteTempDirectory() {
-    echo ""
-    echo "[EXIT] Deleting $WORKING_DIR"
+    sysout ""
+    sysout "[EXIT] Deleting $WORKING_DIR"
 
     rm -rf "$WORKING_DIR"
 }
@@ -63,89 +73,92 @@ fi
 # Creating the temporary folder where we'll download the source and do the compilation
 mkdir -p "$WORKING_DIR"
 
-echo "[install-openssl-1.0] Downloading the OpenSSL 1.0 source code"
-echo ""
+sysout "\033[1m[$G_PROG_NAME]\033[0m Downloading the OpenSSL 1.0 source code"
+sysout ""
 
 # Downloading the OpenSSL source code
-wget "https://www.openssl.org/source/old/1.0.2/openssl-1.0.2u.tar.gz" -O "$WORKING_DIR/openssl-1.0.2u.tar.gz"
+wget --no-verbose --no-check-certificate "https://www.openssl.org/source/old/1.0.2/openssl-1.0.2u.tar.gz" -O "$WORKING_DIR/openssl-1.0.2u.tar.gz"
 
 cd "$WORKING_DIR"
 
-echo "[install-openssl-1.0] Extracting the OpenSSL 1.0 source code"
-echo ""
+sysout ""
+sysout "\033[1m[$G_PROG_NAME]\033[0m Extracting the OpenSSL 1.0 source code"
+sysout ""
 
 # Extracting the OpenSSL source code
-tar zxvf "openssl-1.0.2u.tar.gz"
-
-echo ""
+tar zxf "openssl-1.0.2u.tar.gz"
 
 cd "openssl-1.0.2u"
 
 # Creating the destination directory
 mkdir -p "$INSTALL_DIR"
 
-# This is not a Python compilation (needed for search-libraries.sh)
+# This is not a Python compilation (needed for libraries/search-libraries.sh)
 # shellcheck disable=SC2034
 G_PYTHON_COMPILE=0
 
 # Searching for the necessary libraries to compile Python
-source "$SCRIPTS_DIR/search-libraries.sh"
+# UPDATE: Since we are NOT using zlib anymore, we do not need this
+# source "$SCRIPTS_DIR/libraries/search-libraries.sh"
 
 # These are needed, so the gcc coming from brew does not get picked-up
 export CC="/usr/bin/gcc"
 export CXX="/usr/bin/g++"
 export LD="/usr/bin/g++"
 
+# We don't need these
+unset LDFLAGS CPPFLAGS LD_LIBRARY_PATH PKG_CONFIG_PATH
+
 # OpenSSL 1.0 does not have Apple Silicon support by default, so let's add it
 if [[ "$IS_APPLE_SILICON" -eq 1 ]]; then
-    echo "[install-openssl-1.0] Patching Configure"
-    echo ""
+    sysout "\033[1m[$G_PROG_NAME]\033[0m Patching Configure"
+    sysout ""
 
     cp Configure Configure.patched
 
     # Applying the patch file
     patch Configure.patched < "$SCRIPTS_DIR/patches/openssl-1.0.2u-Configure.patch"
 
-    echo "[install-openssl-1.0] Patch content for Configure:"
-    echo ""
+    sysout "\033[1m[$G_PROG_NAME]\033[0m Patch content for Configure:"
+    sysout ""
 
-    echo "================================================================================"
+    sysout "================================================================================"
     diff --color -u Configure Configure.patched || true
-    echo "================================================================================"
+    sysout "================================================================================"
 
-    echo ""
+    sysout ""
 
-    read -r -p "Press [ENTER] to continue " && echo ""
+    ask "\033[1m[$G_PROG_NAME]\033[0m Press [ENTER] to continue" && sysout ""
 
     mv Configure.patched Configure
-
-    OPENSSL_ARCH="darwin64-arm64-cc"
-else
-    OPENSSL_ARCH="darwin64-x86_64-cc"
 fi
 
-echo "[install-openssl-1.0] Configuring OpenSSL"
-echo ""
+# This could interfere with how we expect OpenSSL to build
+unset OPENSSL_LOCAL_CONFIG_DIR
+
+sysout "\033[1m[$G_PROG_NAME]\033[0m Configuring OpenSSL"
+sysout ""
 
 # Configuring OpenSSL
-./Configure "$OPENSSL_ARCH" "--prefix=$INSTALL_DIR" "--openssldir=$INSTALL_DIR" shared zlib
+echoAndExec ./Configure "darwin64-$(uname -m)-cc" "enable-ec_nistp_64_gcc_128" \
+    threads no-ssl2 no-ssl3 no-ssl3-method no-comp no-zlib no-shared \
+    "--prefix=$INSTALL_DIR" "--openssldir=$INSTALL_DIR"
 
-echo ""
+sysout ""
 
-read -r -p "Press [ENTER] to continue " && echo ""
+ask "\033[1m[$G_PROG_NAME]\033[0m Press [ENTER] to continue" && sysout ""
 
-echo "[install-openssl-1.0] Compiling OpenSSL"
-echo ""
+sysout "\033[1m[$G_PROG_NAME]\033[0m Compiling OpenSSL"
+sysout ""
 
 # Compiling OpenSSL
-make -j 8
+echoAndExec make depend && sysout ""
+echoAndExec make -j "$(proc_count="$(nproc)" && echo "$((proc_count / 2))")" && sysout ""
 
-echo ""
+ask "\033[1m[$G_PROG_NAME]\033[0m Press [ENTER] to continue" && sysout ""
 
-read -r -p "Press [ENTER] to continue " && echo ""
-
-echo "[install-openssl-1.0] Installing OpenSSL"
-echo ""
+sysout "\033[1m[$G_PROG_NAME]\033[0m Installing OpenSSL"
+sysout ""
 
 # Installing OpenSSL
-make install
+echoAndExec make install

@@ -52,31 +52,14 @@ If you want to move it, you need to re-compile the whole thing again into the ne
 **You need to install a couple of dependencies with brew:**
 
 ```shell
-brew install asciidoc autoconf bzip2 coreutils dialog diffutils findutils \
-             fontconfig gawk gcc gdbm gdk-pixbuf gettext glib gmp gnu-getopt \
-             gnu-indent gnu-sed gnu-tar gnu-time gnu-which gnunet gnupg \
-             gnutls graphite2 grep jpeg jq libev libevent libextractor libffi \
-             libgcrypt libgpg-error libidn2 libmicrohttpd libmpc libnghttp2 \
-             libpng libpthread-stubs libsodium libtasn1 libtiff libtool \
-             libunistring libx11 libxau libxcb libxdmcp libxext libxrender \
-             lzo mpdecimal ncurses nettle nghttp2 ngrep openssl@1.1 p7zip \
-             pixman pkg-config python@3.9 readline source-highlight sqlite \
-             tcl-tk unbound unzip watch wget xz zlib
+brew install asciidoc autoconf bzip2 coreutils diffutils findutils gawk \
+             gcc gdbm gnu-sed gnu-tar gnu-which gnunet grep jq libffi \
+             libtool libx11 libxcrypt lzo ncurses openssl@1.1 openssl@3 \
+             p7zip pkg-config readline sqlite tcl-tk unzip wget xz zlib
 ```
 
-After that add the `gnu sed` installed with the above command to the `PATH` -- **IMPORTANT:** The default sed on macOS
-does not work with this script.
+The above command does **not** only install libraries, but also a couple of **GNU** executables.
+These will not be used by default, but [search-libraries.sh](libraries/search-libraries.sh) will temporarily add it to
+`PATH`.
 
-We also suggest adding the `gnu tar`, and `wget` to the PATH as that's what we've tested this script with.
-
-**For this you need to add the following directories to the `PATH`:**
-
-* **On Apple Intel:**
-    * `/usr/local/bin`
-    * `/usr/local/opt/gsed/libexec/gnubin`
-    * `/usr/local/opt/gnu-tar/libexec/gnubin`
-
-* **On Apple Silicon:**
-    * `/opt/homebrew/bin`
-    * `/opt/homebrew/opt/gsed/libexec/gnubin`
-    * `/opt/homebrew/opt/gnu-tar/libexec/gnubin`
+These are useful, because their default macOS counterpart might be very old in some cases.
