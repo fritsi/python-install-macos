@@ -1,14 +1,16 @@
-From 235f99b99c12600e560c47546339b28495ad959f Mon Sep 17 00:00:00 2001
+From 0f77745718be15f0ca351f243b5b9a2486d60fe3 Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
-Date: Fri, 28 Oct 2022 10:44:37 +0200
+Date: Wed, 16 Nov 2022 01:12:02 +0100
 Subject: [PATCH] Python 3.6.15 patching
 
 ---
  Lib/ctypes/macholib/dyld.py           |  10 +
- Lib/ctypes/test/test_macholib.py      |  13 +-
+ Lib/ctypes/test/test_macholib.py      |  15 +-
  Lib/distutils/tests/test_build_ext.py |   2 +-
  Lib/test/support/__init__.py          |  26 ++-
+ Lib/test/test_bytes.py                |   1 +
  Lib/test/test_gdb.py                  |   2 +-
+ Lib/test/test_platform.py             |   2 +-
  Lib/test/test_posix.py                |   8 +-
  Lib/test/test_unicode.py              |   3 +
  Modules/Setup.dist                    |  25 ++-
@@ -26,7 +28,7 @@ Subject: [PATCH] Python 3.6.15 patching
  configure.ac                          |  19 +-
  pyconfig.h.in                         |   3 +
  setup.py                              | 260 ++++++++++++++++++++------
- 22 files changed, 510 insertions(+), 130 deletions(-)
+ 24 files changed, 513 insertions(+), 132 deletions(-)
 
 diff --git a/Lib/ctypes/macholib/dyld.py b/Lib/ctypes/macholib/dyld.py
 index c158e67..e1c58fc 100644
@@ -57,10 +59,10 @@ index c158e67..e1c58fc 100644
  
  def framework_find(fn, executable_path=None, env=None):
 diff --git a/Lib/ctypes/test/test_macholib.py b/Lib/ctypes/test/test_macholib.py
-index 6b35269..5eeb73a 100644
+index 6b35269..b364b27 100644
 --- a/Lib/ctypes/test/test_macholib.py
 +++ b/Lib/ctypes/test/test_macholib.py
-@@ -45,9 +45,11 @@ def find_lib(name):
+@@ -45,19 +45,22 @@ def find_lib(name):
  class MachOTest(unittest.TestCase):
      @unittest.skipUnless(sys.platform == "darwin", 'OSX-specific test')
      def test_find(self):
@@ -75,9 +77,11 @@ index 6b35269..5eeb73a 100644
  
          result = find_lib('z')
          # Issue #21093: dyld default search path includes $HOME/lib and
-@@ -56,8 +58,9 @@ class MachOTest(unittest.TestCase):
+         # /usr/local/lib before /usr/lib, which caused test failures if
+         # a local copy of libz exists in one of them. Now ignore the head
          # of the path.
-         self.assertRegex(result, r".*/lib/libz\..*.*\.dylib")
+-        self.assertRegex(result, r".*/lib/libz\..*.*\.dylib")
++        self.assertRegex(result, r".*/lib/libz.*\.dylib")
  
 -        self.assertEqual(find_lib('IOKit'),
 -                             '/System/Library/Frameworks/IOKit.framework/Versions/A/IOKit')
@@ -152,6 +156,18 @@ index 66c0fed..d297307 100644
          except Exception as e:
              err_string = str(e)
              if len(err_string) > 50:
+diff --git a/Lib/test/test_bytes.py b/Lib/test/test_bytes.py
+index 7fa2a38..624cae7 100644
+--- a/Lib/test/test_bytes.py
++++ b/Lib/test/test_bytes.py
+@@ -895,6 +895,7 @@ class BytesTest(BaseBytesTest, unittest.TestCase):
+             c_char_p)
+ 
+         PyBytes_FromFormat = pythonapi.PyBytes_FromFormat
++        PyBytes_FromFormat.argtypes = (c_char_p,)
+         PyBytes_FromFormat.restype = py_object
+ 
+         # basic tests
 diff --git a/Lib/test/test_gdb.py b/Lib/test/test_gdb.py
 index 9c15fca..8bcfbd0 100644
 --- a/Lib/test/test_gdb.py
@@ -165,6 +181,19 @@ index 9c15fca..8bcfbd0 100644
  class DebuggerTests(unittest.TestCase):
  
      """Test that the debugger can debug Python."""
+diff --git a/Lib/test/test_platform.py b/Lib/test/test_platform.py
+index 371cf0a..119dbda 100644
+--- a/Lib/test/test_platform.py
++++ b/Lib/test/test_platform.py
+@@ -242,7 +242,7 @@ class PlatformTest(unittest.TestCase):
+             self.assertEqual(res[1], ('', '', ''))
+ 
+             if sys.byteorder == 'little':
+-                self.assertIn(res[2], ('i386', 'x86_64'))
++                self.assertIn(res[2], ('i386', 'x86_64', 'arm64'))
+             else:
+                 self.assertEqual(res[2], 'PowerPC')
+ 
 diff --git a/Lib/test/test_posix.py b/Lib/test/test_posix.py
 index 2dae473..c7d0a76 100644
 --- a/Lib/test/test_posix.py
@@ -1218,5 +1247,5 @@ index e2c1898..3556bbe 100644
              self.use_system_libffi = True
  
 -- 
-2.23.0
+2.38.1
 

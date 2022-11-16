@@ -1,13 +1,15 @@
-From e9adebe328e88a36293add498e259f234b0f8080 Mon Sep 17 00:00:00 2001
+From d84dfefa62975711656ccb264329305109aafa0f Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
-Date: Fri, 28 Oct 2022 10:44:48 +0200
+Date: Wed, 16 Nov 2022 01:12:05 +0100
 Subject: [PATCH] Python 3.7.15 patching
 
 ---
  Lib/ctypes/macholib/dyld.py           |  10 +++
  Lib/ctypes/test/test_macholib.py      |   1 -
  Lib/test/support/__init__.py          |  26 ++++--
+ Lib/test/test_bytes.py                |   1 +
  Lib/test/test_gdb.py                  |   2 +-
+ Lib/test/test_platform.py             |   2 +-
  Lib/test/test_posix.py                |   8 +-
  Lib/test/test_unicode.py              |   3 +
  Modules/Setup.dist                    |  25 ++++--
@@ -23,7 +25,7 @@ Subject: [PATCH] Python 3.7.15 patching
  configure.ac                          |   6 ++
  pyconfig.h.in                         |   3 +
  setup.py                              |  65 +++++++++++----
- 19 files changed, 277 insertions(+), 50 deletions(-)
+ 21 files changed, 279 insertions(+), 51 deletions(-)
 
 diff --git a/Lib/ctypes/macholib/dyld.py b/Lib/ctypes/macholib/dyld.py
 index 9d86b05..931a9e7 100644
@@ -117,6 +119,18 @@ index 8de486f..f6b983a 100644
          except Exception as e:
              err_string = str(e)
              if len(err_string) > 50:
+diff --git a/Lib/test/test_bytes.py b/Lib/test/test_bytes.py
+index 3387a1b..81a1b36 100644
+--- a/Lib/test/test_bytes.py
++++ b/Lib/test/test_bytes.py
+@@ -903,6 +903,7 @@ class BytesTest(BaseBytesTest, unittest.TestCase):
+             c_char_p)
+ 
+         PyBytes_FromFormat = pythonapi.PyBytes_FromFormat
++        PyBytes_FromFormat.argtypes = (c_char_p,)
+         PyBytes_FromFormat.restype = py_object
+ 
+         # basic tests
 diff --git a/Lib/test/test_gdb.py b/Lib/test/test_gdb.py
 index fe603be..3ed972c 100644
 --- a/Lib/test/test_gdb.py
@@ -130,6 +144,19 @@ index fe603be..3ed972c 100644
  class DebuggerTests(unittest.TestCase):
  
      """Test that the debugger can debug Python."""
+diff --git a/Lib/test/test_platform.py b/Lib/test/test_platform.py
+index 452a56e..9f3bf73 100644
+--- a/Lib/test/test_platform.py
++++ b/Lib/test/test_platform.py
+@@ -254,7 +254,7 @@ class PlatformTest(unittest.TestCase):
+             self.assertEqual(res[1], ('', '', ''))
+ 
+             if sys.byteorder == 'little':
+-                self.assertIn(res[2], ('i386', 'x86_64'))
++                self.assertIn(res[2], ('i386', 'x86_64', 'arm64'))
+             else:
+                 self.assertEqual(res[2], 'PowerPC')
+ 
 diff --git a/Lib/test/test_posix.py b/Lib/test/test_posix.py
 index 1cd9e56..feea098 100644
 --- a/Lib/test/test_posix.py
@@ -708,5 +735,5 @@ index bf90600..4673628 100644
              self.use_system_libffi = True
  
 -- 
-2.23.0
+2.38.1
 

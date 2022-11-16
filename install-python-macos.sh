@@ -55,6 +55,24 @@ function printUsage() {
     sysout ""
     sysout "    \033[1m--keep-test-results\033[0m - We'll keep the test log and test result xml files even in case everything passed."
     sysout ""
+
+    # Also printing out the preparation steps
+    printPreparationSteps
+}
+
+function printPreparationSteps() {
+    sysout "\033[1m\033[4mAs a preparation we suggest to perform the following:\033[0m"
+    sysout ""
+    sysout "\033[1mbrew install\033[0m asciidoc autoconf bzip2 coreutils diffutils findutils \\"
+    sysout "             gawk gcc gdbm gnu-sed gnu-tar gnu-which gnunet grep jq \\"
+    sysout "             libffi libtool libx11 libxcrypt libzip lzo ncurses \\"
+    sysout "             openssl@1.1 openssl@3 p7zip pkg-config readline sqlite \\"
+    sysout "             tcl-tk unzip wget xz zlib"
+    sysout ""
+    sysout "\033[1m\033[4mNOTE:\033[0m The above command does \033[1mnot\033[0m only install libraries, but also a couple of \033[1mGNU\033[0m executables."
+    sysout "      These will not be used by default, but \033[3msearch-libraries.sh\033[0m will temporarily add it to PATH."
+    sysout "      These are useful, because their default macOS counterpart might be very old in some cases."
+    sysout ""
 }
 
 if [[ "$#" -eq 1 ]] && [[ "$1" == "--help" ]]; then
@@ -83,26 +101,7 @@ else
     exit 1
 fi
 
-sysout "\033[1m\033[4mAs a preparation we suggest to perform the following:\033[0m"
-
-# Fake underline if we don't have a GNU echo
-if [[ "$G_GNU_ECHO" -ne 1 ]]; then
-    echo "====================================================="
-fi
-
-sysout ""
-sysout "\033[1mbrew install\033[0m asciidoc autoconf bzip2 coreutils diffutils \\"
-sysout "             findutils gawk gcc gdbm gnu-sed gnu-tar gnu-which \\"
-sysout "             gnunet grep jq libffi libtool libx11 libxcrypt \\"
-sysout "             lzo ncurses openssl@1.1 openssl@3 p7zip pkg-config \\"
-sysout "             readline sqlite tcl-tk unzip wget xz zlib"
-sysout ""
-
-sysout "\033[1m\033[4mNOTE:\033[0m The above command does \033[1mnot\033[0m only install libraries, but also a couple of \033[1mGNU\033[0m executables."
-sysout "      These will not be used by default, but \033[3msearch-libraries.sh\033[0m will temporarily add it to PATH."
-
-sysout "      These are useful, because their default macOS counterpart might be very old in some cases."
-sysout ""
+printPreparationSteps
 
 ask "\033[1m[$G_PROG_NAME]\033[0m Did you perform the above? ([y]/N)" response
 
@@ -361,6 +360,7 @@ CONFIGURE_PARAMS=(
     "--with-ensurepip=install"
     "--enable-optimizations"
     "--with-system-ffi"
+    "--with-dbmliborder=gdbm:ndbm"
 )
 
 # --enable-loadable-sqlite-extensions is only available from Python 3

@@ -52,10 +52,11 @@ If you want to move it, you need to re-compile the whole thing again into the ne
 **You need to install a couple of dependencies with brew:**
 
 ```shell
-brew install asciidoc autoconf bzip2 coreutils diffutils findutils gawk \
-             gcc gdbm gnu-sed gnu-tar gnu-which gnunet grep jq libffi \
-             libtool libx11 libxcrypt lzo ncurses openssl@1.1 openssl@3 \
-             p7zip pkg-config readline sqlite tcl-tk unzip wget xz zlib
+brew install asciidoc autoconf bzip2 coreutils diffutils findutils \
+             gawk gcc gdbm gnu-sed gnu-tar gnu-which gnunet grep jq \
+             libffi libtool libx11 libxcrypt libzip lzo ncurses \
+             openssl@1.1 openssl@3 p7zip pkg-config readline sqlite \
+             tcl-tk unzip wget xz zlib
 ```
 
 The above command does **not** only install libraries, but also a couple of **GNU** executables.
