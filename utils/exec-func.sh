@@ -3,7 +3,7 @@ function __internal_echoAndExec_echo() {
     local index
     index=0
 
-    if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+    if ! ${P_DRY_RUN_MODE:-false}; then
         echo -n ">> "
     fi
 
@@ -23,13 +23,13 @@ export -f __internal_echoAndExec_echo
 
 # Prints a command line and then executes it
 function echoAndExec() {
-    if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+    if ! ${P_DRY_RUN_MODE:-false}; then
         __internal_echoAndExec_echo "$@"
 
         sysout ""
         sysout ""
 
-        if [[ "${P_NON_INTERACTIVE:-}" -ne 1 ]]; then
+        if ! ${P_NON_INTERACTIVE:-false}; then
             ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Press [ENTER] to execute the above command" && sysout ""
         fi
 

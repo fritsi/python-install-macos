@@ -8,7 +8,7 @@
 ##############################################################################################
 
 # We are NOT compiling Python at the moment, so there's nothing to do
-if [[ "$G_PYTHON_COMPILE" -ne 1 ]]; then
+if ! $G_PYTHON_COMPILE; then
     return
 fi
 
@@ -35,7 +35,7 @@ fi
 
 # If we are in dry run mode, then libffi33 should already be installed
 # shellcheck disable=SC2236
-if [[ ! -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+if ${P_DRY_RUN_MODE:-false}; then
     sysout >&2 "[ERROR] ${FNT_BLD}libffi33 is not installed${FNT_RST}"
     sysout >&2 "[ERROR] Please install it with: brew install --formula --build-from-source \"$SCRIPTS_DIR/formulas/libffi33.rb\""
     sysout >&2 ""
@@ -52,7 +52,7 @@ sysout ""
 sysout ">> brew install --formula --build-from-source \"$SCRIPTS_DIR/formulas/libffi33.rb\""
 sysout ""
 
-if [[ "$P_NON_INTERACTIVE" -ne 1 ]]; then
+if ! ${P_NON_INTERACTIVE:-false}; then
     ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Press [ENTER] to execute the above command" && sysout ""
 fi
 
@@ -62,6 +62,6 @@ sysout ""
 sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} libffi 3.3.x installation completed"
 sysout ""
 
-if [[ "$P_NON_INTERACTIVE" -ne 1 ]]; then
+if ! ${P_NON_INTERACTIVE:-false}; then
     ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Press [ENTER] to continue" && sysout ""
 fi

@@ -44,9 +44,9 @@ fi
 
 # Checking the architecture type (Intel vs. Apple Silicon)
 if [[ "$(uname -m)" == "x86_64" ]]; then
-    IS_APPLE_SILICON=0
+    IS_APPLE_SILICON=false
 elif [[ "$(uname -m)" == "arm64" ]]; then
-    IS_APPLE_SILICON=1
+    IS_APPLE_SILICON=true
 else
     sysout >&2 "[ERROR] Unsupported OS: $(uname) ($(uname -m))"
     sysout >&2 ""
@@ -96,7 +96,7 @@ mkdir -p "$INSTALL_DIR"
 
 # This is not a Python compilation (needed for libraries/search-libraries.sh)
 # shellcheck disable=SC2034
-G_PYTHON_COMPILE=0
+G_PYTHON_COMPILE=false
 
 # Searching for the necessary libraries to compile Python
 # UPDATE: Since we are NOT using zlib anymore, we do not need this
@@ -111,7 +111,7 @@ export LD="/usr/bin/g++"
 unset LDFLAGS CPPFLAGS LD_LIBRARY_PATH PKG_CONFIG_PATH
 
 # OpenSSL 1.0 does not have Apple Silicon support by default, so let's add it
-if [[ "$IS_APPLE_SILICON" -eq 1 ]]; then
+if $IS_APPLE_SILICON; then
     sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Patching Configure"
     sysout ""
 

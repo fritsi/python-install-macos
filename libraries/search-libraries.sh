@@ -16,7 +16,7 @@ T_LIBRARIES_TO_LOOKUP="bzip2 expat gdbm libxcrypt libzip mpdecimal ncurses readl
 source "$SCRIPTS_DIR/libraries/setup-libffi.sh"
 
 # Adding OpenSSL to the libraries to look-up when we are compiling Python
-if [[ "$G_PYTHON_COMPILE" -eq 1 ]]; then
+if $G_PYTHON_COMPILE; then
     # From Python 3.8 we can use OpenSSL 3
     if [[ "$PY_VERSION_NUM" -ge 308 ]]; then
         T_LIBRARIES_TO_LOOKUP="openssl@3 $T_LIBRARIES_TO_LOOKUP"
@@ -90,7 +90,7 @@ done
 # Unsetting the loop variables
 unset T_LIBRARIES_TO_LOOKUP library_name library_dir
 
-if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+if ! ${P_DRY_RUN_MODE:-false}; then
     # Printing the environment variables we've set
     sysout "${FNT_BLD}${FNT_ULN}Environment:${FNT_RST}"
     sysout ""
@@ -125,6 +125,6 @@ export PATH="$T_EXTRA_PATH:$PATH"
 # And finally, unsetting 'T_EXTRA_PATH' as we don't need it anymore
 unset T_EXTRA_PATH
 
-if [[ "${P_NON_INTERACTIVE:-0}" -ne 1 ]]; then
+if ! ${P_NON_INTERACTIVE:-false}; then
     ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Press [ENTER] to continue" && sysout ""
 fi
