@@ -1,21 +1,46 @@
-From a2b89a95f3d776555a156cd922180f3603ae027f Mon Sep 17 00:00:00 2001
+From 5f1f8f6de9eafd7883fa118c348df4e0f1492392 Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
-Date: Fri, 28 Oct 2022 10:45:20 +0200
+Date: Thu, 17 Nov 2022 12:56:43 +0100
 Subject: [PATCH] Python 3.10.8 patching
 
 ---
- Lib/test/support/__init__.py | 27 ++++++++++++++++++---------
- Lib/test/test_gdb.py         |  2 +-
- Lib/test/test_posix.py       |  8 ++++----
- Modules/Setup                | 31 ++++++++++++++++++++-----------
- Modules/getaddrinfo.c        |  1 +
- Modules/getnameinfo.c        |  1 +
- Modules/socketmodule.c       |  1 +
- Modules/socketmodule.h       |  1 +
- 8 files changed, 47 insertions(+), 25 deletions(-)
+ Lib/distutils/tests/test_build_ext.py |  6 ++++++
+ Lib/test/support/__init__.py          | 27 +++++++++++++++--------
+ Lib/test/test_gdb.py                  |  2 +-
+ Lib/test/test_posix.py                |  8 +++----
+ Modules/Setup                         | 31 +++++++++++++++++----------
+ Modules/getaddrinfo.c                 |  1 +
+ Modules/getnameinfo.c                 |  1 +
+ Modules/socketmodule.c                |  1 +
+ Modules/socketmodule.h                |  1 +
+ 9 files changed, 53 insertions(+), 25 deletions(-)
 
+diff --git a/Lib/distutils/tests/test_build_ext.py b/Lib/distutils/tests/test_build_ext.py
+index 8e7364d..4916642 100644
+--- a/Lib/distutils/tests/test_build_ext.py
++++ b/Lib/distutils/tests/test_build_ext.py
+@@ -457,6 +457,9 @@ class BuildExtTestCase(TempdirManager,
+         # deployment target higher than that of the interpreter: the ext
+         # module may depend on some newer OS feature.
+         deptarget = sysconfig.get_config_var('MACOSX_DEPLOYMENT_TARGET')
++        # Handling the case where MACOSX_DEPLOYMENT_TARGET >= 11 (Big Sur)
++        if deptarget.isdigit():
++            deptarget = f"{deptarget}.0"
+         if deptarget:
+             # increment the minor version number (i.e. 10.6 -> 10.7)
+             deptarget = [int(x) for x in deptarget.split('.')]
+@@ -492,6 +495,9 @@ class BuildExtTestCase(TempdirManager,
+ 
+         # get the deployment target that the interpreter was built with
+         target = sysconfig.get_config_var('MACOSX_DEPLOYMENT_TARGET')
++        # Handling the case where MACOSX_DEPLOYMENT_TARGET >= 11 (Big Sur)
++        if target.isdigit():
++            target = f"{target}.0"
+         target = tuple(map(int, target.split('.')[0:2]))
+         # format the target value as defined in the Apple
+         # Availability Macros.  We can't use the macro names since
 diff --git a/Lib/test/support/__init__.py b/Lib/test/support/__init__.py
-index c9a80c2..2db7b32 100644
+index c9a80c2..4ec302a 100644
 --- a/Lib/test/support/__init__.py
 +++ b/Lib/test/support/__init__.py
 @@ -202,8 +202,16 @@ def _force_run(path, func, *args):
@@ -24,7 +49,7 @@ index c9a80c2..2db7b32 100644
          return _is_gui_available.result
 +
 +    if os.environ.get("UI_TESTS_ENABLED", "") != "1":
-+        _is_gui_available.reason = "UI tests are disabled, because the 'UI_TESTS_ENABLED' environment variable is not set to '1'"
++        _is_gui_available.reason = "fritsi: UI tests are disabled, because the 'UI_TESTS_ENABLED' environment variable is not set to '1'"
 +        _is_gui_available.result = False
 +        return _is_gui_available.result
 +
@@ -69,7 +94,7 @@ index c9a80c2..2db7b32 100644
              err_string = str(e)
              if len(err_string) > 50:
 diff --git a/Lib/test/test_gdb.py b/Lib/test/test_gdb.py
-index 5f55489..3aa60a2 100644
+index 5f55489..b840613 100644
 --- a/Lib/test/test_gdb.py
 +++ b/Lib/test/test_gdb.py
 @@ -137,7 +137,7 @@ HAS_PYUP_PYDOWN = gdb_has_frame_select()
@@ -77,7 +102,7 @@ index 5f55489..3aa60a2 100644
  BREAKPOINT_FN='builtin_id'
  
 -@unittest.skipIf(support.PGO, "not useful for PGO")
-+@unittest.skipIf(True, "gdb requires code signing on MacOS")
++@unittest.skipIf(True, "fritsi: gdb requires code signing on MacOS")
  class DebuggerTests(unittest.TestCase):
  
      """Test that the debugger can debug Python."""
@@ -229,5 +254,5 @@ index e4f375d..4f799e4 100644
  # if !defined(__CYGWIN__)
  #  include <netinet/tcp.h>
 -- 
-2.23.0
+2.38.1
 

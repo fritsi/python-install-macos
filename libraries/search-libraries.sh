@@ -10,7 +10,7 @@ export PKG_CONFIG_PATH=""
 
 # The list of libraries we need to look-up, and set include / lib directories based on them for the compiler
 # Some of them are definitely mandatory, others are optional for the Python build
-T_LIBRARIES_TO_LOOKUP="bzip2 gdbm libxcrypt libzip ncurses readline sqlite tcl-tk xz zlib"
+T_LIBRARIES_TO_LOOKUP="bzip2 expat gdbm libxcrypt libzip mpdecimal ncurses readline sqlite tcl-tk xz zlib"
 
 # Checking which version of libffi we need to use, and whether we need to install an older version or not
 source "$SCRIPTS_DIR/libraries/setup-libffi.sh"

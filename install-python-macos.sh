@@ -63,11 +63,10 @@ function printUsage() {
 function printPreparationSteps() {
     sysout "\033[1m\033[4mAs a preparation we suggest to perform the following:\033[0m"
     sysout ""
-    sysout "\033[1mbrew install\033[0m asciidoc autoconf bzip2 coreutils diffutils findutils \\"
-    sysout "             gawk gcc gdbm gnu-sed gnu-tar gnu-which gnunet grep jq \\"
-    sysout "             libffi libtool libx11 libxcrypt libzip lzo ncurses \\"
-    sysout "             openssl@1.1 openssl@3 p7zip pkg-config readline sqlite \\"
-    sysout "             tcl-tk unzip wget xz zlib"
+    sysout "\033[1mbrew install\033[0m asciidoc autoconf bzip2 coreutils diffutils expat findutils gawk \\"
+    sysout "             gcc gdbm gnu-sed gnu-tar gnu-which gnunet grep jq libffi libtool \\"
+    sysout "             libx11 libxcrypt libzip lzo mpdecimal ncurses openssl@1.1 openssl@3 \\"
+    sysout "             p7zip pkg-config readline sqlite tcl-tk unzip wget xz zlib"
     sysout ""
     sysout "\033[1m\033[4mNOTE:\033[0m The above command does \033[1mnot\033[0m only install libraries, but also a couple of \033[1mGNU\033[0m executables."
     sysout "      These will not be used by default, but \033[3msearch-libraries.sh\033[0m will temporarily add it to PATH."
@@ -354,18 +353,36 @@ export CC="/usr/bin/gcc"
 export CXX="/usr/bin/g++"
 export LD="/usr/bin/g++"
 
+# Unset these if they are set
+unset PYTHONHOME PYTHONPATH
+
+# Override the auto-detection in setup.py, which assumes a universal build
+# This is only available since Python 3
+if [[ "$PY_VERSION_NUM" -ge 300 ]]; then
+    if [[ "$IS_APPLE_SILICON" -eq 1 ]]; then
+        export PYTHON_DECIMAL_WITH_MACHINE="uint128"
+    else
+        export PYTHON_DECIMAL_WITH_MACHINE="x64"
+    fi
+
+    sysout "\033[1m[$G_PROG_NAME]\033[0m export PYTHON_DECIMAL_WITH_MACHINE=\"$PYTHON_DECIMAL_WITH_MACHINE\""
+    sysout ""
+fi
+
 # Parameters used for ./configure
 CONFIGURE_PARAMS=(
     "--prefix=$PYTHON_INSTALL_DIR"
     "--with-ensurepip=install"
     "--enable-optimizations"
-    "--with-system-ffi"
+    "--enable-ipv6"
     "--with-dbmliborder=gdbm:ndbm"
+    "--with-system-expat"
+    "--with-system-ffi"
 )
 
-# --enable-loadable-sqlite-extensions is only available from Python 3
+# --with-system-libmpdec is only available from Python 3
 if [[ "$PY_VERSION_NUM" -ge 300 ]]; then
-    CONFIGURE_PARAMS+=("--enable-loadable-sqlite-extensions")
+    CONFIGURE_PARAMS+=("--with-system-libmpdec")
 fi
 
 # --with-openssl is only available from Python 3.7
@@ -373,10 +390,14 @@ if [[ "$PY_VERSION_NUM" -ge 307 ]]; then
     CONFIGURE_PARAMS+=("--with-openssl=$L_OPENSSL_BASE")
 fi
 
-# --with-tcltk-includes and --with-tcltk-libs is NOT available since Python 3.11
-if [[ "$PY_VERSION_NUM" -lt 311 ]]; then
-    CONFIGURE_PARAMS+=("--with-tcltk-includes=-I$L_TCL_TK_BASE/include")
-    CONFIGURE_PARAMS+=("--with-tcltk-libs=-L$L_TCL_TK_BASE/lib -ltk8.6 -ltcl8.6 -DWITH_APPINIT")
+# --with-dtrace is only available from Python 3.9
+if [[ "$PY_VERSION_NUM" -ge 309 ]]; then
+    CONFIGURE_PARAMS+=("--with-dtrace")
+fi
+
+# --enable-loadable-sqlite-extensions is only available from Python 3
+if [[ "$PY_VERSION_NUM" -ge 300 ]]; then
+    CONFIGURE_PARAMS+=("--enable-loadable-sqlite-extensions")
 fi
 
 # On non Apple-Silicon machines if the Python version is >= 3.7, then
@@ -385,6 +406,43 @@ if [[ "$IS_APPLE_SILICON" -ne 1 ]] && [[ "$PY_VERSION_NUM" -ge 307 ]]; then
     CONFIGURE_PARAMS+=("--enable-universalsdk")
     CONFIGURE_PARAMS+=("--with-universal-archs=intel-64")
 fi
+
+# --with-tcltk-includes and --with-tcltk-libs is NOT available since Python 3.11
+if [[ "$PY_VERSION_NUM" -lt 311 ]]; then
+    CONFIGURE_PARAMS+=("--with-tcltk-includes=-I$L_TCL_TK_BASE/include")
+    CONFIGURE_PARAMS+=("--with-tcltk-libs=-L$L_TCL_TK_BASE/lib -ltk8.6 -ltcl8.6 -DWITH_APPINIT")
+fi
+
+function macOsVersion() {
+    local mac_os_version
+    local mac_os_version_parts
+
+    # Getting the full version, e.g.: '11.6.8'
+    mac_os_version="$(sw_vers -productVersion)"
+
+    # Splitting the version by dots
+    IFS='.' read -ra mac_os_version_parts <<< "$mac_os_version"
+
+    # 11 is BigSur
+    # For that and above that we only need the major version, because they mean:
+    # Big Sur:  "11"
+    # Monterey: "12"
+    # Ventura:  "13"
+    if [[ "${mac_os_version_parts[0]}" -ge 11 ]]; then
+        echo -n "${mac_os_version_parts[0]}"
+    # Below that we need that major and minor versions, because for these the versions means:
+    # El Capitan:  "10.11"
+    # Sierra:      "10.12"
+    # High Sierra: "10.13"
+    # Mojave:      "10.14"
+    # Catalina:    "10.15"
+    else
+        echo -n "${mac_os_version_parts[0]}.${mac_os_version_parts[1]}"
+    fi
+}
+
+# Avoid linking to libgcc https://mail.python.org/pipermail/python-dev/2012-February/116205.html
+CONFIGURE_PARAMS+=("MACOSX_DEPLOYMENT_TARGET=$(macOsVersion)")
 
 # Configuring Python
 echoAndExec ./configure "${CONFIGURE_PARAMS[@]}" 2>&1

@@ -1,11 +1,13 @@
-From d84dfefa62975711656ccb264329305109aafa0f Mon Sep 17 00:00:00 2001
+From fce51e45f4fc93d5e5c34dce8984d6f585382fcf Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
-Date: Wed, 16 Nov 2022 01:12:05 +0100
+Date: Thu, 17 Nov 2022 12:56:12 +0100
 Subject: [PATCH] Python 3.7.15 patching
 
 ---
  Lib/ctypes/macholib/dyld.py           |  10 +++
  Lib/ctypes/test/test_macholib.py      |   1 -
+ Lib/distutils/tests/test_build_ext.py |   6 ++
+ Lib/sysconfig.py                      |  12 +++
  Lib/test/support/__init__.py          |  26 ++++--
  Lib/test/test_bytes.py                |   1 +
  Lib/test/test_gdb.py                  |   2 +-
@@ -16,6 +18,7 @@ Subject: [PATCH] Python 3.7.15 patching
  Modules/_ctypes/_ctypes.c             |  31 +++++++
  Modules/_ctypes/callproc.c            | 114 +++++++++++++++++++++++---
  Modules/_ctypes/ctypes.h              |   1 +
+ Modules/_decimal/_decimal.c           |  10 ++-
  Modules/_decimal/libmpdec/mpdecimal.h |   3 +
  Modules/getaddrinfo.c                 |   1 +
  Modules/getnameinfo.c                 |   1 +
@@ -24,8 +27,8 @@ Subject: [PATCH] Python 3.7.15 patching
  configure                             |  25 ++++++
  configure.ac                          |   6 ++
  pyconfig.h.in                         |   3 +
- setup.py                              |  65 +++++++++++----
- 21 files changed, 279 insertions(+), 51 deletions(-)
+ setup.py                              |  67 +++++++++++----
+ 24 files changed, 306 insertions(+), 54 deletions(-)
 
 diff --git a/Lib/ctypes/macholib/dyld.py b/Lib/ctypes/macholib/dyld.py
 index 9d86b05..931a9e7 100644
@@ -67,8 +70,76 @@ index 8b13b3a..1919211 100644
      def test_find(self):
          # On Mac OS 11, system dylibs are only present in the shared cache,
          # so symlinks like libpthread.dylib -> libSystem.B.dylib will not
+diff --git a/Lib/distutils/tests/test_build_ext.py b/Lib/distutils/tests/test_build_ext.py
+index d042859..ac7942d 100644
+--- a/Lib/distutils/tests/test_build_ext.py
++++ b/Lib/distutils/tests/test_build_ext.py
+@@ -431,6 +431,9 @@ class BuildExtTestCase(TempdirManager,
+         # deployment target higher than that of the interpreter: the ext
+         # module may depend on some newer OS feature.
+         deptarget = sysconfig.get_config_var('MACOSX_DEPLOYMENT_TARGET')
++        # Handling the case where MACOSX_DEPLOYMENT_TARGET >= 11 (Big Sur)
++        if deptarget.isdigit():
++            deptarget = f"{deptarget}.0"
+         if deptarget:
+             # increment the minor version number (i.e. 10.6 -> 10.7)
+             deptarget = [int(x) for x in deptarget.split('.')]
+@@ -466,6 +469,9 @@ class BuildExtTestCase(TempdirManager,
+ 
+         # get the deployment target that the interpreter was built with
+         target = sysconfig.get_config_var('MACOSX_DEPLOYMENT_TARGET')
++        # Handling the case where MACOSX_DEPLOYMENT_TARGET >= 11 (Big Sur)
++        if target.isdigit():
++            target = f"{target}.0"
+         target = tuple(map(int, target.split('.')[0:2]))
+         # format the target value as defined in the Apple
+         # Availability Macros.  We can't use the macro names since
+diff --git a/Lib/sysconfig.py b/Lib/sysconfig.py
+index d15cec8..7f50f93 100644
+--- a/Lib/sysconfig.py
++++ b/Lib/sysconfig.py
+@@ -18,6 +18,11 @@ __all__ = [
+     'parse_config_h',
+ ]
+ 
++# Keys for get_config_var() that are never converted to Python integers.
++_ALWAYS_STR = {
++    'MACOSX_DEPLOYMENT_TARGET',
++}
++
+ _INSTALL_SCHEMES = {
+     'posix_prefix': {
+         'stdlib': '{installed_base}/lib/python{py_version_short}',
+@@ -242,6 +247,9 @@ def _parse_makefile(filename, vars=None):
+                 notdone[n] = v
+             else:
+                 try:
++                    if n in _ALWAYS_STR:
++                        raise ValueError
++
+                     v = int(v)
+                 except ValueError:
+                     # insert literal `$'
+@@ -300,6 +308,8 @@ def _parse_makefile(filename, vars=None):
+                         notdone[name] = value
+                     else:
+                         try:
++                            if name in _ALWAYS_STR:
++                                raise ValueError
+                             value = int(value)
+                         except ValueError:
+                             done[name] = value.strip()
+@@ -460,6 +470,8 @@ def parse_config_h(fp, vars=None):
+         if m:
+             n, v = m.group(1, 2)
+             try:
++                if n in _ALWAYS_STR:
++                    raise ValueError
+                 v = int(v)
+             except ValueError:
+                 pass
 diff --git a/Lib/test/support/__init__.py b/Lib/test/support/__init__.py
-index 8de486f..f6b983a 100644
+index 8de486f..60f97b1 100644
 --- a/Lib/test/support/__init__.py
 +++ b/Lib/test/support/__init__.py
 @@ -465,7 +465,14 @@ def forget(modname):
@@ -77,7 +148,7 @@ index 8de486f..f6b983a 100644
          return _is_gui_available.result
 +
 +    if os.environ.get("UI_TESTS_ENABLED", "") != "1":
-+        _is_gui_available.reason = "UI tests are disabled, because the 'UI_TESTS_ENABLED' environment variable is not set to '1'"
++        _is_gui_available.reason = "fritsi: UI tests are disabled, because the 'UI_TESTS_ENABLED' environment variable is not set to '1'"
 +        _is_gui_available.result = False
 +        return _is_gui_available.result
 +
@@ -132,7 +203,7 @@ index 3387a1b..81a1b36 100644
  
          # basic tests
 diff --git a/Lib/test/test_gdb.py b/Lib/test/test_gdb.py
-index fe603be..3ed972c 100644
+index fe603be..93427f0 100644
 --- a/Lib/test/test_gdb.py
 +++ b/Lib/test/test_gdb.py
 @@ -133,7 +133,7 @@ HAS_PYUP_PYDOWN = gdb_has_frame_select()
@@ -140,7 +211,7 @@ index fe603be..3ed972c 100644
  BREAKPOINT_FN='builtin_id'
  
 -@unittest.skipIf(support.PGO, "not useful for PGO")
-+@unittest.skipIf(True, "gdb requires code signing on MacOS")
++@unittest.skipIf(True, "fritsi: gdb requires code signing on MacOS")
  class DebuggerTests(unittest.TestCase):
  
      """Test that the debugger can debug Python."""
@@ -498,6 +569,41 @@ index e58f852..e45975f 100644
  
  #define TYPEFLAG_ISPOINTER 0x100
  #define TYPEFLAG_HASPOINTER 0x200
+diff --git a/Modules/_decimal/_decimal.c b/Modules/_decimal/_decimal.c
+index 93e2950..749c561 100644
+--- a/Modules/_decimal/_decimal.c
++++ b/Modules/_decimal/_decimal.c
+@@ -58,6 +58,12 @@
+ 
+ #define BOUNDS_CHECK(x, MIN, MAX) x = (x < MIN || MAX < x) ? MAX : x
+ 
++#if defined(__GNUC__) && !defined(__INTEL_COMPILER)
++  #define UNUSED __attribute__((unused))
++#else
++  #define UNUSED
++#endif
++
+ 
+ /* _Py_DEC_MINALLOC >= MPD_MINALLOC */
+ #define _Py_DEC_MINALLOC 4
+@@ -3277,7 +3283,7 @@ dec_format(PyObject *dec, PyObject *args)
+     }
+     else {
+         size_t n = strlen(spec.dot);
+-        if (n > 1 || (n == 1 && !isascii((uchar)spec.dot[0]))) {
++        if (n > 1 || (n == 1 && !isascii((unsigned char)spec.dot[0]))) {
+             /* fix locale dependent non-ascii characters */
+             dot = dotsep_as_utf8(spec.dot);
+             if (dot == NULL) {
+@@ -3286,7 +3292,7 @@ dec_format(PyObject *dec, PyObject *args)
+             spec.dot = PyBytes_AS_STRING(dot);
+         }
+         n = strlen(spec.sep);
+-        if (n > 1 || (n == 1 && !isascii((uchar)spec.sep[0]))) {
++        if (n > 1 || (n == 1 && !isascii((unsigned char)spec.sep[0]))) {
+             /* fix locale dependent non-ascii characters */
+             sep = dotsep_as_utf8(spec.sep);
+             if (sep == NULL) {
 diff --git a/Modules/_decimal/libmpdec/mpdecimal.h b/Modules/_decimal/libmpdec/mpdecimal.h
 index a67dd9b..3e9c818 100644
 --- a/Modules/_decimal/libmpdec/mpdecimal.h
@@ -628,7 +734,7 @@ index ebab5ff..e8110e0 100644
  #undef HAVE_DYNAMIC_LOADING
  
 diff --git a/setup.py b/setup.py
-index bf90600..4673628 100644
+index bf90600..b530d36 100644
 --- a/setup.py
 +++ b/setup.py
 @@ -142,6 +142,13 @@ def macosx_sdk_root():
@@ -734,6 +840,15 @@ index bf90600..4673628 100644
              ext.libraries.append(ffi_lib)
              self.use_system_libffi = True
  
+@@ -2054,7 +2089,7 @@ class PyBuildExt(build_ext):
+         undef_macros = []
+         if '--with-system-libmpdec' in sysconfig.get_config_var("CONFIG_ARGS"):
+             include_dirs = []
+-            libraries = [':libmpdec.so.2']
++            libraries = ['mpdec']
+             sources = ['_decimal/_decimal.c']
+             depends = ['_decimal/docstrings.h']
+         else:
 -- 
 2.38.1
 

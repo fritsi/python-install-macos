@@ -1,19 +1,22 @@
-From 1fc5f588a9cdad969c6ce4944b75574a19d7ac14 Mon Sep 17 00:00:00 2001
+From 35739a6c1b923ae66650b6ab5ba805649b2da369 Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
-Date: Wed, 16 Nov 2022 01:11:58 +0100
+Date: Thu, 17 Nov 2022 12:55:50 +0100
 Subject: [PATCH] Python 2.7.18 patching
 
 ---
  Lib/ctypes/macholib/dyld.py           |  10 ++
  Lib/ctypes/test/test_macholib.py      |  14 +-
- Lib/distutils/tests/test_build_ext.py |   2 +-
+ Lib/distutils/tests/test_build_ext.py |   8 +-
+ Lib/sysconfig.py                      |  18 ++-
  Lib/test/support/__init__.py          |  26 ++--
  Lib/test/test_gdb.py                  |   1 +
+ Lib/test/test_minidom.py              |  10 +-
  Lib/test/test_platform.py             |   2 +-
  Lib/test/test_posix.py                |  10 +-
  Lib/test/test_str.py                  |   2 +
  Lib/test/test_test_support.py         |   1 +
  Lib/test/test_unicode.py              |   3 +
+ Lib/test/test_xml_etree.py            |   1 +
  Mac/Modules/qt/setup.py               |   2 +-
  Mac/Tools/pythonw.c                   |   6 +
  Modules/Setup.dist                    |  20 ++-
@@ -30,7 +33,7 @@ Subject: [PATCH] Python 2.7.18 patching
  configure.ac                          |   9 ++
  pyconfig.h.in                         |   3 +
  setup.py                              | 216 +++++++++++++++++++-------
- 26 files changed, 432 insertions(+), 109 deletions(-)
+ 29 files changed, 464 insertions(+), 112 deletions(-)
 
 diff --git a/Lib/ctypes/macholib/dyld.py b/Lib/ctypes/macholib/dyld.py
 index 1fdf8d6..8553106 100644
@@ -93,10 +96,27 @@ index 9779b2f..1ddb68d 100644
  if __name__ == "__main__":
      unittest.main()
 diff --git a/Lib/distutils/tests/test_build_ext.py b/Lib/distutils/tests/test_build_ext.py
-index a6d2d2e..d5ba1cb 100644
+index a6d2d2e..e665737 100644
 --- a/Lib/distutils/tests/test_build_ext.py
 +++ b/Lib/distutils/tests/test_build_ext.py
-@@ -491,7 +491,7 @@ class BuildExtTestCase(support.TempdirManager,
+@@ -452,6 +452,9 @@ class BuildExtTestCase(support.TempdirManager,
+         # deployment target higher than that of the interpreter: the ext
+         # module may depend on some newer OS feature.
+         deptarget = sysconfig.get_config_var('MACOSX_DEPLOYMENT_TARGET')
++        # Handling the case where MACOSX_DEPLOYMENT_TARGET >= 11 (Big Sur)
++        if deptarget.isdigit():
++            deptarget = "{}.0".format(deptarget)
+         if deptarget:
+             # increment the minor version number (i.e. 10.6 -> 10.7)
+             deptarget = [int(x) for x in deptarget.split('.')]
+@@ -487,11 +490,14 @@ class BuildExtTestCase(support.TempdirManager,
+ 
+         # get the deployment target that the interpreter was built with
+         target = sysconfig.get_config_var('MACOSX_DEPLOYMENT_TARGET')
++        # Handling the case where MACOSX_DEPLOYMENT_TARGET >= 11 (Big Sur)
++        if target.isdigit():
++            target = "{}.0".format(target)
+         target = tuple(map(int, target.split('.')[0:2]))
          # format the target value as defined in the Apple
          # Availability Macros.  We can't use the macro names since
          # at least one value we test with will not exist yet.
@@ -105,8 +125,58 @@ index a6d2d2e..d5ba1cb 100644
              # for 10.1 through 10.9.x -> "10n0"
              target = '%02d%01d0' % target
          else:
+diff --git a/Lib/sysconfig.py b/Lib/sysconfig.py
+index 9c8350d..2bdaad2 100644
+--- a/Lib/sysconfig.py
++++ b/Lib/sysconfig.py
+@@ -5,6 +5,11 @@ import sys
+ import os
+ from os.path import pardir, realpath
+ 
++# Keys for get_config_var() that are never converted to Python integers.
++_ALWAYS_STR = {
++    'MACOSX_DEPLOYMENT_TARGET',
++}
++
+ _INSTALL_SCHEMES = {
+     'posix_prefix': {
+         'stdlib': '{base}/lib/python{py_version_short}',
+@@ -228,6 +233,9 @@ def _parse_makefile(filename, vars=None):
+                 notdone[n] = v
+             else:
+                 try:
++                    if n in _ALWAYS_STR:
++                        raise ValueError
++
+                     v = int(v)
+                 except ValueError:
+                     # insert literal `$'
+@@ -259,7 +267,10 @@ def _parse_makefile(filename, vars=None):
+                     if "$" in after:
+                         notdone[name] = value
+                     else:
+-                        try: value = int(value)
++                        try:
++                            if name in _ALWAYS_STR:
++                                raise ValueError
++                            value = int(value)
+                         except ValueError:
+                             done[name] = value.strip()
+                         else:
+@@ -397,7 +408,10 @@ def parse_config_h(fp, vars=None):
+         m = define_rx.match(line)
+         if m:
+             n, v = m.group(1, 2)
+-            try: v = int(v)
++            try:
++                if n in _ALWAYS_STR:
++                    raise ValueError
++                v = int(v)
+             except ValueError: pass
+             vars[n] = v
+         else:
 diff --git a/Lib/test/support/__init__.py b/Lib/test/support/__init__.py
-index ccc11c1..217bb06 100644
+index ccc11c1..d32eab8 100644
 --- a/Lib/test/support/__init__.py
 +++ b/Lib/test/support/__init__.py
 @@ -325,7 +325,14 @@ def forget(modname):
@@ -115,7 +185,7 @@ index ccc11c1..217bb06 100644
          return _is_gui_available.result
 +
 +    if os.environ.get("UI_TESTS_ENABLED", "") != "1":
-+        _is_gui_available.reason = "UI tests are disabled, because the 'UI_TESTS_ENABLED' environment variable is not set to '1'"
++        _is_gui_available.reason = "fritsi: UI tests are disabled, because the 'UI_TESTS_ENABLED' environment variable is not set to '1'"
 +        _is_gui_available.result = False
 +        return _is_gui_available.result
 +
@@ -158,17 +228,51 @@ index ccc11c1..217bb06 100644
              err_string = str(e)
              if len(err_string) > 50:
 diff --git a/Lib/test/test_gdb.py b/Lib/test/test_gdb.py
-index b96acc0..75fdb17 100644
+index b96acc0..5bd2f01 100644
 --- a/Lib/test/test_gdb.py
 +++ b/Lib/test/test_gdb.py
 @@ -132,6 +132,7 @@ def gdb_has_frame_select():
  
  HAS_PYUP_PYDOWN = gdb_has_frame_select()
  
-+@unittest.skipIf(True, "gdb requires code signing on MacOS")
++@unittest.skipIf(True, "fritsi: gdb requires code signing on MacOS")
  class DebuggerTests(unittest.TestCase):
  
      """Test that the debugger can debug Python."""
+diff --git a/Lib/test/test_minidom.py b/Lib/test/test_minidom.py
+index 2eb6423..ca8959f 100644
+--- a/Lib/test/test_minidom.py
++++ b/Lib/test/test_minidom.py
+@@ -6,12 +6,14 @@ from StringIO import StringIO
+ from test import support
+ import unittest
+ 
++import pyexpat
+ import xml.dom
+ import xml.dom.minidom
+ import xml.parsers.expat
+ 
+ from xml.dom.minidom import parse, Node, Document, parseString
+ from xml.dom.minidom import getDOMImplementation
++from xml.parsers.expat import ExpatError
+ 
+ 
+ tstfile = support.findfile("test.xml", subdir="xmltestdata")
+@@ -1051,7 +1053,13 @@ class MinidomTest(unittest.TestCase):
+ 
+         # Verify that character decoding errors raise exceptions instead
+         # of crashing
+-        self.assertRaises(UnicodeDecodeError, parseString,
++        if pyexpat.version_info >= (2, 4, 5):
++            self.assertRaises(ExpatError, parseString,
++                    '<fran\xe7ais></fran\xe7ais>')
++            self.assertRaises(ExpatError, parseString,
++                    '<franais>Comment \xe7a va ? Tr\xe8s bien ?</franais>')
++        else:
++            self.assertRaises(UnicodeDecodeError, parseString,
+                 '<fran\xe7ais>Comment \xe7a va ? Tr\xe8s bien ?</fran\xe7ais>')
+ 
+         doc.unlink()
 diff --git a/Lib/test/test_platform.py b/Lib/test/test_platform.py
 index 542763d..74eda70 100644
 --- a/Lib/test/test_platform.py
@@ -261,6 +365,18 @@ index 92476f6..23e9e64 100644
          _PyUnicode_FromFormat.restype = py_object
  
          def PyUnicode_FromFormat(format, *args):
+diff --git a/Lib/test/test_xml_etree.py b/Lib/test/test_xml_etree.py
+index c75d55f..7635ac9 100644
+--- a/Lib/test/test_xml_etree.py
++++ b/Lib/test/test_xml_etree.py
+@@ -1482,6 +1482,7 @@ class BugsTest(unittest.TestCase):
+                 b"<?xml version='1.0' encoding='ascii'?>\n"
+                 b'<body>t&#227;g</body>')
+ 
++    @unittest.skipIf(True, "fritsi: With using system expat, this is no longer needed")
+     def test_issue3151(self):
+         e = ET.XML('<prefix:localname xmlns:prefix="${stuff}"/>')
+         self.assertEqual(e.tag, '{${stuff}}localname')
 diff --git a/Mac/Modules/qt/setup.py b/Mac/Modules/qt/setup.py
 index 8442011..4b5bc2b 100644
 --- a/Mac/Modules/qt/setup.py
