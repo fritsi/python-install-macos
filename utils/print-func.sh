@@ -19,8 +19,6 @@ fi
 
 # Checking whether the echo command is still not a GNU echo, or now we have a GNU one
 if [[ "$(enable -n echo && echo --help)" == "--help" ]]; then
-    export G_GNU_ECHO=0
-
     # The echo command does NOT support formatting, so declaring a sysout
     # which will remove the formatting and then print the text
     function sysout() {
@@ -28,8 +26,6 @@ if [[ "$(enable -n echo && echo --help)" == "--help" ]]; then
         echo "$1" | sed "s/\\\\033\[[0-9]m//g"
     }
 else
-    export G_GNU_ECHO=1
-
     # The echo command does support formatting, so we can print out a formatted text
     function sysout() {
         echo -e "$1"

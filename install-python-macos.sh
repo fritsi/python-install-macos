@@ -95,9 +95,9 @@ fi
 
 # Checking the architecture type (Intel vs. Apple Silicon)
 if [[ "$(uname -m)" == "x86_64" ]]; then
-    IS_APPLE_SILICON=0
+    IS_APPLE_SILICON=false
 elif [[ "$(uname -m)" == "arm64" ]]; then
-    IS_APPLE_SILICON=1
+    IS_APPLE_SILICON=true
 else
     sysout >&2 "[ERROR] Unsupported OS: $(uname) ($(uname -m))"
     sysout >&2 ""
@@ -128,18 +128,21 @@ PYTHON_VERSION="$1"
 PYTHON_INSTALL_BASE="$2"
 
 # Checking whether the version provided to the script is a valid version or not
-_is_valid_version=0
-for supported_version in "${SUPPORTED_VERSIONS[@]}"; do
-    if [[ "$supported_version" == "$PYTHON_VERSION" ]]; then
-        _is_valid_version=1
-        break
+{
+    _is_valid_version=false
+    for supported_version in "${SUPPORTED_VERSIONS[@]}"; do
+        if [[ "$supported_version" == "$PYTHON_VERSION" ]]; then
+            _is_valid_version=true
+            break
+        fi
+    done
+    if ! $_is_valid_version; then
+        sysout >&2 "[ERROR] Invalid Python versions: '$PYTHON_VERSION'. Supported versions are: $SUPPORTED_VERSIONS_TEXT"
+        sysout >&2 ""
+        exit 1
     fi
-done
-if [[ "$_is_valid_version" -ne 1 ]]; then
-    sysout >&2 "[ERROR] Invalid Python versions: '$PYTHON_VERSION'. Supported versions are: $SUPPORTED_VERSIONS_TEXT"
-    sysout >&2 ""
-    exit 1
-fi
+    unset _is_valid_version
+}
 
 # Validating the installation base directory
 if [[ ! -d "$PYTHON_INSTALL_BASE" ]]; then
@@ -168,10 +171,11 @@ shift 2
 G_PY_COMPILE_CURRENT_MILLIS="$(date "+%s")"
 export G_PY_COMPILE_CURRENT_MILLIS
 
-P_NON_INTERACTIVE=0
-P_EXTRA_LINKS=0
-P_KEEP_WORKING_DIR=0
-P_KEEP_TEST_RESULTS=0
+export P_NON_INTERACTIVE=false
+export P_EXTRA_LINKS=false
+export P_KEEP_WORKING_DIR=false
+export P_KEEP_TEST_RESULTS=false
+export P_DRY_RUN_MODE=false
 
 # Checking the rest of the arguments
 while [[ "$#" -gt 0 ]]; do
@@ -181,18 +185,19 @@ while [[ "$#" -gt 0 ]]; do
 
     case "$argument" in
         --non-interactive)
-            P_NON_INTERACTIVE=1
+            export P_NON_INTERACTIVE=true
             ;;
         --extra-links)
-            P_EXTRA_LINKS=1
+            export P_EXTRA_LINKS=true
             ;;
         --keep-working-dir)
-            P_KEEP_WORKING_DIR=1
+            export P_KEEP_WORKING_DIR=true
             ;;
         --keep-test-results)
-            P_KEEP_TEST_RESULTS=1
+            export P_KEEP_TEST_RESULTS=true
             ;;
         --dry-run)
+            export P_DRY_RUN_MODE=true
             # Setting the name of the temporary file where we'll store the commands we'd execute
             G_PY_COMPILE_COMMANDS_FILE="$(cd "$TMPDIR" && pwd)/python-$PYTHON_VERSION-install-commands.$G_PY_COMPILE_CURRENT_MILLIS.sh"
             export G_PY_COMPILE_COMMANDS_FILE
@@ -206,7 +211,7 @@ while [[ "$#" -gt 0 ]]; do
 done
 
 # shellcheck disable=SC2236
-if [[ ! -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+if $P_DRY_RUN_MODE; then
     sysout "${FNT_BLD}!!! WE ARE IN DRY RUN MODE${FNT_RST}"
     sysout ""
 
@@ -214,9 +219,9 @@ if [[ ! -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
     trap 'rm -rf "$G_PY_COMPILE_COMMANDS_FILE"' EXIT
 
     # When we are in dry run mode, then we control these variables
-    P_NON_INTERACTIVE=1
-    P_KEEP_WORKING_DIR=0
-    P_KEEP_TEST_RESULTS=0
+    export P_NON_INTERACTIVE=true
+    export P_KEEP_WORKING_DIR=false
+    export P_KEEP_TEST_RESULTS=false
 
     {
         echo "export WORKING_DIR=\"{SET THIS TO A TEMPORARY DIRECTORY}\""
@@ -224,11 +229,8 @@ if [[ ! -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
     } >> "$G_PY_COMPILE_COMMANDS_FILE"
 fi
 
-# Exporting this as we need to use it in "trap"
-export P_KEEP_WORKING_DIR
-
 # Validating the --extra-links argument's purpose
-if [[ "$P_EXTRA_LINKS" -eq 1 ]] && [[ "$PY_VERSION_NUM" -lt 300 ]]; then
+if $P_EXTRA_LINKS && [[ "$PY_VERSION_NUM" -lt 300 ]]; then
     sysout >&2 "[ERROR] --extra-links can only be used with Python 3"
     sysout >&2 ""
     exit 1
@@ -264,14 +266,14 @@ else
     checkNotExists "$PYTHON_INSTALL_BASE/virtualenv$PY_POSTFIX"
 
     # If --extra-links was given, then we also need to validate that those do not exist
-    if [[ "$P_EXTRA_LINKS" -eq 1 ]]; then
+    if $P_EXTRA_LINKS; then
         checkNotExists "$PYTHON_INSTALL_BASE/python3"
         checkNotExists "$PYTHON_INSTALL_BASE/pip3"
         checkNotExists "$PYTHON_INSTALL_BASE/virtualenv3"
     fi
 fi
 
-if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+if ! $P_DRY_RUN_MODE; then
     sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Will install Python version: ${FNT_BLD}$PYTHON_VERSION${FNT_RST} into ${FNT_BLD}$PYTHON_INSTALL_DIR${FNT_RST}"
     sysout ""
 
@@ -279,7 +281,7 @@ if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
     sysout ""
 fi
 
-if [[ "$P_NON_INTERACTIVE" -ne 1 ]]; then
+if ! $P_NON_INTERACTIVE; then
     ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Do you want to continue? ([y]/N)" response
 
     case "$response" in
@@ -298,7 +300,7 @@ if [[ -d "$WORKING_DIR" ]]; then
     rm -rf "$WORKING_DIR"
 fi
 
-if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+if ! $P_DRY_RUN_MODE; then
     mkdir -p "$WORKING_DIR"
 
     # This method will be invoked when we exit from the script
@@ -306,7 +308,7 @@ if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
     function deleteWorkingDirectory() {
         sysout ""
 
-        if [[ "$P_KEEP_WORKING_DIR" -ne 1 ]]; then
+        if ! $P_KEEP_WORKING_DIR; then
             sysout "[EXIT] Deleting $WORKING_DIR"
             rm -rf "$WORKING_DIR"
         else
@@ -321,14 +323,14 @@ fi
 
 # We are compiling Python here (needed for libraries/search-libraries.sh)
 # shellcheck disable=SC2034
-G_PYTHON_COMPILE=1
+G_PYTHON_COMPILE=true
 
 # Searching for the necessary libraries to compile Python
 source "$SCRIPTS_DIR/libraries/search-libraries.sh"
 
 # Begin installation
 
-if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+if ! $P_DRY_RUN_MODE; then
     sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Downloading https://www.python.org/ftp/python/$PYTHON_VERSION/Python-$PYTHON_VERSION.tgz into $WORKING_DIR/Python-$PYTHON_VERSION.tgz"
     sysout ""
 
@@ -344,7 +346,7 @@ else
     } >> "$G_PY_COMPILE_COMMANDS_FILE"
 fi
 
-if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+if ! $P_DRY_RUN_MODE; then
     sysout ""
     sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Extracting Python-$PYTHON_VERSION.tgz"
     sysout ""
@@ -361,7 +363,7 @@ else
     } >> "$G_PY_COMPILE_COMMANDS_FILE"
 fi
 
-if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+if ! $P_DRY_RUN_MODE; then
     sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Applying the patch file onto the Python source code"
 
     # Copying the patch file to our working directory as we need to replace '__openssl_install_dir__' in it
@@ -378,7 +380,7 @@ function substituteVariableInPatch() {
     variableName="$1"
     variableValue="$2"
 
-    if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+    if ! $P_DRY_RUN_MODE; then
         sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Substituting '$variableName' with '$variableValue' in the patch file"
 
         sed -i "s/$variableName/$(echo "$variableValue" | sed 's/\//\\\//g' | sed 's/\./\\\./g')/g" "$WORKING_DIR/Python-$PYTHON_VERSION.patch"
@@ -387,7 +389,7 @@ function substituteVariableInPatch() {
     fi
 }
 
-if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+if ! $P_DRY_RUN_MODE; then
     sysout ""
 else
     echo "" >> "$G_PY_COMPILE_COMMANDS_FILE"
@@ -399,7 +401,7 @@ substituteVariableInPatch "__readline_install_dir__" "$L_READLINE_BASE"
 substituteVariableInPatch "__tcl_tk_install_dir__" "$L_TCL_TK_BASE"
 substituteVariableInPatch "__zlib_install_dir__" "$L_ZLIB_BASE"
 
-if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+if ! $P_DRY_RUN_MODE; then
     sysout ""
 else
     echo "" >> "$G_PY_COMPILE_COMMANDS_FILE"
@@ -407,7 +409,7 @@ fi
 
 # Applying the patch file
 
-if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+if ! $P_DRY_RUN_MODE; then
     patch -p1 < "$WORKING_DIR/Python-$PYTHON_VERSION.patch"
 
     sysout ""
@@ -419,11 +421,11 @@ else
 fi
 
 # But after all files have been patched, we do ask for one if we need to
-if [[ "$P_NON_INTERACTIVE" -ne 1 ]]; then
+if ! $P_NON_INTERACTIVE; then
     ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Press [ENTER] to continue" && sysout ""
 fi
 
-if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+if ! $P_DRY_RUN_MODE; then
     sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Configuring the Compiler"
     sysout ""
 
@@ -448,21 +450,21 @@ fi
 # Override the auto-detection in setup.py, which assumes a universal build
 # This is only available since Python 3
 if [[ "$PY_VERSION_NUM" -ge 300 ]]; then
-    if [[ "$IS_APPLE_SILICON" -eq 1 ]]; then
-        if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+    if $IS_APPLE_SILICON; then
+        if ! $P_DRY_RUN_MODE; then
             export PYTHON_DECIMAL_WITH_MACHINE="uint128"
         else
             echo "export PYTHON_DECIMAL_WITH_MACHINE=\"uint128\"" >> "$G_PY_COMPILE_COMMANDS_FILE"
         fi
     else
-        if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+        if ! $P_DRY_RUN_MODE; then
             export PYTHON_DECIMAL_WITH_MACHINE="x64"
         else
             echo "export PYTHON_DECIMAL_WITH_MACHINE=\"x64\"" >> "$G_PY_COMPILE_COMMANDS_FILE"
         fi
     fi
 
-    if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+    if ! $P_DRY_RUN_MODE; then
         sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} export PYTHON_DECIMAL_WITH_MACHINE=\"$PYTHON_DECIMAL_WITH_MACHINE\""
         sysout ""
     else
@@ -503,7 +505,7 @@ fi
 
 # On non Apple-Silicon machines if the Python version is >= 3.7, then
 # we add --enable-universalsdk and --with-universal-archs=intel-64 as well
-if [[ "$IS_APPLE_SILICON" -ne 1 ]] && [[ "$PY_VERSION_NUM" -ge 307 ]]; then
+if ! $IS_APPLE_SILICON && [[ "$PY_VERSION_NUM" -ge 307 ]]; then
     CONFIGURE_PARAMS+=("--enable-universalsdk")
     CONFIGURE_PARAMS+=("--with-universal-archs=intel-64")
 fi
@@ -548,20 +550,20 @@ CONFIGURE_PARAMS+=("MACOSX_DEPLOYMENT_TARGET=$(macOsVersion)")
 # Configuring Python
 echoAndExec ./configure "${CONFIGURE_PARAMS[@]}" 2>&1
 
-if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+if ! $P_DRY_RUN_MODE; then
     sysout ""
 else
     echo "" >> "$G_PY_COMPILE_COMMANDS_FILE"
 fi
 
-if [[ "$P_NON_INTERACTIVE" -ne 1 ]]; then
+if ! $P_NON_INTERACTIVE; then
     ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Press [ENTER] to continue" && sysout ""
 fi
 
 # Saving the number of processors
 PROC_COUNT="$(nproc)"
 
-if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+if ! $P_DRY_RUN_MODE; then
     sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Compiling Python"
     sysout ""
 fi
@@ -570,13 +572,13 @@ fi
 # We'll be using half the available cores for make
 echoAndExec make -j "$((PROC_COUNT / 2))" 2>&1
 
-if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+if ! $P_DRY_RUN_MODE; then
     sysout ""
 else
     echo "" >> "$G_PY_COMPILE_COMMANDS_FILE"
 fi
 
-if [[ "$P_NON_INTERACTIVE" -ne 1 ]]; then
+if ! $P_NON_INTERACTIVE; then
     ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Press [ENTER] to continue" && sysout ""
 fi
 
@@ -594,7 +596,7 @@ function runTests() {
         set -o pipefail
 
         # shellcheck disable=SC2030
-        if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+        if ! $P_DRY_RUN_MODE; then
             # Needed for some of the tests
             export LC_ALL="en_US.UTF-8"
             export LANG="en_US.UTF-8"
@@ -628,7 +630,7 @@ function runTests() {
         EXTRA_TEST_ARGS=()
         if [[ "$PY_VERSION_NUM" -ge 300 ]]; then
             EXTRA_TEST_ARGS+=("-w")
-            if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+            if ! $P_DRY_RUN_MODE; then
                 EXTRA_TEST_ARGS+=("--junit-xml=$test_result_xml_file")
             else
                 EXTRA_TEST_ARGS+=("--junit-xml=\"{SET THE JUNIT XML FILENAME}\"")
@@ -645,7 +647,7 @@ function runTests() {
         # because in that case some of the tests might get skipped
         #
         # * Yes, in its native compiled-only state, it's python.exe :D
-        if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+        if ! $P_DRY_RUN_MODE; then
             echoAndExec ./python.exe -W default -bb -m test -j "$((PROC_COUNT / 2))" -u all "${EXTRA_TEST_ARGS[@]}" 2>&1 | tee "$test_log_file"
         else
             {
@@ -656,11 +658,11 @@ function runTests() {
     )
 
     # shellcheck disable=SC2031
-    if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+    if ! $P_DRY_RUN_MODE; then
         # shellcheck disable=SC2181
         if [[ "$?" -eq 0 ]]; then
             # Waiting for the user's confirmation
-            if [[ "$P_NON_INTERACTIVE" -ne 1 ]]; then
+            if ! $P_NON_INTERACTIVE; then
                 sysout ""
                 ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Press [ENTER] to continue"
             fi
@@ -669,7 +671,7 @@ function runTests() {
             set -euo pipefail
 
             # Deleting the test log and test result xml files if we don't want to keep them
-            if [[ "$P_KEEP_TEST_RESULTS" -ne 1 ]]; then
+            if ! $P_KEEP_TEST_RESULTS; then
                 rm -rf "$test_log_file" "$test_result_xml_file"
             fi
 
@@ -697,7 +699,7 @@ function runTests() {
     fi
 }
 
-if [[ "$P_NON_INTERACTIVE" -eq 1 ]]; then
+if $P_NON_INTERACTIVE; then
     # In non-interactive mode we run the tests
     runTests && sysout ""
 else
@@ -709,7 +711,7 @@ else
     fi
 fi
 
-if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+if ! $P_DRY_RUN_MODE; then
     sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Installing Python into $PYTHON_INSTALL_DIR"
     sysout ""
 else
@@ -720,7 +722,7 @@ fi
 echoAndExec make install 2>&1
 
 # Unsetting the compiler arguments
-if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+if ! $P_DRY_RUN_MODE; then
     sysout ""
 
     unset LDFLAGS CPPFLAGS LD_LIBRARY_PATH PKG_CONFIG_PATH CC CXX LD
@@ -732,18 +734,18 @@ else
     } >> "$G_PY_COMPILE_COMMANDS_FILE"
 fi
 
-if [[ "$P_NON_INTERACTIVE" -ne 1 ]]; then
+if ! $P_NON_INTERACTIVE; then
     ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Press [ENTER] to continue" && sysout ""
 fi
 
-if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+if ! $P_DRY_RUN_MODE; then
     sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Creating links"
     sysout ""
 fi
 
 # Creating symbolic links for pip and the python command
 if [[ "$PY_POSTFIX" == "2.7" ]]; then
-    if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+    if ! $P_DRY_RUN_MODE; then
         ln -s "$PYTHON_INSTALL_DIR/bin/python2" "$PYTHON_INSTALL_BASE/python2"
         ln -s "$PYTHON_INSTALL_DIR/bin/pip2" "$PYTHON_INSTALL_BASE/pip2"
     else
@@ -753,7 +755,7 @@ if [[ "$PY_POSTFIX" == "2.7" ]]; then
         } >> "$G_PY_COMPILE_COMMANDS_FILE"
     fi
 else
-    if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+    if ! $P_DRY_RUN_MODE; then
         ln -s "$PYTHON_INSTALL_DIR/bin/python3" "$PYTHON_INSTALL_BASE/python$PY_POSTFIX"
         ln -s "$PYTHON_INSTALL_DIR/bin/pip3" "$PYTHON_INSTALL_BASE/pip$PY_POSTFIX"
     else
@@ -764,8 +766,8 @@ else
     fi
 
     # If --extra-links was given, then we also create the python3 and pip3 symbolic links
-    if [[ "$P_EXTRA_LINKS" -eq 1 ]]; then
-        if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+    if $P_EXTRA_LINKS; then
+        if ! $P_DRY_RUN_MODE; then
             ln -s "$PYTHON_INSTALL_DIR/bin/python3" "$PYTHON_INSTALL_BASE/python3"
             ln -s "$PYTHON_INSTALL_DIR/bin/pip3" "$PYTHON_INSTALL_BASE/pip3"
         else
@@ -777,7 +779,7 @@ else
     fi
 fi
 
-if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+if ! $P_DRY_RUN_MODE; then
     # Adding our new and shiny Python installation to the PATH
     export PATH="$PYTHON_INSTALL_BASE:$PATH"
 
@@ -790,7 +792,7 @@ if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
         sysout "    * pip$PY_POSTFIX: $(which "pip$PY_POSTFIX")"
 
         # If --extra-links was given, then we also print the python3 and pip3 links
-        if [[ "$P_EXTRA_LINKS" -eq 1 ]]; then
+        if $P_EXTRA_LINKS; then
             sysout "    * python3: $(which "python3")"
             sysout "    * pip3: $(which "pip3")"
         fi
@@ -809,13 +811,13 @@ fi
 
 # Upgrading pip
 if [[ "$PY_POSTFIX" == "2.7" ]]; then
-    if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+    if ! $P_DRY_RUN_MODE; then
         pip2 install --upgrade pip
     else
         echo "pip2 install --upgrade pip" >> "$G_PY_COMPILE_COMMANDS_FILE"
     fi
 else
-    if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+    if ! $P_DRY_RUN_MODE; then
         "pip$PY_POSTFIX" install --upgrade pip
     else
         echo "pip$PY_POSTFIX install --upgrade pip" >> "$G_PY_COMPILE_COMMANDS_FILE"
@@ -824,20 +826,20 @@ fi
 
 # Upgrading setuptools
 if [[ "$PY_POSTFIX" == "2.7" ]]; then
-    if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+    if ! $P_DRY_RUN_MODE; then
         pip2 install --upgrade setuptools
     else
         echo "pip2 install --upgrade setuptools" >> "$G_PY_COMPILE_COMMANDS_FILE"
     fi
 else
-    if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+    if ! $P_DRY_RUN_MODE; then
         "pip$PY_POSTFIX" install --upgrade setuptools
     else
         echo "pip$PY_POSTFIX install --upgrade setuptools" >> "$G_PY_COMPILE_COMMANDS_FILE"
     fi
 fi
 
-if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+if ! $P_DRY_RUN_MODE; then
     sysout ""
     sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Installing virtualenv"
     sysout ""
@@ -845,20 +847,20 @@ fi
 
 # Installing virtualenv
 if [[ "$PY_POSTFIX" == "2.7" ]]; then
-    if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+    if ! $P_DRY_RUN_MODE; then
         pip2 install virtualenv
     else
         echo "pip2 install virtualenv" >> "$G_PY_COMPILE_COMMANDS_FILE"
     fi
 else
-    if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+    if ! $P_DRY_RUN_MODE; then
         "pip$PY_POSTFIX" install virtualenv
     else
         echo "pip$PY_POSTFIX install virtualenv" >> "$G_PY_COMPILE_COMMANDS_FILE"
     fi
 fi
 
-if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+if ! $P_DRY_RUN_MODE; then
     sysout ""
     sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Creating a link for virtualenv"
 else
@@ -867,21 +869,21 @@ fi
 
 # Creating a symbolic link for virtualenv
 if [[ "$PY_POSTFIX" == "2.7" ]]; then
-    if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+    if ! $P_DRY_RUN_MODE; then
         ln -s "$PYTHON_INSTALL_DIR/bin/virtualenv" "$PYTHON_INSTALL_BASE/virtualenv2"
     else
         echo "ln -s \"$PYTHON_INSTALL_DIR/bin/virtualenv\" \"$PYTHON_INSTALL_BASE/virtualenv2\"" >> "$G_PY_COMPILE_COMMANDS_FILE"
     fi
 else
-    if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+    if ! $P_DRY_RUN_MODE; then
         ln -s "$PYTHON_INSTALL_DIR/bin/virtualenv" "$PYTHON_INSTALL_BASE/virtualenv$PY_POSTFIX"
     else
         echo "ln -s \"$PYTHON_INSTALL_DIR/bin/virtualenv\" \"$PYTHON_INSTALL_BASE/virtualenv$PY_POSTFIX\"" >> "$G_PY_COMPILE_COMMANDS_FILE"
     fi
 
     # If --extra-links was given, then we also create the virtualenv3 symbolic link
-    if [[ "$P_EXTRA_LINKS" -eq 1 ]]; then
-        if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+    if $P_EXTRA_LINKS; then
+        if ! $P_DRY_RUN_MODE; then
             ln -s "$PYTHON_INSTALL_DIR/bin/virtualenv" "$PYTHON_INSTALL_BASE/virtualenv3"
         else
             echo "ln -s \"$PYTHON_INSTALL_DIR/bin/virtualenv\" \"$PYTHON_INSTALL_BASE/virtualenv3\"" >> "$G_PY_COMPILE_COMMANDS_FILE"
@@ -889,7 +891,7 @@ else
     fi
 fi
 
-if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+if ! $P_DRY_RUN_MODE; then
     sysout ""
     sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} It is recommended that you add $PYTHON_INSTALL_BASE to your PATH"
     sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} For that execute: export PATH=\"$PYTHON_INSTALL_BASE:\$PATH\""
