@@ -4,6 +4,20 @@ set -euo pipefail
 
 clear
 
+# Checking whether we are running the script on macOS or not
+if [[ "$(uname)" != "Darwin" ]]; then
+    echo >&2 "[ERROR] This script must be run on macOS"
+    echo >&2 ""
+    exit 1
+fi
+
+# Checking whether Homebrew is installed or not
+if [[ "$(command -v brew 2> /dev/null || true)" == "" ]]; then
+    echo >&2 "[ERROR] Homebrew is not installed"
+    echo >&2 ""
+    exit 1
+fi
+
 G_PROG_NAME="$(basename -s ".sh" "$0")"
 export G_PROG_NAME
 
@@ -85,13 +99,6 @@ fi
 
 # Searching for GNU programs and adding them to the PATH
 source "$SCRIPTS_DIR/libraries/search-gnu-progs.sh"
-
-# Checking whether we are running the script on macOS or not
-if [[ "$(uname)" != "Darwin" ]]; then
-    sysout >&2 "[ERROR] This script must be run on macOS"
-    sysout >&2 ""
-    exit 1
-fi
 
 # Checking the architecture type (Intel vs. Apple Silicon)
 if [[ "$(uname -m)" == "x86_64" ]]; then
@@ -799,16 +806,16 @@ if ! $P_DRY_RUN_MODE; then
 
     sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Locations:"
     if [[ "$PY_POSTFIX" == "2.7" ]]; then
-        sysout "    * python2: $(which "python2")"
-        sysout "    * pip2: $(which "pip2")"
+        sysout "    * python2: $(command -v "python2")"
+        sysout "    * pip2: $(command -v "pip2")"
     else
-        sysout "    * python$PY_POSTFIX: $(which "python$PY_POSTFIX")"
-        sysout "    * pip$PY_POSTFIX: $(which "pip$PY_POSTFIX")"
+        sysout "    * python$PY_POSTFIX: $(command -v "python$PY_POSTFIX")"
+        sysout "    * pip$PY_POSTFIX: $(command -v "pip$PY_POSTFIX")"
 
         # If --extra-links was given, then we also print the python3 and pip3 links
         if $P_EXTRA_LINKS; then
-            sysout "    * python3: $(which "python3")"
-            sysout "    * pip3: $(which "pip3")"
+            sysout "    * python3: $(command -v "python3")"
+            sysout "    * pip3: $(command -v "pip3")"
         fi
     fi
     sysout ""

@@ -16,6 +16,20 @@ set -euo pipefail
 
 clear
 
+# Checking whether we are running the script on macOS or not
+if [[ "$(uname)" != "Darwin" ]]; then
+    echo >&2 "[ERROR] This script must be run on macOS"
+    echo >&2 ""
+    exit 1
+fi
+
+# Checking whether Homebrew is installed or not
+if [[ "$(command -v brew 2> /dev/null || true)" == "" ]]; then
+    echo >&2 "[ERROR] Homebrew is not installed"
+    echo >&2 ""
+    exit 1
+fi
+
 G_PROG_NAME="$(basename -s ".sh" "$0")"
 export G_PROG_NAME
 
@@ -34,13 +48,6 @@ WORKING_DIR="$(cd "$TMPDIR" && pwd)/openssl-1.0.2u-temp.$(date "+%s")"
 export WORKING_DIR
 
 INSTALL_DIR="$HOME/Library/openssl-1.0.2u"
-
-# Checking whether we are running the script on macOS or not
-if [[ "$(uname)" != "Darwin" ]]; then
-    sysout >&2 "[ERROR] This script must be run on macOS"
-    sysout >&2 ""
-    exit 1
-fi
 
 # Checking the architecture type (Intel vs. Apple Silicon)
 if [[ "$(uname -m)" == "x86_64" ]]; then
