@@ -11,10 +11,10 @@ G_PY_COMPILE_GNU_PROG_PATH=""
 # Iterating over some programs which should be present on the PATH
 for programName in wget jq grep gnu-which gnu-tar gnu-sed gawk findutils coreutils autoconf asciidoc pkg-config; do
     # Getting their base directory
-    programDir="$(brew --prefix "$programName" 2> /dev/null)"
+    programDir="$(brew --prefix "$programName" 2> /dev/null || true)"
 
     # Validating the external program
-    if [[ ! -d "$programDir" ]] || { [[ ! -d "$programDir/libexec/gnubin" ]] && [[ ! -d "$programDir/bin" ]]; }; then
+    if [[ "$programDir" == "" ]] || [[ ! -d "$programDir" ]] || { [[ ! -d "$programDir/libexec/gnubin" ]] && [[ ! -d "$programDir/bin" ]]; }; then
         sysout >&2 "[ERROR] Could not find $programName, did you install it with brew install $programName ?"
         sysout >&2 ""
         exit 1
