@@ -34,7 +34,6 @@ if [[ "$(brew list -1 | grep -ciF "libffi33" || true)" -gt 0 ]]; then
 fi
 
 # If we are in dry run mode, then libffi33 should already be installed
-# shellcheck disable=SC2236
 if ${P_DRY_RUN_MODE:-false}; then
     sysout >&2 "[ERROR] ${FNT_BLD}libffi33 is not installed${FNT_RST}"
     sysout >&2 "[ERROR] Please install it with: brew install --formula --build-from-source \"$SCRIPTS_DIR/formulas/libffi33.rb\""

@@ -9,27 +9,27 @@
 G_PY_COMPILE_GNU_PROG_PATH=""
 
 # Iterating over some programs which should be present on the PATH
-for program_name in wget jq grep gnu-which gnu-tar gnu-sed gawk findutils coreutils autoconf asciidoc pkg-config; do
+for programName in wget jq grep gnu-which gnu-tar gnu-sed gawk findutils coreutils autoconf asciidoc pkg-config; do
     # Getting their base directory
-    program_dir="$(brew --prefix "$program_name" 2> /dev/null)"
+    programDir="$(brew --prefix "$programName" 2> /dev/null)"
 
     # Validating the external program
-    if [[ ! -d "$program_dir" ]] || { [[ ! -d "$program_dir/libexec/gnubin" ]] && [[ ! -d "$program_dir/bin" ]]; }; then
-        sysout >&2 "[ERROR] Could not find $program_name, did you install it with brew install $program_name ?"
+    if [[ ! -d "$programDir" ]] || { [[ ! -d "$programDir/libexec/gnubin" ]] && [[ ! -d "$programDir/bin" ]]; }; then
+        sysout >&2 "[ERROR] Could not find $programName, did you install it with brew install $programName ?"
         sysout >&2 ""
         exit 1
     fi
 
     # Adding it to 'G_PY_COMPILE_GNU_PROG_PATH'
-    if [[ -d "$program_dir/libexec/gnubin" ]]; then
-        G_PY_COMPILE_GNU_PROG_PATH="$program_dir/libexec/gnubin${G_PY_COMPILE_GNU_PROG_PATH:+:$G_PY_COMPILE_GNU_PROG_PATH}"
-    elif [[ -d "$program_dir/bin" ]]; then
-        G_PY_COMPILE_GNU_PROG_PATH="$program_dir/bin${G_PY_COMPILE_GNU_PROG_PATH:+:$G_PY_COMPILE_GNU_PROG_PATH}"
+    if [[ -d "$programDir/libexec/gnubin" ]]; then
+        G_PY_COMPILE_GNU_PROG_PATH="$programDir/libexec/gnubin${G_PY_COMPILE_GNU_PROG_PATH:+:$G_PY_COMPILE_GNU_PROG_PATH}"
+    elif [[ -d "$programDir/bin" ]]; then
+        G_PY_COMPILE_GNU_PROG_PATH="$programDir/bin${G_PY_COMPILE_GNU_PROG_PATH:+:$G_PY_COMPILE_GNU_PROG_PATH}"
     fi
 done
 
 # Unsetting the loop variables
-unset program_name program_dir
+unset programName programDir
 
 # Printing our 'G_PY_COMPILE_GNU_PROG_PATH' variable
 sysout "${FNT_BLD}GNU_PROG_PATHS:${FNT_RST} $G_PY_COMPILE_GNU_PROG_PATH" && sysout ""

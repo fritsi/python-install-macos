@@ -10,11 +10,11 @@
 # coreutils installed with brew or not, and if we do have, then we prepend the 'PATH'
 # with it
 if [[ "$(enable -n echo && echo --help)" == "--help" ]]; then
-    __core_utils_prefix=$(brew --prefix coreutils 2> /dev/null || true)
-    if [[ "$__core_utils_prefix" != "" ]] && [[ -d "$__core_utils_prefix/libexec/gnubin" ]]; then
-        export PATH="$__core_utils_prefix/libexec/gnubin:$PATH"
+    __coreUtilsPrefix=$(brew --prefix coreutils 2> /dev/null || true)
+    if [[ "$__coreUtilsPrefix" != "" ]] && [[ -d "$__coreUtilsPrefix/libexec/gnubin" ]]; then
+        export PATH="$__coreUtilsPrefix/libexec/gnubin:$PATH"
     fi
-    unset __core_utils_prefix
+    unset __coreUtilsPrefix
 fi
 
 # Checking whether the echo command is still not a GNU echo, or now we have a GNU one

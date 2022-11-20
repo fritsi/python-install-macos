@@ -129,19 +129,19 @@ PYTHON_INSTALL_BASE="$2"
 
 # Checking whether the version provided to the script is a valid version or not
 {
-    _is_valid_version=false
-    for supported_version in "${SUPPORTED_VERSIONS[@]}"; do
-        if [[ "$supported_version" == "$PYTHON_VERSION" ]]; then
-            _is_valid_version=true
+    __isValidVersion=false
+    for __supportedVersion in "${SUPPORTED_VERSIONS[@]}"; do
+        if [[ "$__supportedVersion" == "$PYTHON_VERSION" ]]; then
+            __isValidVersion=true
             break
         fi
     done
-    if ! $_is_valid_version; then
+    if ! $__isValidVersion; then
         sysout >&2 "[ERROR] Invalid Python versions: '$PYTHON_VERSION'. Supported versions are: $SUPPORTED_VERSIONS_TEXT"
         sysout >&2 ""
         exit 1
     fi
-    unset _is_valid_version
+    unset __isValidVersion __supportedVersion
 }
 
 # Validating the installation base directory
@@ -152,18 +152,18 @@ if [[ ! -d "$PYTHON_INSTALL_BASE" ]]; then
 fi
 
 # Splitting up the Python version at the dots
-IFS='.' read -ra python_version_parts <<< "$PYTHON_VERSION"
+IFS='.' read -ra __pythonVersionParts <<< "$PYTHON_VERSION"
 
 # Keeping only the major and minor version
 # E.g.: '3.9.14' becomes '3.9'
-PY_POSTFIX="${python_version_parts[0]}.${python_version_parts[1]}"
+PY_POSTFIX="${__pythonVersionParts[0]}.${__pythonVersionParts[1]}"
 
 # Converting the Python major.minor version into its numeric representation
 # E.g.: 2.7 -> 207; 3.6 -> 306; 3.9 -> 309; 3.10 -> 310
-PY_VERSION_NUM="$((python_version_parts[0] * 100 + python_version_parts[1]))"
+PY_VERSION_NUM="$((__pythonVersionParts[0] * 100 + __pythonVersionParts[1]))"
 
 # We no longer need this
-unset python_version_parts
+unset __pythonVersionParts
 
 shift 2
 
@@ -210,7 +210,6 @@ while [[ "$#" -gt 0 ]]; do
     esac
 done
 
-# shellcheck disable=SC2236
 if $P_DRY_RUN_MODE; then
     sysout "${FNT_BLD}!!! WE ARE IN DRY RUN MODE${FNT_RST}"
     sysout ""
@@ -517,22 +516,22 @@ if [[ "$PY_VERSION_NUM" -lt 311 ]]; then
 fi
 
 function macOsVersion() {
-    local mac_os_version
-    local mac_os_version_parts
+    local macOsVersionName
+    local macOsVersionParts
 
     # Getting the full version, e.g.: '11.6.8'
-    mac_os_version="$(sw_vers -productVersion)"
+    macOsVersionName="$(sw_vers -productVersion)"
 
     # Splitting the version by dots
-    IFS='.' read -ra mac_os_version_parts <<< "$mac_os_version"
+    IFS='.' read -ra macOsVersionParts <<< "$macOsVersionName"
 
     # 11 is BigSur
     # For that and above that we only need the major version, because they mean:
     # Big Sur:  "11"
     # Monterey: "12"
     # Ventura:  "13"
-    if [[ "${mac_os_version_parts[0]}" -ge 11 ]]; then
-        echo -n "${mac_os_version_parts[0]}"
+    if [[ "${macOsVersionParts[0]}" -ge 11 ]]; then
+        echo -n "${macOsVersionParts[0]}"
     # Below that we need that major and minor versions, because for these the versions means:
     # El Capitan:  "10.11"
     # Sierra:      "10.12"
@@ -540,7 +539,7 @@ function macOsVersion() {
     # Mojave:      "10.14"
     # Catalina:    "10.15"
     else
-        echo -n "${mac_os_version_parts[0]}.${mac_os_version_parts[1]}"
+        echo -n "${macOsVersionParts[0]}.${macOsVersionParts[1]}"
     fi
 }
 
@@ -583,11 +582,12 @@ if ! $P_NON_INTERACTIVE; then
 fi
 
 function runTests() {
-    local test_log_file
-    local test_result_xml_file
+    local testLogFile
+    local testResultXmlFile
+    local testsExitCode
 
-    test_log_file="$PYTHON_INSTALL_BASE/python-$PYTHON_VERSION-tests.log"
-    test_result_xml_file="$PYTHON_INSTALL_BASE/python-$PYTHON_VERSION-test-results.xml"
+    testLogFile="$PYTHON_INSTALL_BASE/python-$PYTHON_VERSION-tests.log"
+    testResultXmlFile="$PYTHON_INSTALL_BASE/python-$PYTHON_VERSION-test-results.xml"
 
     # Turning off exit in case of a failure, so we can explicitly check the exit code of the python -m test command
     set +euo pipefail
@@ -595,7 +595,6 @@ function runTests() {
     (
         set -o pipefail
 
-        # shellcheck disable=SC2030
         if ! $P_DRY_RUN_MODE; then
             # Needed for some of the tests
             export LC_ALL="en_US.UTF-8"
@@ -625,13 +624,15 @@ function runTests() {
             } >> "$G_PY_COMPILE_COMMANDS_FILE"
         fi
 
+        EXTRA_TEST_ARGS=()
+
         # --junit-xml is not available for Python 2.7, so for Python 2.7 we use verbose test output,
         # and for Python 3.x we use non-verbose output with --junit-xml
-        EXTRA_TEST_ARGS=()
         if [[ "$PY_VERSION_NUM" -ge 300 ]]; then
             EXTRA_TEST_ARGS+=("-w")
+
             if ! $P_DRY_RUN_MODE; then
-                EXTRA_TEST_ARGS+=("--junit-xml=$test_result_xml_file")
+                EXTRA_TEST_ARGS+=("--junit-xml=$testResultXmlFile")
             else
                 EXTRA_TEST_ARGS+=("--junit-xml=\"{SET THE JUNIT XML FILENAME}\"")
             fi
@@ -648,7 +649,7 @@ function runTests() {
         #
         # * Yes, in its native compiled-only state, it's python.exe :D
         if ! $P_DRY_RUN_MODE; then
-            echoAndExec ./python.exe -W default -bb -m test -j "$((PROC_COUNT / 2))" -u all "${EXTRA_TEST_ARGS[@]}" 2>&1 | tee "$test_log_file"
+            echoAndExec ./python.exe -W default -bb -m test -j "$((PROC_COUNT / 2))" -u all "${EXTRA_TEST_ARGS[@]}" 2>&1 | tee "$testLogFile"
         else
             {
                 echo "    ./python.exe -W default -bb -m test -j $((PROC_COUNT / 2)) -u all ${EXTRA_TEST_ARGS[*]}"
@@ -657,44 +658,48 @@ function runTests() {
         fi
     )
 
-    # shellcheck disable=SC2031
-    if ! $P_DRY_RUN_MODE; then
-        # shellcheck disable=SC2181
-        if [[ "$?" -eq 0 ]]; then
-            # Waiting for the user's confirmation
-            if ! $P_NON_INTERACTIVE; then
-                sysout ""
-                ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Press [ENTER] to continue"
-            fi
+    # Saving the exit code of the above block in a variable
+    testsExitCode="$?"
 
-            # Turning on exit code check again
-            set -euo pipefail
+    # Nothing more to do when we are in dry-run mode
+    if $P_DRY_RUN_MODE; then
+        return 0
+    fi
 
-            # Deleting the test log and test result xml files if we don't want to keep them
-            if ! $P_KEEP_TEST_RESULTS; then
-                rm -rf "$test_log_file" "$test_result_xml_file"
-            fi
+    if [[ "$testsExitCode" -eq 0 ]]; then
+        # Waiting for the user's confirmation
+        if ! $P_NON_INTERACTIVE; then
+            sysout ""
+            ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Press [ENTER] to continue"
+        fi
 
-            # Nothing else to do here
-            return 0
+        # Turning on exit code check again
+        set -euo pipefail
+
+        # Deleting the test log and test result xml files if we don't want to keep them
+        if ! $P_KEEP_TEST_RESULTS; then
+            rm -rf "$testLogFile" "$testResultXmlFile"
+        fi
+
+        # Nothing else to do here
+        return 0
+    else
+        sysout >&2 ""
+        sysout >&2 "[ERROR] THERE WERE TEST FAILURES"
+        if [[ -f "$testResultXmlFile" ]]; then
+            sysout >&2 "[ERROR] PLEASE CHECK THE FOLLOWING LOG FILE FOR MORE INFORMATION: $testLogFile,"
+            sysout >&2 "[ERROR] OR THE TEST RESULT XML FILE: $testResultXmlFile"
         else
-            sysout >&2 ""
-            sysout >&2 "[ERROR] THERE WERE TEST FAILURES"
-            if [[ -f "$test_result_xml_file" ]]; then
-                sysout >&2 "[ERROR] PLEASE CHECK THE FOLLOWING LOG FILE FOR MORE INFORMATION: $test_log_file,"
-                sysout >&2 "[ERROR] OR THE TEST RESULT XML FILE: $test_result_xml_file"
-            else
-                sysout >&2 "[ERROR] PLEASE CHECK THE FOLLOWING LOG FILE FOR MORE INFORMATION: $test_log_file"
-            fi
-            sysout >&2 ""
+            sysout >&2 "[ERROR] PLEASE CHECK THE FOLLOWING LOG FILE FOR MORE INFORMATION: $testLogFile"
+        fi
+        sysout >&2 ""
 
-            # Ask the user if they want to continue
-            ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Would you like to continue? ([y]/N)" response
+        # Ask the user if they want to continue
+        ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Would you like to continue? ([y]/N)" response
 
-            # If not, then we exit
-            if [[ "$response" != "" ]] && [[ ! "$response" =~ ^(([yY][eE][sS])|([yY]))$ ]]; then
-                exit 1
-            fi
+        # If not, then we exit
+        if [[ "$response" != "" ]] && [[ ! "$response" =~ ^(([yY][eE][sS])|([yY]))$ ]]; then
+            exit 1
         fi
     fi
 }
