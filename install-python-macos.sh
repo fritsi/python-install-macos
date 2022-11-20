@@ -582,12 +582,21 @@ if ! $P_NON_INTERACTIVE; then
 fi
 
 function runTests() {
+    local testLogDir
     local testLogFile
     local testResultXmlFile
     local testsExitCode
 
-    testLogFile="$PYTHON_INSTALL_BASE/python-$PYTHON_VERSION-tests.log"
-    testResultXmlFile="$PYTHON_INSTALL_BASE/python-$PYTHON_VERSION-test-results.xml"
+    # The directory where we'll put the test logs, and the test result xml file in case of Python 3
+    testLogDir="$PYTHON_INSTALL_BASE/python-install-logs"
+
+    # Creating the directory if it does not exist
+    if [[ ! -d "$testLogDir" ]]; then
+        mkdir "$testLogDir"
+    fi
+
+    testLogFile="$testLogDir/python-$PYTHON_VERSION-tests.log"
+    testResultXmlFile="$testLogDir/python-$PYTHON_VERSION-test-results.xml"
 
     # Turning off exit in case of a failure, so we can explicitly check the exit code of the python -m test command
     set +euo pipefail
