@@ -33,6 +33,15 @@ if [[ "$(brew list -1 | grep -ciF "libffi33" || true)" -gt 0 ]]; then
     return
 fi
 
+# If we are in dry run mode, then libffi33 should already be installed
+# shellcheck disable=SC2236
+if [[ ! -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+    sysout >&2 "[ERROR] ${FNT_BLD}libffi33 is not installed${FNT_RST}"
+    sysout >&2 "[ERROR] Please install it with: brew install --formula --build-from-source \"$SCRIPTS_DIR/formulas/libffi33.rb\""
+    sysout >&2 ""
+    exit 1
+fi
+
 # Let's install libffi 3.3.x
 # formulas/libffi33.rb was downloaded from an older hash of https://github.com/Homebrew/homebrew-core/blob/HEAD/Formula/libffi.rb,
 # and then changed a bit

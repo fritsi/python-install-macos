@@ -6,7 +6,7 @@
 #############################################################################
 
 # Extra paths we'll add to 'PATH'
-T_GNU_PROG_PATHS=""
+G_PY_COMPILE_GNU_PROG_PATH=""
 
 # Iterating over some programs which should be present on the PATH
 for program_name in wget jq grep gnu-which gnu-tar gnu-sed gawk findutils coreutils autoconf asciidoc pkg-config; do
@@ -20,22 +20,22 @@ for program_name in wget jq grep gnu-which gnu-tar gnu-sed gawk findutils coreut
         exit 1
     fi
 
-    # Adding it to 'T_GNU_PROG_PATHS'
+    # Adding it to 'G_PY_COMPILE_GNU_PROG_PATH'
     if [[ -d "$program_dir/libexec/gnubin" ]]; then
-        T_GNU_PROG_PATHS="$program_dir/libexec/gnubin${T_GNU_PROG_PATHS:+:$T_GNU_PROG_PATHS}"
+        G_PY_COMPILE_GNU_PROG_PATH="$program_dir/libexec/gnubin${G_PY_COMPILE_GNU_PROG_PATH:+:$G_PY_COMPILE_GNU_PROG_PATH}"
     elif [[ -d "$program_dir/bin" ]]; then
-        T_GNU_PROG_PATHS="$program_dir/bin${T_GNU_PROG_PATHS:+:$T_GNU_PROG_PATHS}"
+        G_PY_COMPILE_GNU_PROG_PATH="$program_dir/bin${G_PY_COMPILE_GNU_PROG_PATH:+:$G_PY_COMPILE_GNU_PROG_PATH}"
     fi
 done
 
 # Unsetting the loop variables
 unset program_name program_dir
 
-# Printing our 'T_GNU_PROG_PATHS' variable
-sysout "${FNT_BLD}GNU_PROG_PATHS:${FNT_RST} $T_GNU_PROG_PATHS" && sysout ""
+# Printing our 'G_PY_COMPILE_GNU_PROG_PATH' variable
+sysout "${FNT_BLD}GNU_PROG_PATHS:${FNT_RST} $G_PY_COMPILE_GNU_PROG_PATH" && sysout ""
 
-# Prepending 'PATH' with 'T_GNU_PROG_PATHS' which we've assembled based on the libraries
-export PATH="$T_GNU_PROG_PATHS:$PATH"
+# Prepending 'PATH' with 'G_PY_COMPILE_GNU_PROG_PATH' which we've assembled based on the libraries
+export PATH="$G_PY_COMPILE_GNU_PROG_PATH:$PATH"
 
-# We don't need this anymore
-unset T_GNU_PROG_PATHS
+# No longer unsetting this as we need it in case of dry run mode
+# unset G_PY_COMPILE_GNU_PROG_PATH

@@ -56,6 +56,9 @@ function printUsage() {
     sysout ""
     sysout "    ${FNT_BLD}--keep-test-results${FNT_RST} - We'll keep the test log and test result xml files even in case everything passed."
     sysout ""
+    sysout "    ${FNT_BLD}--dry-run${FNT_RST} - We'll only print out the commands which would be executed."
+    sysout "                ${FNT_BLD}NOTE:${FNT_RST} Collecting GNU binaries will still be executed."
+    sysout ""
 
     # Also printing out the preparation steps
     printPreparationSteps
@@ -124,7 +127,46 @@ fi
 PYTHON_VERSION="$1"
 PYTHON_INSTALL_BASE="$2"
 
+# Checking whether the version provided to the script is a valid version or not
+_is_valid_version=0
+for supported_version in "${SUPPORTED_VERSIONS[@]}"; do
+    if [[ "$supported_version" == "$PYTHON_VERSION" ]]; then
+        _is_valid_version=1
+        break
+    fi
+done
+if [[ "$_is_valid_version" -ne 1 ]]; then
+    sysout >&2 "[ERROR] Invalid Python versions: '$PYTHON_VERSION'. Supported versions are: $SUPPORTED_VERSIONS_TEXT"
+    sysout >&2 ""
+    exit 1
+fi
+
+# Validating the installation base directory
+if [[ ! -d "$PYTHON_INSTALL_BASE" ]]; then
+    sysout >&2 "[ERROR] The install base directory does not exists: '$PYTHON_INSTALL_BASE'"
+    sysout >&2 ""
+    exit 1
+fi
+
+# Splitting up the Python version at the dots
+IFS='.' read -ra python_version_parts <<< "$PYTHON_VERSION"
+
+# Keeping only the major and minor version
+# E.g.: '3.9.14' becomes '3.9'
+PY_POSTFIX="${python_version_parts[0]}.${python_version_parts[1]}"
+
+# Converting the Python major.minor version into its numeric representation
+# E.g.: 2.7 -> 207; 3.6 -> 306; 3.9 -> 309; 3.10 -> 310
+PY_VERSION_NUM="$((python_version_parts[0] * 100 + python_version_parts[1]))"
+
+# We no longer need this
+unset python_version_parts
+
 shift 2
+
+# Getting the current millis which can be used across the scripts
+G_PY_COMPILE_CURRENT_MILLIS="$(date "+%s")"
+export G_PY_COMPILE_CURRENT_MILLIS
 
 P_NON_INTERACTIVE=0
 P_EXTRA_LINKS=0
@@ -150,6 +192,11 @@ while [[ "$#" -gt 0 ]]; do
         --keep-test-results)
             P_KEEP_TEST_RESULTS=1
             ;;
+        --dry-run)
+            # Setting the name of the temporary file where we'll store the commands we'd execute
+            G_PY_COMPILE_COMMANDS_FILE="$(cd "$TMPDIR" && pwd)/python-$PYTHON_VERSION-install-commands.$G_PY_COMPILE_CURRENT_MILLIS.sh"
+            export G_PY_COMPILE_COMMANDS_FILE
+            ;;
         *)
             sysout >&2 "[ERROR] Unrecognized argument: '$argument'"
             sysout >&2 ""
@@ -158,43 +205,27 @@ while [[ "$#" -gt 0 ]]; do
     esac
 done
 
+# shellcheck disable=SC2236
+if [[ ! -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+    sysout "${FNT_BLD}!!! WE ARE IN DRY RUN MODE${FNT_RST}"
+    sysout ""
+
+    # Deleting the temporary command file on exit
+    trap 'rm -rf "$G_PY_COMPILE_COMMANDS_FILE"' EXIT
+
+    # When we are in dry run mode, then we control these variables
+    P_NON_INTERACTIVE=1
+    P_KEEP_WORKING_DIR=0
+    P_KEEP_TEST_RESULTS=0
+
+    {
+        echo "export WORKING_DIR=\"{SET THIS TO A TEMPORARY DIRECTORY}\""
+        echo ""
+    } >> "$G_PY_COMPILE_COMMANDS_FILE"
+fi
+
 # Exporting this as we need to use it in "trap"
 export P_KEEP_WORKING_DIR
-
-# Validating the installation base directory
-if [[ ! -d "$PYTHON_INSTALL_BASE" ]]; then
-    sysout >&2 "[ERROR] The install base directory does not exists: '$PYTHON_INSTALL_BASE'"
-    sysout >&2 ""
-    exit 1
-fi
-
-# Checking whether the version provided to the script is a valid version or not
-_is_valid_version=0
-for supported_version in "${SUPPORTED_VERSIONS[@]}"; do
-    if [[ "$supported_version" == "$PYTHON_VERSION" ]]; then
-        _is_valid_version=1
-        break
-    fi
-done
-if [[ "$_is_valid_version" -ne 1 ]]; then
-    sysout >&2 "[ERROR] Invalid Python versions: '$PYTHON_VERSION'. Supported versions are: $SUPPORTED_VERSIONS_TEXT"
-    sysout >&2 ""
-    exit 1
-fi
-
-# Splitting up the Python version at the dots
-IFS='.' read -ra python_version_parts <<< "$PYTHON_VERSION"
-
-# Keeping only the major and minor version
-# E.g.: '3.9.14' becomes '3.9'
-PY_POSTFIX="${python_version_parts[0]}.${python_version_parts[1]}"
-
-# Converting the Python major.minor version into its numeric representation
-# E.g.: 2.7 -> 207; 3.6 -> 306; 3.9 -> 309; 3.10 -> 310
-PY_VERSION_NUM="$((python_version_parts[0] * 100 + python_version_parts[1]))"
-
-# We no longer need this
-unset python_version_parts
 
 # Validating the --extra-links argument's purpose
 if [[ "$P_EXTRA_LINKS" -eq 1 ]] && [[ "$PY_VERSION_NUM" -lt 300 ]]; then
@@ -215,7 +246,7 @@ function checkNotExists() {
     fi
 }
 
-WORKING_DIR="$(cd "$TMPDIR" && pwd)/python-$PYTHON_VERSION-temp.$(date "+%s")"
+WORKING_DIR="$(cd "$TMPDIR" && pwd)/python-$PYTHON_VERSION-temp.$G_PY_COMPILE_CURRENT_MILLIS"
 export WORKING_DIR
 
 checkNotExists "$WORKING_DIR/Python-$PYTHON_VERSION.tgz"
@@ -240,11 +271,13 @@ else
     fi
 fi
 
-sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Will install Python version: ${FNT_BLD}$PYTHON_VERSION${FNT_RST} into ${FNT_BLD}$PYTHON_INSTALL_DIR${FNT_RST}"
-sysout ""
+if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+    sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Will install Python version: ${FNT_BLD}$PYTHON_VERSION${FNT_RST} into ${FNT_BLD}$PYTHON_INSTALL_DIR${FNT_RST}"
+    sysout ""
 
-sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Using working directory: ${FNT_BLD}$WORKING_DIR${FNT_RST}"
-sysout ""
+    sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Using working directory: ${FNT_BLD}$WORKING_DIR${FNT_RST}"
+    sysout ""
+fi
 
 if [[ "$P_NON_INTERACTIVE" -ne 1 ]]; then
     ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Do you want to continue? ([y]/N)" response
@@ -265,24 +298,26 @@ if [[ -d "$WORKING_DIR" ]]; then
     rm -rf "$WORKING_DIR"
 fi
 
-mkdir -p "$WORKING_DIR"
+if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+    mkdir -p "$WORKING_DIR"
 
-# This method will be invoked when we exit from the script
-# This will eventually delete our temporary directory
-function deleteWorkingDirectory() {
-    sysout ""
+    # This method will be invoked when we exit from the script
+    # This will eventually delete our temporary directory
+    function deleteWorkingDirectory() {
+        sysout ""
 
-    if [[ "$P_KEEP_WORKING_DIR" -ne 1 ]]; then
-        sysout "[EXIT] Deleting $WORKING_DIR"
-        rm -rf "$WORKING_DIR"
-    else
-        sysout "[EXIT] Keeping $WORKING_DIR"
-    fi
-}
+        if [[ "$P_KEEP_WORKING_DIR" -ne 1 ]]; then
+            sysout "[EXIT] Deleting $WORKING_DIR"
+            rm -rf "$WORKING_DIR"
+        else
+            sysout "[EXIT] Keeping $WORKING_DIR"
+        fi
+    }
 
-export -f deleteWorkingDirectory
+    export -f deleteWorkingDirectory
 
-trap "deleteWorkingDirectory" EXIT
+    trap "deleteWorkingDirectory" EXIT
+fi
 
 # We are compiling Python here (needed for libraries/search-libraries.sh)
 # shellcheck disable=SC2034
@@ -293,25 +328,47 @@ source "$SCRIPTS_DIR/libraries/search-libraries.sh"
 
 # Begin installation
 
-sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Downloading https://www.python.org/ftp/python/$PYTHON_VERSION/Python-$PYTHON_VERSION.tgz into $WORKING_DIR/Python-$PYTHON_VERSION.tgz"
-sysout ""
+if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+    sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Downloading https://www.python.org/ftp/python/$PYTHON_VERSION/Python-$PYTHON_VERSION.tgz into $WORKING_DIR/Python-$PYTHON_VERSION.tgz"
+    sysout ""
 
-wget --no-verbose --no-check-certificate "https://www.python.org/ftp/python/$PYTHON_VERSION/Python-$PYTHON_VERSION.tgz" -O "$WORKING_DIR/Python-$PYTHON_VERSION.tgz"
+    wget --no-verbose --no-check-certificate "https://www.python.org/ftp/python/$PYTHON_VERSION/Python-$PYTHON_VERSION.tgz" -O "$WORKING_DIR/Python-$PYTHON_VERSION.tgz"
 
-cd "$WORKING_DIR"
+    cd "$WORKING_DIR"
+else
+    {
+        echo "wget --no-verbose --no-check-certificate \"https://www.python.org/ftp/python/$PYTHON_VERSION/Python-$PYTHON_VERSION.tgz\" -O \"\$WORKING_DIR/Python-$PYTHON_VERSION.tgz\""
+        echo ""
+        echo "cd \"\$WORKING_DIR\""
+        echo ""
+    } >> "$G_PY_COMPILE_COMMANDS_FILE"
+fi
 
-sysout ""
-sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Extracting Python-$PYTHON_VERSION.tgz"
-sysout ""
+if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+    sysout ""
+    sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Extracting Python-$PYTHON_VERSION.tgz"
+    sysout ""
 
-tar xzf "Python-$PYTHON_VERSION.tgz"
+    tar xzf "Python-$PYTHON_VERSION.tgz"
 
-cd "$WORKING_DIR/Python-$PYTHON_VERSION"
+    cd "$WORKING_DIR/Python-$PYTHON_VERSION"
+else
+    {
+        echo "tar xzf \"Python-$PYTHON_VERSION.tgz\""
+        echo ""
+        echo "cd \"\$WORKING_DIR/Python-$PYTHON_VERSION\""
+        echo ""
+    } >> "$G_PY_COMPILE_COMMANDS_FILE"
+fi
 
-sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Applying the patch file onto the Python source code"
+if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+    sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Applying the patch file onto the Python source code"
 
-# Copying the patch file to our working directory as we need to replace '__openssl_install_dir__' in it
-cp "$SCRIPTS_DIR/patches/Python-$PYTHON_VERSION.patch" "$WORKING_DIR/Python-$PYTHON_VERSION.patch"
+    # Copying the patch file to our working directory as we need to replace '__openssl_install_dir__' in it
+    cp "$SCRIPTS_DIR/patches/Python-$PYTHON_VERSION.patch" "$WORKING_DIR/Python-$PYTHON_VERSION.patch"
+else
+    echo "cp \"$SCRIPTS_DIR/patches/Python-$PYTHON_VERSION.patch\" \"\$WORKING_DIR/Python-$PYTHON_VERSION.patch\"" >> "$G_PY_COMPILE_COMMANDS_FILE"
+fi
 
 # Function to replace variables with a value in the patch file
 function substituteVariableInPatch() {
@@ -321,12 +378,20 @@ function substituteVariableInPatch() {
     variableName="$1"
     variableValue="$2"
 
-    sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Substituting '$variableName' with '$variableValue' in the patch file"
+    if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+        sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Substituting '$variableName' with '$variableValue' in the patch file"
 
-    sed -i "s/$variableName/$(echo "$variableValue" | sed 's/\//\\\//g' | sed 's/\./\\\./g')/g" "$WORKING_DIR/Python-$PYTHON_VERSION.patch"
+        sed -i "s/$variableName/$(echo "$variableValue" | sed 's/\//\\\//g' | sed 's/\./\\\./g')/g" "$WORKING_DIR/Python-$PYTHON_VERSION.patch"
+    else
+        echo "sed -i \"s/$variableName/$(echo "$variableValue" | sed 's/\//\\\//g' | sed 's/\./\\\./g')/g\" \"\$WORKING_DIR/Python-$PYTHON_VERSION.patch\"" >> "$G_PY_COMPILE_COMMANDS_FILE"
+    fi
 }
 
-sysout ""
+if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+    sysout ""
+else
+    echo "" >> "$G_PY_COMPILE_COMMANDS_FILE"
+fi
 
 # Substituting some variable in the patch file
 substituteVariableInPatch "__openssl_install_dir__" "$L_OPENSSL_BASE"
@@ -334,40 +399,75 @@ substituteVariableInPatch "__readline_install_dir__" "$L_READLINE_BASE"
 substituteVariableInPatch "__tcl_tk_install_dir__" "$L_TCL_TK_BASE"
 substituteVariableInPatch "__zlib_install_dir__" "$L_ZLIB_BASE"
 
-sysout ""
+if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+    sysout ""
+else
+    echo "" >> "$G_PY_COMPILE_COMMANDS_FILE"
+fi
 
 # Applying the patch file
-patch -p1 < "$WORKING_DIR/Python-$PYTHON_VERSION.patch"
 
-sysout ""
+if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+    patch -p1 < "$WORKING_DIR/Python-$PYTHON_VERSION.patch"
+
+    sysout ""
+else
+    {
+        echo "patch -p1 < \"\$WORKING_DIR/Python-$PYTHON_VERSION.patch\""
+        echo ""
+    } >> "$G_PY_COMPILE_COMMANDS_FILE"
+fi
 
 # But after all files have been patched, we do ask for one if we need to
 if [[ "$P_NON_INTERACTIVE" -ne 1 ]]; then
     ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Press [ENTER] to continue" && sysout ""
 fi
 
-sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Configuring the Compiler"
-sysout ""
+if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+    sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Configuring the Compiler"
+    sysout ""
 
-# These are needed, so the gcc coming from brew does not get picked-up
-export CC="/usr/bin/gcc"
-export CXX="/usr/bin/g++"
-export LD="/usr/bin/g++"
+    # These are needed, so the gcc coming from brew does not get picked-up
+    export CC="/usr/bin/gcc"
+    export CXX="/usr/bin/g++"
+    export LD="/usr/bin/g++"
 
-# Unset these if they are set
-unset PYTHONHOME PYTHONPATH
+    # Unset these if they are set
+    unset PYTHONHOME PYTHONPATH
+else
+    {
+        echo "export CC=\"/usr/bin/gcc\""
+        echo "export CXX=\"/usr/bin/g++\""
+        echo "export LD=\"/usr/bin/g++\""
+        echo ""
+        echo "unset PYTHONHOME PYTHONPATH"
+        echo ""
+    } >> "$G_PY_COMPILE_COMMANDS_FILE"
+fi
 
 # Override the auto-detection in setup.py, which assumes a universal build
 # This is only available since Python 3
 if [[ "$PY_VERSION_NUM" -ge 300 ]]; then
     if [[ "$IS_APPLE_SILICON" -eq 1 ]]; then
-        export PYTHON_DECIMAL_WITH_MACHINE="uint128"
+        if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+            export PYTHON_DECIMAL_WITH_MACHINE="uint128"
+        else
+            echo "export PYTHON_DECIMAL_WITH_MACHINE=\"uint128\"" >> "$G_PY_COMPILE_COMMANDS_FILE"
+        fi
     else
-        export PYTHON_DECIMAL_WITH_MACHINE="x64"
+        if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+            export PYTHON_DECIMAL_WITH_MACHINE="x64"
+        else
+            echo "export PYTHON_DECIMAL_WITH_MACHINE=\"x64\"" >> "$G_PY_COMPILE_COMMANDS_FILE"
+        fi
     fi
 
-    sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} export PYTHON_DECIMAL_WITH_MACHINE=\"$PYTHON_DECIMAL_WITH_MACHINE\""
-    sysout ""
+    if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+        sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} export PYTHON_DECIMAL_WITH_MACHINE=\"$PYTHON_DECIMAL_WITH_MACHINE\""
+        sysout ""
+    else
+        echo "" >> "$G_PY_COMPILE_COMMANDS_FILE"
+    fi
 fi
 
 # Parameters used for ./configure
@@ -448,7 +548,11 @@ CONFIGURE_PARAMS+=("MACOSX_DEPLOYMENT_TARGET=$(macOsVersion)")
 # Configuring Python
 echoAndExec ./configure "${CONFIGURE_PARAMS[@]}" 2>&1
 
-sysout ""
+if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+    sysout ""
+else
+    echo "" >> "$G_PY_COMPILE_COMMANDS_FILE"
+fi
 
 if [[ "$P_NON_INTERACTIVE" -ne 1 ]]; then
     ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Press [ENTER] to continue" && sysout ""
@@ -457,14 +561,20 @@ fi
 # Saving the number of processors
 PROC_COUNT="$(nproc)"
 
-sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Compiling Python"
-sysout ""
+if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+    sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Compiling Python"
+    sysout ""
+fi
 
 # Compiling Python
 # We'll be using half the available cores for make
 echoAndExec make -j "$((PROC_COUNT / 2))" 2>&1
 
-sysout ""
+if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+    sysout ""
+else
+    echo "" >> "$G_PY_COMPILE_COMMANDS_FILE"
+fi
 
 if [[ "$P_NON_INTERACTIVE" -ne 1 ]]; then
     ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Press [ENTER] to continue" && sysout ""
@@ -483,25 +593,46 @@ function runTests() {
     (
         set -o pipefail
 
-        # Needed for some of the tests
-        export LC_ALL="en_US.UTF-8"
-        export LANG="en_US.UTF-8"
+        # shellcheck disable=SC2030
+        if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+            # Needed for some of the tests
+            export LC_ALL="en_US.UTF-8"
+            export LANG="en_US.UTF-8"
 
-        # unsetting these as they would mess with the tests
-        unset PYTHONHTTPSVERIFY DISPLAY
+            # unsetting these as they would mess with the tests
+            unset PYTHONHTTPSVERIFY DISPLAY
 
-        # Getting rid of some warnings in the tests
-        export TK_SILENCE_DEPRECATION=1
+            # Getting rid of some warnings in the tests
+            export TK_SILENCE_DEPRECATION=1
 
-        # We don't want to run the Tkinter related tests as they are too unstable
-        export UI_TESTS_ENABLED=0
+            # We don't want to run the Tkinter related tests as they are too unstable
+            export UI_TESTS_ENABLED=0
+        else
+            {
+                echo "# To run the tests, execute:"
+                echo ""
+                echo "("
+                echo "    export LC_ALL=\"en_US.UTF-8\""
+                echo "    export LANG=\"en_US.UTF-8\""
+                echo ""
+                echo "    unset PYTHONHTTPSVERIFY DISPLAY"
+                echo ""
+                echo "    export TK_SILENCE_DEPRECATION=1"
+                echo "    export UI_TESTS_ENABLED=0"
+                echo ""
+            } >> "$G_PY_COMPILE_COMMANDS_FILE"
+        fi
 
         # --junit-xml is not available for Python 2.7, so for Python 2.7 we use verbose test output,
         # and for Python 3.x we use non-verbose output with --junit-xml
         EXTRA_TEST_ARGS=()
         if [[ "$PY_VERSION_NUM" -ge 300 ]]; then
             EXTRA_TEST_ARGS+=("-w")
-            EXTRA_TEST_ARGS+=("--junit-xml=$test_result_xml_file")
+            if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+                EXTRA_TEST_ARGS+=("--junit-xml=$test_result_xml_file")
+            else
+                EXTRA_TEST_ARGS+=("--junit-xml=\"{SET THE JUNIT XML FILENAME}\"")
+            fi
         else
             EXTRA_TEST_ARGS+=("--verbose")
         fi
@@ -514,44 +645,54 @@ function runTests() {
         # because in that case some of the tests might get skipped
         #
         # * Yes, in its native compiled-only state, it's python.exe :D
-        echoAndExec ./python.exe -W default -bb -m test -j "$((PROC_COUNT / 2))" -u all "${EXTRA_TEST_ARGS[@]}" 2>&1 | tee "$test_log_file"
+        if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+            echoAndExec ./python.exe -W default -bb -m test -j "$((PROC_COUNT / 2))" -u all "${EXTRA_TEST_ARGS[@]}" 2>&1 | tee "$test_log_file"
+        else
+            {
+                echo "    ./python.exe -W default -bb -m test -j $((PROC_COUNT / 2)) -u all ${EXTRA_TEST_ARGS[*]}"
+                echo ")"
+            } >> "$G_PY_COMPILE_COMMANDS_FILE"
+        fi
     )
 
-    # shellcheck disable=SC2181
-    if [[ "$?" -eq 0 ]]; then
-        # Waiting for the user's confirmation
-        if [[ "$P_NON_INTERACTIVE" -ne 1 ]]; then
-            sysout ""
-            ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Press [ENTER] to continue"
-        fi
+    # shellcheck disable=SC2031
+    if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+        # shellcheck disable=SC2181
+        if [[ "$?" -eq 0 ]]; then
+            # Waiting for the user's confirmation
+            if [[ "$P_NON_INTERACTIVE" -ne 1 ]]; then
+                sysout ""
+                ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Press [ENTER] to continue"
+            fi
 
-        # Turning on exit code check again
-        set -euo pipefail
+            # Turning on exit code check again
+            set -euo pipefail
 
-        # Deleting the test log and test result xml files if we don't want to keep them
-        if [[ "$P_KEEP_TEST_RESULTS" -ne 1 ]]; then
-            rm -rf "$test_log_file" "$test_result_xml_file"
-        fi
+            # Deleting the test log and test result xml files if we don't want to keep them
+            if [[ "$P_KEEP_TEST_RESULTS" -ne 1 ]]; then
+                rm -rf "$test_log_file" "$test_result_xml_file"
+            fi
 
-        # Nothing else to do here
-        return 0
-    else
-        sysout >&2 ""
-        sysout >&2 "[ERROR] THERE WERE TEST FAILURES"
-        if [[ -f "$test_result_xml_file" ]]; then
-            sysout >&2 "[ERROR] PLEASE CHECK THE FOLLOWING LOG FILE FOR MORE INFORMATION: $test_log_file,"
-            sysout >&2 "[ERROR] OR THE TEST RESULT XML FILE: $test_result_xml_file"
+            # Nothing else to do here
+            return 0
         else
-            sysout >&2 "[ERROR] PLEASE CHECK THE FOLLOWING LOG FILE FOR MORE INFORMATION: $test_log_file"
-        fi
-        sysout >&2 ""
+            sysout >&2 ""
+            sysout >&2 "[ERROR] THERE WERE TEST FAILURES"
+            if [[ -f "$test_result_xml_file" ]]; then
+                sysout >&2 "[ERROR] PLEASE CHECK THE FOLLOWING LOG FILE FOR MORE INFORMATION: $test_log_file,"
+                sysout >&2 "[ERROR] OR THE TEST RESULT XML FILE: $test_result_xml_file"
+            else
+                sysout >&2 "[ERROR] PLEASE CHECK THE FOLLOWING LOG FILE FOR MORE INFORMATION: $test_log_file"
+            fi
+            sysout >&2 ""
 
-        # Ask the user if they want to continue
-        ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Would you like to continue? ([y]/N)" response
+            # Ask the user if they want to continue
+            ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Would you like to continue? ([y]/N)" response
 
-        # If not, then we exit
-        if [[ "$response" != "" ]] && [[ ! "$response" =~ ^(([yY][eE][sS])|([yY]))$ ]]; then
-            exit 1
+            # If not, then we exit
+            if [[ "$response" != "" ]] && [[ ! "$response" =~ ^(([yY][eE][sS])|([yY]))$ ]]; then
+                exit 1
+            fi
         fi
     fi
 }
@@ -568,104 +709,198 @@ else
     fi
 fi
 
-sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Installing Python into $PYTHON_INSTALL_DIR"
-sysout ""
+if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+    sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Installing Python into $PYTHON_INSTALL_DIR"
+    sysout ""
+else
+    echo "" >> "$G_PY_COMPILE_COMMANDS_FILE"
+fi
 
 # Installing Python to the destination directory
 echoAndExec make install 2>&1
 
 # Unsetting the compiler arguments
-unset LDFLAGS CPPFLAGS LD_LIBRARY_PATH CC CXX LD
+if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+    sysout ""
 
-sysout ""
+    unset LDFLAGS CPPFLAGS LD_LIBRARY_PATH PKG_CONFIG_PATH CC CXX LD
+else
+    {
+        echo ""
+        echo "unset LDFLAGS CPPFLAGS LD_LIBRARY_PATH PKG_CONFIG_PATH CC CXX LD"
+        echo ""
+    } >> "$G_PY_COMPILE_COMMANDS_FILE"
+fi
 
 if [[ "$P_NON_INTERACTIVE" -ne 1 ]]; then
     ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Press [ENTER] to continue" && sysout ""
 fi
 
-sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Creating links"
-sysout ""
+if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+    sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Creating links"
+    sysout ""
+fi
 
 # Creating symbolic links for pip and the python command
 if [[ "$PY_POSTFIX" == "2.7" ]]; then
-    ln -s "$PYTHON_INSTALL_DIR/bin/python2" "$PYTHON_INSTALL_BASE/python2"
-    ln -s "$PYTHON_INSTALL_DIR/bin/pip2" "$PYTHON_INSTALL_BASE/pip2"
+    if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+        ln -s "$PYTHON_INSTALL_DIR/bin/python2" "$PYTHON_INSTALL_BASE/python2"
+        ln -s "$PYTHON_INSTALL_DIR/bin/pip2" "$PYTHON_INSTALL_BASE/pip2"
+    else
+        {
+            echo "ln -s \"$PYTHON_INSTALL_DIR/bin/python2\" \"$PYTHON_INSTALL_BASE/python2\""
+            echo "ln -s \"$PYTHON_INSTALL_DIR/bin/pip2\" \"$PYTHON_INSTALL_BASE/pip2\""
+        } >> "$G_PY_COMPILE_COMMANDS_FILE"
+    fi
 else
-    ln -s "$PYTHON_INSTALL_DIR/bin/python3" "$PYTHON_INSTALL_BASE/python$PY_POSTFIX"
-    ln -s "$PYTHON_INSTALL_DIR/bin/pip3" "$PYTHON_INSTALL_BASE/pip$PY_POSTFIX"
+    if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+        ln -s "$PYTHON_INSTALL_DIR/bin/python3" "$PYTHON_INSTALL_BASE/python$PY_POSTFIX"
+        ln -s "$PYTHON_INSTALL_DIR/bin/pip3" "$PYTHON_INSTALL_BASE/pip$PY_POSTFIX"
+    else
+        {
+            echo "ln -s \"$PYTHON_INSTALL_DIR/bin/python3\" \"$PYTHON_INSTALL_BASE/python$PY_POSTFIX\""
+            echo "ln -s \"$PYTHON_INSTALL_DIR/bin/pip3\" \"$PYTHON_INSTALL_BASE/pip$PY_POSTFIX\""
+        } >> "$G_PY_COMPILE_COMMANDS_FILE"
+    fi
 
     # If --extra-links was given, then we also create the python3 and pip3 symbolic links
     if [[ "$P_EXTRA_LINKS" -eq 1 ]]; then
-        ln -s "$PYTHON_INSTALL_DIR/bin/python3" "$PYTHON_INSTALL_BASE/python3"
-        ln -s "$PYTHON_INSTALL_DIR/bin/pip3" "$PYTHON_INSTALL_BASE/pip3"
+        if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+            ln -s "$PYTHON_INSTALL_DIR/bin/python3" "$PYTHON_INSTALL_BASE/python3"
+            ln -s "$PYTHON_INSTALL_DIR/bin/pip3" "$PYTHON_INSTALL_BASE/pip3"
+        else
+            {
+                echo "ln -s \"$PYTHON_INSTALL_DIR/bin/python3\" \"$PYTHON_INSTALL_BASE/python3\""
+                echo "ln -s \"$PYTHON_INSTALL_DIR/bin/pip3\" \"$PYTHON_INSTALL_BASE/pip3\""
+            } >> "$G_PY_COMPILE_COMMANDS_FILE"
+        fi
     fi
 fi
 
-# Adding our new and shiny Python installation to the PATH
-export PATH="$PYTHON_INSTALL_BASE:$PATH"
+if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+    # Adding our new and shiny Python installation to the PATH
+    export PATH="$PYTHON_INSTALL_BASE:$PATH"
 
-sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Locations:"
-if [[ "$PY_POSTFIX" == "2.7" ]]; then
-    sysout "    * python2: $(which "python2")"
-    sysout "    * pip2: $(which "pip2")"
+    sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Locations:"
+    if [[ "$PY_POSTFIX" == "2.7" ]]; then
+        sysout "    * python2: $(which "python2")"
+        sysout "    * pip2: $(which "pip2")"
+    else
+        sysout "    * python$PY_POSTFIX: $(which "python$PY_POSTFIX")"
+        sysout "    * pip$PY_POSTFIX: $(which "pip$PY_POSTFIX")"
+
+        # If --extra-links was given, then we also print the python3 and pip3 links
+        if [[ "$P_EXTRA_LINKS" -eq 1 ]]; then
+            sysout "    * python3: $(which "python3")"
+            sysout "    * pip3: $(which "pip3")"
+        fi
+    fi
+    sysout ""
+
+    sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Upgrading pip and setuptools"
+    sysout ""
 else
-    sysout "    * python$PY_POSTFIX: $(which "python$PY_POSTFIX")"
-    sysout "    * pip$PY_POSTFIX: $(which "pip$PY_POSTFIX")"
-
-    # If --extra-links was given, then we also print the python3 and pip3 links
-    if [[ "$P_EXTRA_LINKS" -eq 1 ]]; then
-        sysout "    * python3: $(which "python3")"
-        sysout "    * pip3: $(which "pip3")"
-    fi
+    {
+        echo ""
+        echo "export PATH=\"$PYTHON_INSTALL_BASE:\$PATH\""
+        echo ""
+    } >> "$G_PY_COMPILE_COMMANDS_FILE"
 fi
-sysout ""
-
-sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Upgrading pip and setuptools"
-sysout ""
 
 # Upgrading pip
 if [[ "$PY_POSTFIX" == "2.7" ]]; then
-    pip2 install --upgrade pip
+    if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+        pip2 install --upgrade pip
+    else
+        echo "pip2 install --upgrade pip" >> "$G_PY_COMPILE_COMMANDS_FILE"
+    fi
 else
-    "pip$PY_POSTFIX" install --upgrade pip
+    if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+        "pip$PY_POSTFIX" install --upgrade pip
+    else
+        echo "pip$PY_POSTFIX install --upgrade pip" >> "$G_PY_COMPILE_COMMANDS_FILE"
+    fi
 fi
 
 # Upgrading setuptools
 if [[ "$PY_POSTFIX" == "2.7" ]]; then
-    pip2 install --upgrade setuptools
+    if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+        pip2 install --upgrade setuptools
+    else
+        echo "pip2 install --upgrade setuptools" >> "$G_PY_COMPILE_COMMANDS_FILE"
+    fi
 else
-    "pip$PY_POSTFIX" install --upgrade setuptools
-fi
-
-sysout ""
-sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Installing virtualenv"
-sysout ""
-
-# Installing virtualenv
-if [[ "$PY_POSTFIX" == "2.7" ]]; then
-    pip2 install virtualenv
-else
-    "pip$PY_POSTFIX" install virtualenv
-fi
-
-sysout ""
-sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Creating a link for virtualenv"
-
-# Creating a symbolic link for virtualenv
-if [[ "$PY_POSTFIX" == "2.7" ]]; then
-    ln -s "$PYTHON_INSTALL_DIR/bin/virtualenv" "$PYTHON_INSTALL_BASE/virtualenv2"
-else
-    ln -s "$PYTHON_INSTALL_DIR/bin/virtualenv" "$PYTHON_INSTALL_BASE/virtualenv$PY_POSTFIX"
-
-    # If --extra-links was given, then we also create the virtualenv3 symbolic link
-    if [[ "$P_EXTRA_LINKS" -eq 1 ]]; then
-        ln -s "$PYTHON_INSTALL_DIR/bin/virtualenv" "$PYTHON_INSTALL_BASE/virtualenv3"
+    if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+        "pip$PY_POSTFIX" install --upgrade setuptools
+    else
+        echo "pip$PY_POSTFIX install --upgrade setuptools" >> "$G_PY_COMPILE_COMMANDS_FILE"
     fi
 fi
 
-sysout ""
-sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} It is recommended that you add $PYTHON_INSTALL_BASE to your PATH"
-sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} For that execute: export PATH=\"$PYTHON_INSTALL_BASE:\$PATH\""
+if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+    sysout ""
+    sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Installing virtualenv"
+    sysout ""
+fi
 
-sysout ""
-sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Python $PY_POSTFIX successfully completed :)"
+# Installing virtualenv
+if [[ "$PY_POSTFIX" == "2.7" ]]; then
+    if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+        pip2 install virtualenv
+    else
+        echo "pip2 install virtualenv" >> "$G_PY_COMPILE_COMMANDS_FILE"
+    fi
+else
+    if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+        "pip$PY_POSTFIX" install virtualenv
+    else
+        echo "pip$PY_POSTFIX install virtualenv" >> "$G_PY_COMPILE_COMMANDS_FILE"
+    fi
+fi
+
+if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+    sysout ""
+    sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Creating a link for virtualenv"
+else
+    echo "" >> "$G_PY_COMPILE_COMMANDS_FILE"
+fi
+
+# Creating a symbolic link for virtualenv
+if [[ "$PY_POSTFIX" == "2.7" ]]; then
+    if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+        ln -s "$PYTHON_INSTALL_DIR/bin/virtualenv" "$PYTHON_INSTALL_BASE/virtualenv2"
+    else
+        echo "ln -s \"$PYTHON_INSTALL_DIR/bin/virtualenv\" \"$PYTHON_INSTALL_BASE/virtualenv2\"" >> "$G_PY_COMPILE_COMMANDS_FILE"
+    fi
+else
+    if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+        ln -s "$PYTHON_INSTALL_DIR/bin/virtualenv" "$PYTHON_INSTALL_BASE/virtualenv$PY_POSTFIX"
+    else
+        echo "ln -s \"$PYTHON_INSTALL_DIR/bin/virtualenv\" \"$PYTHON_INSTALL_BASE/virtualenv$PY_POSTFIX\"" >> "$G_PY_COMPILE_COMMANDS_FILE"
+    fi
+
+    # If --extra-links was given, then we also create the virtualenv3 symbolic link
+    if [[ "$P_EXTRA_LINKS" -eq 1 ]]; then
+        if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+            ln -s "$PYTHON_INSTALL_DIR/bin/virtualenv" "$PYTHON_INSTALL_BASE/virtualenv3"
+        else
+            echo "ln -s \"$PYTHON_INSTALL_DIR/bin/virtualenv\" \"$PYTHON_INSTALL_BASE/virtualenv3\"" >> "$G_PY_COMPILE_COMMANDS_FILE"
+        fi
+    fi
+fi
+
+if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+    sysout ""
+    sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} It is recommended that you add $PYTHON_INSTALL_BASE to your PATH"
+    sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} For that execute: export PATH=\"$PYTHON_INSTALL_BASE:\$PATH\""
+
+    sysout ""
+    sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Python $PY_POSTFIX successfully completed :)"
+else
+    sysout "${FNT_BLD}${FNT_ULN}THE PYTHON INSTALL SCRIPT:${FNT_RST}"
+    sysout ""
+
+    cat "$G_PY_COMPILE_COMMANDS_FILE"
+
+    sysout ""
+fi
