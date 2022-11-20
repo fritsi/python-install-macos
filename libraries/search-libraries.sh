@@ -35,10 +35,10 @@ sysout ""
 # Iterating over all libraries we are interested in
 for libraryName in $T_LIBRARIES_TO_LOOKUP; do
     # Getting their base directory
-    libraryDir="$(brew --prefix "$libraryName" 2> /dev/null)"
+    libraryDir="$(brew --prefix "$libraryName" 2> /dev/null || true)"
 
     # Validating the library
-    if [[ ! -d "$libraryDir" ]] || [[ ! -d "$libraryDir/lib" ]] || [[ ! -d "$libraryDir/include" ]]; then
+    if [[ "$libraryDir" == "" ]] || [[ ! -d "$libraryDir" ]] || [[ ! -d "$libraryDir/lib" ]] || [[ ! -d "$libraryDir/include" ]]; then
         sysout >&2 "[ERROR] Could not find $libraryName, did you install it with brew install $libraryName ?"
         sysout >&2 ""
         exit 1
