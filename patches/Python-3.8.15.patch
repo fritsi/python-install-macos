@@ -1,21 +1,48 @@
-From 7dc518d1a804949f0070d6329d47bee8b4762f51 Mon Sep 17 00:00:00 2001
+From ba76c37a19a4290df1cbb8b3e82c0b4ea84e1047 Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
-Date: Fri, 28 Oct 2022 10:45:01 +0200
+Date: Thu, 17 Nov 2022 12:56:22 +0100
 Subject: [PATCH] Python 3.8.15 patching
 
 ---
- Lib/test/support/__init__.py | 26 +++++++++++++++++---------
- Lib/test/test_gdb.py         |  2 +-
- Lib/test/test_posix.py       |  8 ++++----
- Modules/Setup                | 25 +++++++++++++++++--------
- Modules/getaddrinfo.c        |  1 +
- Modules/getnameinfo.c        |  1 +
- Modules/socketmodule.c       |  1 +
- Modules/socketmodule.h       |  1 +
- 8 files changed, 43 insertions(+), 22 deletions(-)
+ Lib/distutils/tests/test_build_ext.py |  6 ++++++
+ Lib/test/support/__init__.py          | 26 +++++++++++++++++---------
+ Lib/test/test_gdb.py                  |  2 +-
+ Lib/test/test_posix.py                |  8 ++++----
+ Modules/Setup                         | 25 +++++++++++++++++--------
+ Modules/_decimal/_decimal.c           |  4 ++--
+ Modules/getaddrinfo.c                 |  1 +
+ Modules/getnameinfo.c                 |  1 +
+ Modules/socketmodule.c                |  1 +
+ Modules/socketmodule.h                |  1 +
+ setup.py                              |  2 +-
+ 11 files changed, 52 insertions(+), 25 deletions(-)
 
+diff --git a/Lib/distutils/tests/test_build_ext.py b/Lib/distutils/tests/test_build_ext.py
+index 808c0dc..7e4632f 100644
+--- a/Lib/distutils/tests/test_build_ext.py
++++ b/Lib/distutils/tests/test_build_ext.py
+@@ -453,6 +453,9 @@ class BuildExtTestCase(TempdirManager,
+         # deployment target higher than that of the interpreter: the ext
+         # module may depend on some newer OS feature.
+         deptarget = sysconfig.get_config_var('MACOSX_DEPLOYMENT_TARGET')
++        # Handling the case where MACOSX_DEPLOYMENT_TARGET >= 11 (Big Sur)
++        if deptarget.isdigit():
++            deptarget = f"{deptarget}.0"
+         if deptarget:
+             # increment the minor version number (i.e. 10.6 -> 10.7)
+             deptarget = [int(x) for x in deptarget.split('.')]
+@@ -488,6 +491,9 @@ class BuildExtTestCase(TempdirManager,
+ 
+         # get the deployment target that the interpreter was built with
+         target = sysconfig.get_config_var('MACOSX_DEPLOYMENT_TARGET')
++        # Handling the case where MACOSX_DEPLOYMENT_TARGET >= 11 (Big Sur)
++        if target.isdigit():
++            target = f"{target}.0"
+         target = tuple(map(int, target.split('.')[0:2]))
+         # format the target value as defined in the Apple
+         # Availability Macros.  We can't use the macro names since
 diff --git a/Lib/test/support/__init__.py b/Lib/test/support/__init__.py
-index fa5a028..1cb737a 100644
+index fa5a028..5eea095 100644
 --- a/Lib/test/support/__init__.py
 +++ b/Lib/test/support/__init__.py
 @@ -491,7 +491,14 @@ def forget(modname):
@@ -24,7 +51,7 @@ index fa5a028..1cb737a 100644
          return _is_gui_available.result
 +
 +    if os.environ.get("UI_TESTS_ENABLED", "") != "1":
-+        _is_gui_available.reason = "UI tests are disabled, because the 'UI_TESTS_ENABLED' environment variable is not set to '1'"
++        _is_gui_available.reason = "fritsi: UI tests are disabled, because the 'UI_TESTS_ENABLED' environment variable is not set to '1'"
 +        _is_gui_available.result = False
 +        return _is_gui_available.result
 +
@@ -67,7 +94,7 @@ index fa5a028..1cb737a 100644
              err_string = str(e)
              if len(err_string) > 50:
 diff --git a/Lib/test/test_gdb.py b/Lib/test/test_gdb.py
-index d90ca5a..dce7c57 100644
+index d90ca5a..4be2c0e 100644
 --- a/Lib/test/test_gdb.py
 +++ b/Lib/test/test_gdb.py
 @@ -137,7 +137,7 @@ HAS_PYUP_PYDOWN = gdb_has_frame_select()
@@ -75,7 +102,7 @@ index d90ca5a..dce7c57 100644
  BREAKPOINT_FN='builtin_id'
  
 -@unittest.skipIf(support.PGO, "not useful for PGO")
-+@unittest.skipIf(True, "gdb requires code signing on MacOS")
++@unittest.skipIf(True, "fritsi: gdb requires code signing on MacOS")
  class DebuggerTests(unittest.TestCase):
  
      """Test that the debugger can debug Python."""
@@ -172,6 +199,28 @@ index 983fa01..13e7150 100644
  
  # Interface to the Expat XML parser
  # More information on Expat can be found at www.libexpat.org.
+diff --git a/Modules/_decimal/_decimal.c b/Modules/_decimal/_decimal.c
+index eb1f1a0..3304195 100644
+--- a/Modules/_decimal/_decimal.c
++++ b/Modules/_decimal/_decimal.c
+@@ -3284,7 +3284,7 @@ dec_format(PyObject *dec, PyObject *args)
+     }
+     else {
+         size_t n = strlen(spec.dot);
+-        if (n > 1 || (n == 1 && !isascii((uchar)spec.dot[0]))) {
++        if (n > 1 || (n == 1 && !isascii((unsigned char)spec.dot[0]))) {
+             /* fix locale dependent non-ascii characters */
+             dot = dotsep_as_utf8(spec.dot);
+             if (dot == NULL) {
+@@ -3293,7 +3293,7 @@ dec_format(PyObject *dec, PyObject *args)
+             spec.dot = PyBytes_AS_STRING(dot);
+         }
+         n = strlen(spec.sep);
+-        if (n > 1 || (n == 1 && !isascii((uchar)spec.sep[0]))) {
++        if (n > 1 || (n == 1 && !isascii((unsigned char)spec.sep[0]))) {
+             /* fix locale dependent non-ascii characters */
+             sep = dotsep_as_utf8(spec.sep);
+             if (sep == NULL) {
 diff --git a/Modules/getaddrinfo.c b/Modules/getaddrinfo.c
 index 5aaa6e7..5291c97 100644
 --- a/Modules/getaddrinfo.c
@@ -220,6 +269,19 @@ index dff1f8f..6349499 100644
  # include <netinet/in.h>
  # if !defined(__CYGWIN__)
  #  include <netinet/tcp.h>
+diff --git a/setup.py b/setup.py
+index 57be07a..3b01f9c 100644
+--- a/setup.py
++++ b/setup.py
+@@ -2055,7 +2055,7 @@ class PyBuildExt(build_ext):
+         undef_macros = []
+         if '--with-system-libmpdec' in sysconfig.get_config_var("CONFIG_ARGS"):
+             include_dirs = []
+-            libraries = [':libmpdec.so.2']
++            libraries = ['mpdec']
+             sources = ['_decimal/_decimal.c']
+             depends = ['_decimal/docstrings.h']
+         else:
 -- 
-2.23.0
+2.38.1
 

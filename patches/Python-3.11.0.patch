@@ -1,22 +1,48 @@
-From 318bacb02ec72a7e67a514aa26ccfaa6115261df Mon Sep 17 00:00:00 2001
+From eb567b9c19af782676144c892590467bac6eac01 Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
-Date: Fri, 28 Oct 2022 10:45:35 +0200
+Date: Thu, 17 Nov 2022 12:56:52 +0100
 Subject: [PATCH] Python 3.11.0 patching
 
 ---
- Lib/test/support/__init__.py | 27 ++++++++++++++++++---------
- Lib/test/test_gdb.py         |  2 +-
- Lib/test/test_posix.py       |  8 ++++----
- Makefile.pre.in              |  7 ++++---
- Modules/Setup                | 20 +++++++++++++++-----
- Modules/getaddrinfo.c        |  1 +
- Modules/getnameinfo.c        |  1 +
- Modules/socketmodule.c       |  1 +
- Modules/socketmodule.h       |  1 +
- 9 files changed, 46 insertions(+), 22 deletions(-)
+ Lib/distutils/tests/test_build_ext.py |  6 ++
+ Lib/test/support/__init__.py          | 27 ++++++---
+ Lib/test/test_gdb.py                  |  2 +-
+ Lib/test/test_posix.py                |  8 +--
+ Makefile.pre.in                       |  7 ++-
+ Modules/Setup                         | 20 +++++--
+ Modules/getaddrinfo.c                 |  1 +
+ Modules/getnameinfo.c                 |  1 +
+ Modules/socketmodule.c                |  1 +
+ Modules/socketmodule.h                |  1 +
+ setup.py                              | 79 ++++++++++++++++++++++++++-
+ 11 files changed, 128 insertions(+), 25 deletions(-)
 
+diff --git a/Lib/distutils/tests/test_build_ext.py b/Lib/distutils/tests/test_build_ext.py
+index 4ebeafe..fa303e3 100644
+--- a/Lib/distutils/tests/test_build_ext.py
++++ b/Lib/distutils/tests/test_build_ext.py
+@@ -459,6 +459,9 @@ class BuildExtTestCase(TempdirManager,
+         # deployment target higher than that of the interpreter: the ext
+         # module may depend on some newer OS feature.
+         deptarget = sysconfig.get_config_var('MACOSX_DEPLOYMENT_TARGET')
++        # Handling the case where MACOSX_DEPLOYMENT_TARGET >= 11 (Big Sur)
++        if deptarget.isdigit():
++            deptarget = f"{deptarget}.0"
+         if deptarget:
+             # increment the minor version number (i.e. 10.6 -> 10.7)
+             deptarget = [int(x) for x in deptarget.split('.')]
+@@ -494,6 +497,9 @@ class BuildExtTestCase(TempdirManager,
+ 
+         # get the deployment target that the interpreter was built with
+         target = sysconfig.get_config_var('MACOSX_DEPLOYMENT_TARGET')
++        # Handling the case where MACOSX_DEPLOYMENT_TARGET >= 11 (Big Sur)
++        if target.isdigit():
++            target = f"{target}.0"
+         target = tuple(map(int, target.split('.')[0:2]))
+         # format the target value as defined in the Apple
+         # Availability Macros.  We can't use the macro names since
 diff --git a/Lib/test/support/__init__.py b/Lib/test/support/__init__.py
-index 46087a9..aa04d3e 100644
+index 46087a9..ee20ecc 100644
 --- a/Lib/test/support/__init__.py
 +++ b/Lib/test/support/__init__.py
 @@ -216,8 +216,16 @@ def _force_run(path, func, *args):
@@ -25,7 +51,7 @@ index 46087a9..aa04d3e 100644
          return _is_gui_available.result
 +
 +    if os.environ.get("UI_TESTS_ENABLED", "") != "1":
-+        _is_gui_available.reason = "UI tests are disabled, because the 'UI_TESTS_ENABLED' environment variable is not set to '1'"
++        _is_gui_available.reason = "fritsi: UI tests are disabled, because the 'UI_TESTS_ENABLED' environment variable is not set to '1'"
 +        _is_gui_available.result = False
 +        return _is_gui_available.result
 +
@@ -70,7 +96,7 @@ index 46087a9..aa04d3e 100644
              err_string = str(e)
              if len(err_string) > 50:
 diff --git a/Lib/test/test_gdb.py b/Lib/test/test_gdb.py
-index 0f39b8f..04e8e34 100644
+index 0f39b8f..295bef8 100644
 --- a/Lib/test/test_gdb.py
 +++ b/Lib/test/test_gdb.py
 @@ -140,7 +140,7 @@ HAS_PYUP_PYDOWN = gdb_has_frame_select()
@@ -78,7 +104,7 @@ index 0f39b8f..04e8e34 100644
  BREAKPOINT_FN='builtin_id'
  
 -@unittest.skipIf(support.PGO, "not useful for PGO")
-+@unittest.skipIf(True, "gdb requires code signing on MacOS")
++@unittest.skipIf(True, "fritsi: gdb requires code signing on MacOS")
  class DebuggerTests(unittest.TestCase):
  
      """Test that the debugger can debug Python."""
@@ -224,6 +250,99 @@ index 1b35b11..61bc720 100644
  # include <netinet/in.h>
  # include <netinet/tcp.h>
  
+diff --git a/setup.py b/setup.py
+index 15d0d45..7ad963e 100644
+--- a/setup.py
++++ b/setup.py
+@@ -1468,12 +1468,85 @@ class PyBuildExt(build_ext):
+ 
+     def detect_decimal(self):
+         # Stefan Krah's _decimal module
++
++        # Taken from Python 3.10 setup.py
++        if '--with-system-libmpdec' in sysconfig.get_config_var("CONFIG_ARGS"):
++            include_dirs = []
++            libraries = ['mpdec']
++            sources = ['_decimal/_decimal.c']
++            depends = ['_decimal/docstrings.h']
++        else:
++            include_dirs = [os.path.abspath(os.path.join(self.srcdir, 'Modules', '_decimal', 'libmpdec'))]
++            libraries = ['m']
++            sources = [
++              '_decimal/_decimal.c',
++              '_decimal/libmpdec/basearith.c',
++              '_decimal/libmpdec/constants.c',
++              '_decimal/libmpdec/context.c',
++              '_decimal/libmpdec/convolute.c',
++              '_decimal/libmpdec/crt.c',
++              '_decimal/libmpdec/difradix2.c',
++              '_decimal/libmpdec/fnt.c',
++              '_decimal/libmpdec/fourstep.c',
++              '_decimal/libmpdec/io.c',
++              '_decimal/libmpdec/mpalloc.c',
++              '_decimal/libmpdec/mpdecimal.c',
++              '_decimal/libmpdec/numbertheory.c',
++              '_decimal/libmpdec/sixstep.c',
++              '_decimal/libmpdec/transpose.c',
++            ]
++            depends = [
++              '_decimal/docstrings.h',
++              '_decimal/libmpdec/basearith.h',
++              '_decimal/libmpdec/bits.h',
++              '_decimal/libmpdec/constants.h',
++              '_decimal/libmpdec/convolute.h',
++              '_decimal/libmpdec/crt.h',
++              '_decimal/libmpdec/difradix2.h',
++              '_decimal/libmpdec/fnt.h',
++              '_decimal/libmpdec/fourstep.h',
++              '_decimal/libmpdec/io.h',
++              '_decimal/libmpdec/mpalloc.h',
++              '_decimal/libmpdec/mpdecimal.h',
++              '_decimal/libmpdec/numbertheory.h',
++              '_decimal/libmpdec/sixstep.h',
++              '_decimal/libmpdec/transpose.h',
++              '_decimal/libmpdec/typearith.h',
++              '_decimal/libmpdec/umodarith.h',
++            ]
++
++        # Taken from Python 3.10 setup.py
++        config = {
++          'x64':     [('CONFIG_64','1'), ('ASM','1')],
++          'uint128': [('CONFIG_64','1'), ('ANSI','1'), ('HAVE_UINT128_T','1')],
++          'ansi64':  [('CONFIG_64','1'), ('ANSI','1')],
++          'ppro':    [('CONFIG_32','1'), ('PPRO','1'), ('ASM','1')],
++          'ansi32':  [('CONFIG_32','1'), ('ANSI','1')],
++          'ansi-legacy': [('CONFIG_32','1'), ('ANSI','1'), ('LEGACY_COMPILER','1')],
++          'universal':   [('UNIVERSAL','1')]
++        }
++
++        # Taken from Python 3.10 setup.py, but only the 'if' and 'elif' part
++        machine = os.environ.get('PYTHON_DECIMAL_WITH_MACHINE')
++        if machine:
++            # Override automatic configuration to facilitate testing.
++            define_macros = config[machine]
++        elif MACOS:
++            # Universal here means: build with the same options Python was built with.
++            define_macros = config['universal']
++        else:
++            raise DistutilsError("_decimal: unsupported architecture -- only macOs is supported")
++
+         self.addext(
+             Extension(
+                 '_decimal',
+-                ['_decimal/_decimal.c'],
+-                # Uncomment for extra functionality:
+-                # define_macros=[('EXTRA_FUNCTIONALITY', 1)]
++                include_dirs=include_dirs,
++                libraries=libraries,
++                define_macros=define_macros,
++                undef_macros=[],
++                extra_compile_args=[],
++                sources=sources,
++                depends=depends
+             )
+         )
+ 
 -- 
-2.23.0
+2.38.1
 
