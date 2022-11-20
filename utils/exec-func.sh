@@ -1,10 +1,11 @@
-# Prints a command line and then executes it
-function echoAndExec() {
+function __internal_echoAndExec_echo() {
     local param
     local index
     index=0
 
-    echo -n ">> "
+    if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+        echo -n ">> "
+    fi
 
     # First item (assuming it's the executable) will be printed without quotes
     # The rest of the parameters with quotes
@@ -16,15 +17,29 @@ function echoAndExec() {
         fi
         index=$((index + 1))
     done
+}
 
-    sysout ""
-    sysout ""
+export -f __internal_echoAndExec_echo
 
-    if [[ "${P_NON_INTERACTIVE:-}" -ne 1 ]]; then
-        ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Press [ENTER] to execute the above command" && sysout ""
+# Prints a command line and then executes it
+function echoAndExec() {
+    if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+        __internal_echoAndExec_echo "$@"
+
+        sysout ""
+        sysout ""
+
+        if [[ "${P_NON_INTERACTIVE:-}" -ne 1 ]]; then
+            ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Press [ENTER] to execute the above command" && sysout ""
+        fi
+
+        "$@"
+    else
+        {
+            __internal_echoAndExec_echo "$@"
+            echo ""
+        } >> "$G_PY_COMPILE_COMMANDS_FILE"
     fi
-
-    "$@"
 }
 
 export -f echoAndExec

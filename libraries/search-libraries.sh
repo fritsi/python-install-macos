@@ -90,19 +90,34 @@ done
 # Unsetting the loop variables
 unset T_LIBRARIES_TO_LOOKUP library_name library_dir
 
-# Printing the environment variables we've set
-sysout "${FNT_BLD}${FNT_ULN}Environment:${FNT_RST}"
-sysout ""
-sysout "    * ${FNT_BLD}EXTRA_PATH:${FNT_RST} $T_EXTRA_PATH"
-sysout ""
-sysout "    * ${FNT_BLD}LDFLAGS:${FNT_RST} $LDFLAGS"
-sysout ""
-sysout "    * ${FNT_BLD}CPPFLAGS:${FNT_RST} $CPPFLAGS"
-sysout ""
-sysout "    * ${FNT_BLD}LD_LIBRARY_PATH:${FNT_RST} $LD_LIBRARY_PATH"
-sysout ""
-sysout "    * ${FNT_BLD}PKG_CONFIG_PATH:${FNT_RST} $PKG_CONFIG_PATH"
-sysout ""
+if [[ -z "${G_PY_COMPILE_COMMANDS_FILE:-}" ]]; then
+    # Printing the environment variables we've set
+    sysout "${FNT_BLD}${FNT_ULN}Environment:${FNT_RST}"
+    sysout ""
+    sysout "    * ${FNT_BLD}EXTRA_PATH:${FNT_RST} $T_EXTRA_PATH"
+    sysout ""
+    sysout "    * ${FNT_BLD}LDFLAGS:${FNT_RST} $LDFLAGS"
+    sysout ""
+    sysout "    * ${FNT_BLD}CPPFLAGS:${FNT_RST} $CPPFLAGS"
+    sysout ""
+    sysout "    * ${FNT_BLD}LD_LIBRARY_PATH:${FNT_RST} $LD_LIBRARY_PATH"
+    sysout ""
+    sysout "    * ${FNT_BLD}PKG_CONFIG_PATH:${FNT_RST} $PKG_CONFIG_PATH"
+    sysout ""
+else
+    {
+        echo "export PATH=\"$G_PY_COMPILE_GNU_PROG_PATH:$T_EXTRA_PATH:\$PATH\""
+        echo ""
+        echo "export LDFLAGS=\"$LDFLAGS\""
+        echo ""
+        echo "export CPPFLAGS=\"$CPPFLAGS\""
+        echo ""
+        echo "export LD_LIBRARY_PATH=\"$LD_LIBRARY_PATH\""
+        echo ""
+        echo "export PKG_CONFIG_PATH=\"$PKG_CONFIG_PATH\""
+        echo ""
+    } >> "$G_PY_COMPILE_COMMANDS_FILE"
+fi
 
 # Prepending 'PATH' with 'T_EXTRA_PATH' which we've assembled based on the libraries
 export PATH="$T_EXTRA_PATH:$PATH"

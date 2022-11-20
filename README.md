@@ -43,6 +43,9 @@ These are for the socket/ssl related tests. It's safe to allow.
 
 * **--keep-test-results** - We'll keep the test log and test result xml files even in case everything passed.
 
+* **--dry-run** - We'll only print out the commands which would be executed. **NOTE:** Collecting GNU binaries will
+  still be executed.
+
 ## Requirements
 
 The `installBaseDir` should be a directory where you have write access.
