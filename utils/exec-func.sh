@@ -21,7 +21,7 @@ function echoAndExec() {
     sysout ""
 
     if [[ "${P_NON_INTERACTIVE:-}" -ne 1 ]]; then
-        ask "\033[1m[$G_PROG_NAME]\033[0m Press [ENTER] to execute the above command" && sysout ""
+        ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Press [ENTER] to execute the above command" && sysout ""
     fi
 
     "$@"

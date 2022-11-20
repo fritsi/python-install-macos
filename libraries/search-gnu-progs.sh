@@ -32,7 +32,7 @@ done
 unset program_name program_dir
 
 # Printing our 'T_GNU_PROG_PATHS' variable
-sysout "\033[1mGNU_PROG_PATHS:\033[0m $T_GNU_PROG_PATHS" && sysout ""
+sysout "${FNT_BLD}GNU_PROG_PATHS:${FNT_RST} $T_GNU_PROG_PATHS" && sysout ""
 
 # Prepending 'PATH' with 'T_GNU_PROG_PATHS' which we've assembled based on the libraries
 export PATH="$T_GNU_PROG_PATHS:$PATH"

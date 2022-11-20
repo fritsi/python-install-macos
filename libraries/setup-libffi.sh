@@ -25,7 +25,7 @@ fi
 # We'll need to use libffi 3.3.x, let's prepend that to 'T_LIBRARIES_TO_LOOKUP'
 T_LIBRARIES_TO_LOOKUP="libffi33 $T_LIBRARIES_TO_LOOKUP"
 
-sysout "\033[1m[$G_PROG_NAME]\033[0m Checking libffi33 ..."
+sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Checking libffi33 ..."
 sysout ""
 
 if [[ "$(brew list -1 | grep -ciF "libffi33" || true)" -gt 0 ]]; then
@@ -37,22 +37,22 @@ fi
 # formulas/libffi33.rb was downloaded from an older hash of https://github.com/Homebrew/homebrew-core/blob/HEAD/Formula/libffi.rb,
 # and then changed a bit
 
-sysout "\033[1m[$G_PROG_NAME]\033[0m libffi 3.3.x is not installed, installing it now"
+sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} libffi 3.3.x is not installed, installing it now"
 sysout ""
 
 sysout ">> brew install --formula --build-from-source \"$SCRIPTS_DIR/formulas/libffi33.rb\""
 sysout ""
 
 if [[ "$P_NON_INTERACTIVE" -ne 1 ]]; then
-    ask "\033[1m[$G_PROG_NAME]\033[0m Press [ENTER] to execute the above command" && sysout ""
+    ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Press [ENTER] to execute the above command" && sysout ""
 fi
 
 brew install --formula --build-from-source "$SCRIPTS_DIR/formulas/libffi33.rb" 2>&1
 
 sysout ""
-sysout "\033[1m[$G_PROG_NAME]\033[0m libffi 3.3.x installation completed"
+sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} libffi 3.3.x installation completed"
 sysout ""
 
 if [[ "$P_NON_INTERACTIVE" -ne 1 ]]; then
-    ask "\033[1m[$G_PROG_NAME]\033[0m Press [ENTER] to continue" && sysout ""
+    ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Press [ENTER] to continue" && sysout ""
 fi
