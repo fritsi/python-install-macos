@@ -33,62 +33,62 @@ sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Searching for libraries ..."
 sysout ""
 
 # Iterating over all libraries we are interested in
-for library_name in $T_LIBRARIES_TO_LOOKUP; do
+for libraryName in $T_LIBRARIES_TO_LOOKUP; do
     # Getting their base directory
-    library_dir="$(brew --prefix "$library_name" 2> /dev/null)"
+    libraryDir="$(brew --prefix "$libraryName" 2> /dev/null)"
 
     # Validating the library
-    if [[ ! -d "$library_dir" ]] || [[ ! -d "$library_dir/lib" ]] || [[ ! -d "$library_dir/include" ]]; then
-        sysout >&2 "[ERROR] Could not find $library_name, did you install it with brew install $library_name ?"
+    if [[ ! -d "$libraryDir" ]] || [[ ! -d "$libraryDir/lib" ]] || [[ ! -d "$libraryDir/include" ]]; then
+        sysout >&2 "[ERROR] Could not find $libraryName, did you install it with brew install $libraryName ?"
         sysout >&2 ""
         exit 1
     fi
 
     # If the library has a bin folder, we add it to 'T_EXTRA_PATH'
-    if [[ -d "$library_dir/bin" ]]; then
-        T_EXTRA_PATH="${T_EXTRA_PATH:+$T_EXTRA_PATH:}$library_dir/bin"
+    if [[ -d "$libraryDir/bin" ]]; then
+        T_EXTRA_PATH="${T_EXTRA_PATH:+$T_EXTRA_PATH:}$libraryDir/bin"
     fi
 
     # Adding the library to the compiler flags
-    export LDFLAGS="${LDFLAGS:+$LDFLAGS }-L$library_dir/lib"
-    export CPPFLAGS="${CPPFLAGS:+$CPPFLAGS }-I$library_dir/include"
-    export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}$library_dir/lib"
+    export LDFLAGS="${LDFLAGS:+$LDFLAGS }-L$libraryDir/lib"
+    export CPPFLAGS="${CPPFLAGS:+$CPPFLAGS }-I$libraryDir/include"
+    export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}$libraryDir/lib"
 
     # Adding the optional package config to 'PKG_CONFIG_PATH'
-    if [[ -d "$library_dir/lib/pkgconfig" ]]; then
-        export PKG_CONFIG_PATH="${PKG_CONFIG_PATH:+$PKG_CONFIG_PATH:}$library_dir/lib/pkgconfig"
+    if [[ -d "$libraryDir/lib/pkgconfig" ]]; then
+        export PKG_CONFIG_PATH="${PKG_CONFIG_PATH:+$PKG_CONFIG_PATH:}$libraryDir/lib/pkgconfig"
     fi
 
     # OpenSSL also has an include/openssl subdirectory, handling that
-    if [[ "$library_name" =~ ^openssl.*$ ]]; then
-        if [[ ! -d "$library_dir/include/openssl" ]]; then
-            sysout >&2 "[ERROR] Could not find $library_dir/include/openssl, did you install $library_name correctly ?"
+    if [[ "$libraryName" =~ ^openssl.*$ ]]; then
+        if [[ ! -d "$libraryDir/include/openssl" ]]; then
+            sysout >&2 "[ERROR] Could not find $libraryDir/include/openssl, did you install $libraryName correctly ?"
             sysout >&2 ""
             exit 1
         else
-            export CPPFLAGS="${CPPFLAGS:+$CPPFLAGS }-I$library_dir/include/openssl"
+            export CPPFLAGS="${CPPFLAGS:+$CPPFLAGS }-I$libraryDir/include/openssl"
         fi
     fi
 
     # Some of the library locations are also needed by install-python-macos.sh directly, so saving those
-    case "$library_name" in
+    case "$libraryName" in
         openssl*)
-            export L_OPENSSL_BASE="$library_dir"
+            export L_OPENSSL_BASE="$libraryDir"
             ;;
         readline)
-            export L_READLINE_BASE="$library_dir"
+            export L_READLINE_BASE="$libraryDir"
             ;;
         tcl-tk)
-            export L_TCL_TK_BASE="$library_dir"
+            export L_TCL_TK_BASE="$libraryDir"
             ;;
         zlib)
-            export L_ZLIB_BASE="$library_dir"
+            export L_ZLIB_BASE="$libraryDir"
             ;;
     esac
 done
 
 # Unsetting the loop variables
-unset T_LIBRARIES_TO_LOOKUP library_name library_dir
+unset T_LIBRARIES_TO_LOOKUP libraryName libraryDir
 
 if ! ${P_DRY_RUN_MODE:-false}; then
     # Printing the environment variables we've set

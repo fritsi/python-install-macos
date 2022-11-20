@@ -1,4 +1,4 @@
-function __internal_echoAndExec_echo() {
+function __internalShowCommandToBeExecuted() {
     local param
     local index
     index=0
@@ -19,12 +19,12 @@ function __internal_echoAndExec_echo() {
     done
 }
 
-export -f __internal_echoAndExec_echo
+export -f __internalShowCommandToBeExecuted
 
 # Prints a command line and then executes it
 function echoAndExec() {
     if ! ${P_DRY_RUN_MODE:-false}; then
-        __internal_echoAndExec_echo "$@"
+        __internalShowCommandToBeExecuted "$@"
 
         sysout ""
         sysout ""
@@ -36,7 +36,7 @@ function echoAndExec() {
         "$@"
     else
         {
-            __internal_echoAndExec_echo "$@"
+            __internalShowCommandToBeExecuted "$@"
             echo ""
         } >> "$G_PY_COMPILE_COMMANDS_FILE"
     fi
