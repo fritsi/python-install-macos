@@ -29,7 +29,7 @@ fi
 # Extra paths we'll add to the 'PATH' variable
 T_EXTRA_PATH=""
 
-sysout "\033[1m[$G_PROG_NAME]\033[0m Searching for libraries ..."
+sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Searching for libraries ..."
 sysout ""
 
 # Iterating over all libraries we are interested in
@@ -91,17 +91,17 @@ done
 unset T_LIBRARIES_TO_LOOKUP library_name library_dir
 
 # Printing the environment variables we've set
-sysout "\033[1m\033[4mEnvironment:\033[0m"
+sysout "${FNT_BLD}${FNT_ULN}Environment:${FNT_RST}"
 sysout ""
-sysout "    * \033[1mEXTRA_PATH:\033[0m $T_EXTRA_PATH"
+sysout "    * ${FNT_BLD}EXTRA_PATH:${FNT_RST} $T_EXTRA_PATH"
 sysout ""
-sysout "    * \033[1mLDFLAGS:\033[0m $LDFLAGS"
+sysout "    * ${FNT_BLD}LDFLAGS:${FNT_RST} $LDFLAGS"
 sysout ""
-sysout "    * \033[1mCPPFLAGS:\033[0m $CPPFLAGS"
+sysout "    * ${FNT_BLD}CPPFLAGS:${FNT_RST} $CPPFLAGS"
 sysout ""
-sysout "    * \033[1mLD_LIBRARY_PATH:\033[0m $LD_LIBRARY_PATH"
+sysout "    * ${FNT_BLD}LD_LIBRARY_PATH:${FNT_RST} $LD_LIBRARY_PATH"
 sysout ""
-sysout "    * \033[1mPKG_CONFIG_PATH:\033[0m $PKG_CONFIG_PATH"
+sysout "    * ${FNT_BLD}PKG_CONFIG_PATH:${FNT_RST} $PKG_CONFIG_PATH"
 sysout ""
 
 # Prepending 'PATH' with 'T_EXTRA_PATH' which we've assembled based on the libraries
@@ -111,5 +111,5 @@ export PATH="$T_EXTRA_PATH:$PATH"
 unset T_EXTRA_PATH
 
 if [[ "${P_NON_INTERACTIVE:-0}" -ne 1 ]]; then
-    ask "\033[1m[$G_PROG_NAME]\033[0m Press [ENTER] to continue" && sysout ""
+    ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Press [ENTER] to continue" && sysout ""
 fi

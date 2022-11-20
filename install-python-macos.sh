@@ -11,6 +11,7 @@ export G_PROG_NAME
 SCRIPTS_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 # Importing basic functions
+source "$SCRIPTS_DIR/utils/fonts.sh"
 source "$SCRIPTS_DIR/utils/print-func.sh"
 source "$SCRIPTS_DIR/utils/exec-func.sh"
 
@@ -19,41 +20,41 @@ SUPPORTED_VERSIONS=("2.7.18" "3.6.15" "3.7.15" "3.8.15" "3.9.15" "3.10.8" "3.11.
 SUPPORTED_VERSIONS_TEXT="$(versions="${SUPPORTED_VERSIONS[*]}" && echo "${versions// /, }")"
 
 function printUsage() {
-    sysout "\033[1m\033[4mUsage:\033[0m ./$G_PROG_NAME.sh {pythonVersion} {installBaseDir}"
+    sysout "${FNT_BLD}${FNT_ULN}Usage:${FNT_RST} ./$G_PROG_NAME.sh {pythonVersion} {installBaseDir}"
     sysout ""
     sysout "This script will download the given version of the Python source code, compile it, and install it to the given location."
     sysout ""
-    sysout "\033[1m\033[4mNOTE:\033[0m Currently only macOS is supported!"
+    sysout "${FNT_BLD}${FNT_ULN}NOTE:${FNT_RST} Currently only macOS is supported!"
     sysout ""
-    sysout "\033[1m\033[4mSupported Python versions:\033[0m $SUPPORTED_VERSIONS_TEXT"
+    sysout "${FNT_BLD}${FNT_ULN}Supported Python versions:${FNT_RST} $SUPPORTED_VERSIONS_TEXT"
     sysout ""
-    sysout "The given \033[3m'installBaseDir'\033[0m will not be the final install directory, but a subdirectory in that."
-    sysout "For example in case of Python 3.8 it will be \033[1m\033[3m\033[4m{installBaseDir}/python-3.8\033[0m"
+    sysout "The given ${FNT_ITC}'installBaseDir'${FNT_RST} will not be the final install directory, but a subdirectory in that."
+    sysout "For example in case of Python 3.8 it will be ${FNT_BLD}${FNT_ITC}${FNT_ULN}{installBaseDir}/python-3.8${FNT_RST}"
     sysout ""
     sysout "The script will ask you whether you want to run the Python tests or not."
     sysout "This can be used to check whether everything is okay with the compiled Python or not."
     sysout ""
-    sysout "\033[1mIf you followed the instructions, you should have no failures.\033[0m"
+    sysout "${FNT_BLD}If you followed the instructions, you should have no failures.${FNT_RST}"
     sysout ""
     sysout "If there are test failures, the script will stop and ask you if you'd like to continue."
     sysout ""
-    sysout "\033[1m\033[4mNOTE:\033[0m In case of non-interactive mode, the script will always run these tests."
+    sysout "${FNT_BLD}${FNT_ULN}NOTE:${FNT_RST} In case of non-interactive mode, the script will always run these tests."
     sysout ""
-    sysout "\033[1m\033[4mNOTE 2:\033[0m While running the tests, you might see a pop-up window asking you to allow Python to connect to the network."
+    sysout "${FNT_BLD}${FNT_ULN}NOTE 2:${FNT_RST} While running the tests, you might see a pop-up window asking you to allow Python to connect to the network."
     sysout "These are for the socket/ssl related tests. It's safe to allow."
     sysout ""
-    sysout "\033[1m\033[4mNOTE 3:\033[0m Currently the UI (Tkinter) related tests are deliberately skipped as they are unstable."
+    sysout "${FNT_BLD}${FNT_ULN}NOTE 3:${FNT_RST} Currently the UI (Tkinter) related tests are deliberately skipped as they are unstable."
     sysout ""
-    sysout "\033[1m\033[4mOptional arguments:\033[0m"
+    sysout "${FNT_BLD}${FNT_ULN}Optional arguments:${FNT_RST}"
     sysout ""
-    sysout "    \033[1m--non-interactive\033[0m - If given then we won't ask for confirmations."
+    sysout "    ${FNT_BLD}--non-interactive${FNT_RST} - If given then we won't ask for confirmations."
     sysout ""
-    sysout "    \033[1m--extra-links\033[0m - In case of Python 3 besides the pip3.x, python3.x and virtualenv3.x symbolic links,"
+    sysout "    ${FNT_BLD}--extra-links${FNT_RST} - In case of Python 3 besides the pip3.x, python3.x and virtualenv3.x symbolic links,"
     sysout "                    this will also create the pip3, python3 and virtualenv3 links."
     sysout ""
-    sysout "    \033[1m--keep-working-dir\033[0m - We'll keep the working directory after the script finished / exited."
+    sysout "    ${FNT_BLD}--keep-working-dir${FNT_RST} - We'll keep the working directory after the script finished / exited."
     sysout ""
-    sysout "    \033[1m--keep-test-results\033[0m - We'll keep the test log and test result xml files even in case everything passed."
+    sysout "    ${FNT_BLD}--keep-test-results${FNT_RST} - We'll keep the test log and test result xml files even in case everything passed."
     sysout ""
 
     # Also printing out the preparation steps
@@ -61,15 +62,15 @@ function printUsage() {
 }
 
 function printPreparationSteps() {
-    sysout "\033[1m\033[4mAs a preparation we suggest to perform the following:\033[0m"
+    sysout "${FNT_BLD}${FNT_ULN}As a preparation we suggest to perform the following:${FNT_RST}"
     sysout ""
-    sysout "\033[1mbrew install\033[0m asciidoc autoconf bzip2 coreutils diffutils expat findutils gawk \\"
+    sysout "${FNT_BLD}brew install${FNT_RST} asciidoc autoconf bzip2 coreutils diffutils expat findutils gawk \\"
     sysout "             gcc gdbm gnu-sed gnu-tar gnu-which gnunet grep jq libffi libtool \\"
     sysout "             libx11 libxcrypt libzip lzo mpdecimal ncurses openssl@1.1 openssl@3 \\"
     sysout "             p7zip pkg-config readline sqlite tcl-tk unzip wget xz zlib"
     sysout ""
-    sysout "\033[1m\033[4mNOTE:\033[0m The above command does \033[1mnot\033[0m only install libraries, but also a couple of \033[1mGNU\033[0m executables."
-    sysout "      These will not be used by default, but \033[3msearch-libraries.sh\033[0m will temporarily add it to PATH."
+    sysout "${FNT_BLD}${FNT_ULN}NOTE:${FNT_RST} The above command does ${FNT_BLD}not${FNT_RST} only install libraries, but also a couple of ${FNT_BLD}GNU${FNT_RST} executables."
+    sysout "      These will not be used by default, but ${FNT_ITC}search-libraries.sh${FNT_RST} will temporarily add it to PATH."
     sysout "      These are useful, because their default macOS counterpart might be very old in some cases."
     sysout ""
 }
@@ -102,7 +103,7 @@ fi
 
 printPreparationSteps
 
-ask "\033[1m[$G_PROG_NAME]\033[0m Did you perform the above? ([y]/N)" response
+ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Did you perform the above? ([y]/N)" response
 
 # shellcheck disable=SC2154
 case "$response" in
@@ -239,14 +240,14 @@ else
     fi
 fi
 
-sysout "\033[1m[$G_PROG_NAME]\033[0m Will install Python version: \033[1m$PYTHON_VERSION\033[0m into \033[1m$PYTHON_INSTALL_DIR\033[0m"
+sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Will install Python version: ${FNT_BLD}$PYTHON_VERSION${FNT_RST} into ${FNT_BLD}$PYTHON_INSTALL_DIR${FNT_RST}"
 sysout ""
 
-sysout "\033[1m[$G_PROG_NAME]\033[0m Using working directory: \033[1m$WORKING_DIR\033[0m"
+sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Using working directory: ${FNT_BLD}$WORKING_DIR${FNT_RST}"
 sysout ""
 
 if [[ "$P_NON_INTERACTIVE" -ne 1 ]]; then
-    ask "\033[1m[$G_PROG_NAME]\033[0m Do you want to continue? ([y]/N)" response
+    ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Do you want to continue? ([y]/N)" response
 
     case "$response" in
         "" | [yY][eE][sS] | [yY])
@@ -292,7 +293,7 @@ source "$SCRIPTS_DIR/libraries/search-libraries.sh"
 
 # Begin installation
 
-sysout "\033[1m[$G_PROG_NAME]\033[0m Downloading https://www.python.org/ftp/python/$PYTHON_VERSION/Python-$PYTHON_VERSION.tgz into $WORKING_DIR/Python-$PYTHON_VERSION.tgz"
+sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Downloading https://www.python.org/ftp/python/$PYTHON_VERSION/Python-$PYTHON_VERSION.tgz into $WORKING_DIR/Python-$PYTHON_VERSION.tgz"
 sysout ""
 
 wget --no-verbose --no-check-certificate "https://www.python.org/ftp/python/$PYTHON_VERSION/Python-$PYTHON_VERSION.tgz" -O "$WORKING_DIR/Python-$PYTHON_VERSION.tgz"
@@ -300,14 +301,14 @@ wget --no-verbose --no-check-certificate "https://www.python.org/ftp/python/$PYT
 cd "$WORKING_DIR"
 
 sysout ""
-sysout "\033[1m[$G_PROG_NAME]\033[0m Extracting Python-$PYTHON_VERSION.tgz"
+sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Extracting Python-$PYTHON_VERSION.tgz"
 sysout ""
 
 tar xzf "Python-$PYTHON_VERSION.tgz"
 
 cd "$WORKING_DIR/Python-$PYTHON_VERSION"
 
-sysout "\033[1m[$G_PROG_NAME]\033[0m Applying the patch file onto the Python source code"
+sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Applying the patch file onto the Python source code"
 
 # Copying the patch file to our working directory as we need to replace '__openssl_install_dir__' in it
 cp "$SCRIPTS_DIR/patches/Python-$PYTHON_VERSION.patch" "$WORKING_DIR/Python-$PYTHON_VERSION.patch"
@@ -320,7 +321,7 @@ function substituteVariableInPatch() {
     variableName="$1"
     variableValue="$2"
 
-    sysout "\033[1m[$G_PROG_NAME]\033[0m Substituting '$variableName' with '$variableValue' in the patch file"
+    sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Substituting '$variableName' with '$variableValue' in the patch file"
 
     sed -i "s/$variableName/$(echo "$variableValue" | sed 's/\//\\\//g' | sed 's/\./\\\./g')/g" "$WORKING_DIR/Python-$PYTHON_VERSION.patch"
 }
@@ -342,10 +343,10 @@ sysout ""
 
 # But after all files have been patched, we do ask for one if we need to
 if [[ "$P_NON_INTERACTIVE" -ne 1 ]]; then
-    ask "\033[1m[$G_PROG_NAME]\033[0m Press [ENTER] to continue" && sysout ""
+    ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Press [ENTER] to continue" && sysout ""
 fi
 
-sysout "\033[1m[$G_PROG_NAME]\033[0m Configuring the Compiler"
+sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Configuring the Compiler"
 sysout ""
 
 # These are needed, so the gcc coming from brew does not get picked-up
@@ -365,7 +366,7 @@ if [[ "$PY_VERSION_NUM" -ge 300 ]]; then
         export PYTHON_DECIMAL_WITH_MACHINE="x64"
     fi
 
-    sysout "\033[1m[$G_PROG_NAME]\033[0m export PYTHON_DECIMAL_WITH_MACHINE=\"$PYTHON_DECIMAL_WITH_MACHINE\""
+    sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} export PYTHON_DECIMAL_WITH_MACHINE=\"$PYTHON_DECIMAL_WITH_MACHINE\""
     sysout ""
 fi
 
@@ -450,13 +451,13 @@ echoAndExec ./configure "${CONFIGURE_PARAMS[@]}" 2>&1
 sysout ""
 
 if [[ "$P_NON_INTERACTIVE" -ne 1 ]]; then
-    ask "\033[1m[$G_PROG_NAME]\033[0m Press [ENTER] to continue" && sysout ""
+    ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Press [ENTER] to continue" && sysout ""
 fi
 
 # Saving the number of processors
 PROC_COUNT="$(nproc)"
 
-sysout "\033[1m[$G_PROG_NAME]\033[0m Compiling Python"
+sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Compiling Python"
 sysout ""
 
 # Compiling Python
@@ -466,7 +467,7 @@ echoAndExec make -j "$((PROC_COUNT / 2))" 2>&1
 sysout ""
 
 if [[ "$P_NON_INTERACTIVE" -ne 1 ]]; then
-    ask "\033[1m[$G_PROG_NAME]\033[0m Press [ENTER] to continue" && sysout ""
+    ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Press [ENTER] to continue" && sysout ""
 fi
 
 function runTests() {
@@ -521,7 +522,7 @@ function runTests() {
         # Waiting for the user's confirmation
         if [[ "$P_NON_INTERACTIVE" -ne 1 ]]; then
             sysout ""
-            ask "\033[1m[$G_PROG_NAME]\033[0m Press [ENTER] to continue"
+            ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Press [ENTER] to continue"
         fi
 
         # Turning on exit code check again
@@ -546,7 +547,7 @@ function runTests() {
         sysout >&2 ""
 
         # Ask the user if they want to continue
-        ask "\033[1m[$G_PROG_NAME]\033[0m Would you like to continue? ([y]/N)" response
+        ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Would you like to continue? ([y]/N)" response
 
         # If not, then we exit
         if [[ "$response" != "" ]] && [[ ! "$response" =~ ^(([yY][eE][sS])|([yY]))$ ]]; then
@@ -560,14 +561,14 @@ if [[ "$P_NON_INTERACTIVE" -eq 1 ]]; then
     runTests && sysout ""
 else
     # In interactive mode we ask the user whether they want to run the tests or not
-    ask "\033[1m[$G_PROG_NAME]\033[0m Do you want to run the tests? ([y]/N)" response && sysout ""
+    ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Do you want to run the tests? ([y]/N)" response && sysout ""
 
     if [[ "$response" == "" ]] || [[ "$response" =~ ^(([yY][eE][sS])|([yY]))$ ]]; then
         runTests && sysout ""
     fi
 fi
 
-sysout "\033[1m[$G_PROG_NAME]\033[0m Installing Python into $PYTHON_INSTALL_DIR"
+sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Installing Python into $PYTHON_INSTALL_DIR"
 sysout ""
 
 # Installing Python to the destination directory
@@ -579,10 +580,10 @@ unset LDFLAGS CPPFLAGS LD_LIBRARY_PATH CC CXX LD
 sysout ""
 
 if [[ "$P_NON_INTERACTIVE" -ne 1 ]]; then
-    ask "\033[1m[$G_PROG_NAME]\033[0m Press [ENTER] to continue" && sysout ""
+    ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Press [ENTER] to continue" && sysout ""
 fi
 
-sysout "\033[1m[$G_PROG_NAME]\033[0m Creating links"
+sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Creating links"
 sysout ""
 
 # Creating symbolic links for pip and the python command
@@ -603,7 +604,7 @@ fi
 # Adding our new and shiny Python installation to the PATH
 export PATH="$PYTHON_INSTALL_BASE:$PATH"
 
-sysout "\033[1m[$G_PROG_NAME]\033[0m Locations:"
+sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Locations:"
 if [[ "$PY_POSTFIX" == "2.7" ]]; then
     sysout "    * python2: $(which "python2")"
     sysout "    * pip2: $(which "pip2")"
@@ -619,7 +620,7 @@ else
 fi
 sysout ""
 
-sysout "\033[1m[$G_PROG_NAME]\033[0m Upgrading pip and setuptools"
+sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Upgrading pip and setuptools"
 sysout ""
 
 # Upgrading pip
@@ -637,7 +638,7 @@ else
 fi
 
 sysout ""
-sysout "\033[1m[$G_PROG_NAME]\033[0m Installing virtualenv"
+sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Installing virtualenv"
 sysout ""
 
 # Installing virtualenv
@@ -648,7 +649,7 @@ else
 fi
 
 sysout ""
-sysout "\033[1m[$G_PROG_NAME]\033[0m Creating a link for virtualenv"
+sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Creating a link for virtualenv"
 
 # Creating a symbolic link for virtualenv
 if [[ "$PY_POSTFIX" == "2.7" ]]; then
@@ -663,8 +664,8 @@ else
 fi
 
 sysout ""
-sysout "\033[1m[$G_PROG_NAME]\033[0m It is recommended that you add $PYTHON_INSTALL_BASE to your PATH"
-sysout "\033[1m[$G_PROG_NAME]\033[0m For that execute: export PATH=\"$PYTHON_INSTALL_BASE:\$PATH\""
+sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} It is recommended that you add $PYTHON_INSTALL_BASE to your PATH"
+sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} For that execute: export PATH=\"$PYTHON_INSTALL_BASE:\$PATH\""
 
 sysout ""
-sysout "\033[1m[$G_PROG_NAME]\033[0m Python $PY_POSTFIX successfully completed :)"
+sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Python $PY_POSTFIX successfully completed :)"

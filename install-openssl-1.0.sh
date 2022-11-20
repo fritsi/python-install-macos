@@ -23,6 +23,7 @@ export G_PROG_NAME
 SCRIPTS_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 # Importing basic functions
+source "$SCRIPTS_DIR/utils/fonts.sh"
 source "$SCRIPTS_DIR/utils/print-func.sh"
 source "$SCRIPTS_DIR/utils/exec-func.sh"
 
@@ -73,7 +74,7 @@ fi
 # Creating the temporary folder where we'll download the source and do the compilation
 mkdir -p "$WORKING_DIR"
 
-sysout "\033[1m[$G_PROG_NAME]\033[0m Downloading the OpenSSL 1.0 source code"
+sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Downloading the OpenSSL 1.0 source code"
 sysout ""
 
 # Downloading the OpenSSL source code
@@ -82,7 +83,7 @@ wget --no-verbose --no-check-certificate "https://www.openssl.org/source/old/1.0
 cd "$WORKING_DIR"
 
 sysout ""
-sysout "\033[1m[$G_PROG_NAME]\033[0m Extracting the OpenSSL 1.0 source code"
+sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Extracting the OpenSSL 1.0 source code"
 sysout ""
 
 # Extracting the OpenSSL source code
@@ -111,7 +112,7 @@ unset LDFLAGS CPPFLAGS LD_LIBRARY_PATH PKG_CONFIG_PATH
 
 # OpenSSL 1.0 does not have Apple Silicon support by default, so let's add it
 if [[ "$IS_APPLE_SILICON" -eq 1 ]]; then
-    sysout "\033[1m[$G_PROG_NAME]\033[0m Patching Configure"
+    sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Patching Configure"
     sysout ""
 
     cp Configure Configure.patched
@@ -119,7 +120,7 @@ if [[ "$IS_APPLE_SILICON" -eq 1 ]]; then
     # Applying the patch file
     patch Configure.patched < "$SCRIPTS_DIR/patches/openssl-1.0.2u-Configure.patch"
 
-    sysout "\033[1m[$G_PROG_NAME]\033[0m Patch content for Configure:"
+    sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Patch content for Configure:"
     sysout ""
 
     sysout "================================================================================"
@@ -128,7 +129,7 @@ if [[ "$IS_APPLE_SILICON" -eq 1 ]]; then
 
     sysout ""
 
-    ask "\033[1m[$G_PROG_NAME]\033[0m Press [ENTER] to continue" && sysout ""
+    ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Press [ENTER] to continue" && sysout ""
 
     mv Configure.patched Configure
 fi
@@ -136,7 +137,7 @@ fi
 # This could interfere with how we expect OpenSSL to build
 unset OPENSSL_LOCAL_CONFIG_DIR
 
-sysout "\033[1m[$G_PROG_NAME]\033[0m Configuring OpenSSL"
+sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Configuring OpenSSL"
 sysout ""
 
 # Configuring OpenSSL
@@ -146,18 +147,18 @@ echoAndExec ./Configure "darwin64-$(uname -m)-cc" "enable-ec_nistp_64_gcc_128" \
 
 sysout ""
 
-ask "\033[1m[$G_PROG_NAME]\033[0m Press [ENTER] to continue" && sysout ""
+ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Press [ENTER] to continue" && sysout ""
 
-sysout "\033[1m[$G_PROG_NAME]\033[0m Compiling OpenSSL"
+sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Compiling OpenSSL"
 sysout ""
 
 # Compiling OpenSSL
 echoAndExec make depend && sysout ""
 echoAndExec make -j "$(proc_count="$(nproc)" && echo "$((proc_count / 2))")" && sysout ""
 
-ask "\033[1m[$G_PROG_NAME]\033[0m Press [ENTER] to continue" && sysout ""
+ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Press [ENTER] to continue" && sysout ""
 
-sysout "\033[1m[$G_PROG_NAME]\033[0m Installing OpenSSL"
+sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Installing OpenSSL"
 sysout ""
 
 # Installing OpenSSL
