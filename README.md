@@ -12,8 +12,8 @@ This script will download the given version of the Python source code, compile i
 
 **NOTE:** Currently only macOS is supported!
 
-**Supported Python versions:** `2.7.18`**,** `3.6.15`**,** `3.7.15`**,** `3.8.15`**,** `3.9.15`**,** `3.10.8`
-**,** `3.11.0`.
+**Supported Python versions:** `2.7.18`**,** `3.6.15`**,** `3.7.16`**,** `3.8.16`**,** `3.9.16`**,** `3.10.9`
+**,** `3.11.1`.
 
 The given `installBaseDir` will not be the final install directory, but a subdirectory in that.
 For example in case of Python 3.8 it will be `{installBaseDir}/python-3.8`.

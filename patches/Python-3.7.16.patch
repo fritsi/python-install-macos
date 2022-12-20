@@ -1,7 +1,7 @@
-From fce51e45f4fc93d5e5c34dce8984d6f585382fcf Mon Sep 17 00:00:00 2001
+From 6733e50929c4bf0d147305b9757e5d7d6b4f0dde Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
-Date: Thu, 17 Nov 2022 12:56:12 +0100
-Subject: [PATCH] Python 3.7.15 patching
+Date: Tue, 20 Dec 2022 16:15:38 +0100
+Subject: [PATCH] Python 3.7.16 patching
 
 ---
  Lib/ctypes/macholib/dyld.py           |  10 +++
@@ -850,5 +850,5 @@ index bf90600..b530d36 100644
              depends = ['_decimal/docstrings.h']
          else:
 -- 
-2.38.1
+2.39.0
 
