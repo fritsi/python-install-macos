@@ -1,6 +1,6 @@
-From 6733e50929c4bf0d147305b9757e5d7d6b4f0dde Mon Sep 17 00:00:00 2001
+From 43b06f786f586db315ea230fab3797c450742742 Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
-Date: Tue, 20 Dec 2022 16:15:38 +0100
+Date: Mon, 16 Jan 2023 15:27:12 +0100
 Subject: [PATCH] Python 3.7.16 patching
 
 ---
@@ -14,6 +14,7 @@ Subject: [PATCH] Python 3.7.16 patching
  Lib/test/test_platform.py             |   2 +-
  Lib/test/test_posix.py                |   8 +-
  Lib/test/test_unicode.py              |   3 +
+ Makefile.pre.in                       |   6 +-
  Modules/Setup.dist                    |  25 ++++--
  Modules/_ctypes/_ctypes.c             |  31 +++++++
  Modules/_ctypes/callproc.c            | 114 +++++++++++++++++++++++---
@@ -28,7 +29,7 @@ Subject: [PATCH] Python 3.7.16 patching
  configure.ac                          |   6 ++
  pyconfig.h.in                         |   3 +
  setup.py                              |  67 +++++++++++----
- 24 files changed, 306 insertions(+), 54 deletions(-)
+ 25 files changed, 311 insertions(+), 55 deletions(-)
 
 diff --git a/Lib/ctypes/macholib/dyld.py b/Lib/ctypes/macholib/dyld.py
 index 9d86b05..931a9e7 100644
@@ -280,6 +281,23 @@ index 4ebd82d..7b73c19 100644
          _PyUnicode_FromFormat.restype = py_object
  
          def PyUnicode_FromFormat(format, *args):
+diff --git a/Makefile.pre.in b/Makefile.pre.in
+index ef2bfb1..f38c5a8 100644
+--- a/Makefile.pre.in
++++ b/Makefile.pre.in
+@@ -258,7 +258,11 @@ TCLTK_LIBS=	@TCLTK_LIBS@
+ # The task to run while instrumented when building the profile-opt target.
+ # We exclude unittests with -x that take a rediculious amount of time to
+ # run in the instrumented training build or do not provide much value.
+-PROFILE_TASK=-m test.regrtest --pgo
++# CUSTOM NOTE: The default profile task executed almost all the tests,
++# and given these are executed using a single thread, it took an insane
++# amount of time, so we took the tests being executed during profiling
++# from Python 3.8, and inserted those here
++PROFILE_TASK=-m test.regrtest --pgo test_array test_base64 test_binascii test_binop test_bisect test_bytes test_bz2 test_cmath test_codecs test_collections test_complex test_dataclasses test_datetime test_decimal test_difflib test_embed test_float test_fstring test_functools test_generators test_hashlib test_heapq test_int test_itertools test_json test_long test_lzma test_math test_memoryview test_operator test_ordered_dict test_pickle test_pprint test_re test_set test_sqlite test_statistics test_struct test_tabnanny test_time test_unicode test_xml_etree test_xml_etree_c
+ 
+ # report files for gcov / lcov coverage report
+ COVERAGE_INFO=	$(abs_builddir)/coverage.info
 diff --git a/Modules/Setup.dist b/Modules/Setup.dist
 index 344e03a..87cfa29 100644
 --- a/Modules/Setup.dist

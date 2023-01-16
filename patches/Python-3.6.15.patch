@@ -1,6 +1,6 @@
-From 573a7e81589fa8c8fbf0a3414f3b7c126836a4f3 Mon Sep 17 00:00:00 2001
+From bda616c3fac17439f79457499cc37f5cea19f8c2 Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
-Date: Thu, 17 Nov 2022 12:56:02 +0100
+Date: Mon, 16 Jan 2023 15:26:52 +0100
 Subject: [PATCH] Python 3.6.15 patching
 
 ---
@@ -16,6 +16,7 @@ Subject: [PATCH] Python 3.6.15 patching
  Lib/test/test_posix.py                |   8 +-
  Lib/test/test_unicode.py              |   3 +
  Lib/test/test_xml_etree.py            |   1 +
+ Makefile.pre.in                       |   6 +-
  Modules/Setup.dist                    |  25 ++-
  Modules/_ctypes/_ctypes.c             |  31 +++
  Modules/_ctypes/callproc.c            | 114 +++++++++--
@@ -32,7 +33,7 @@ Subject: [PATCH] Python 3.6.15 patching
  configure.ac                          |  19 +-
  pyconfig.h.in                         |   3 +
  setup.py                              | 262 ++++++++++++++++++++------
- 28 files changed, 556 insertions(+), 137 deletions(-)
+ 29 files changed, 561 insertions(+), 138 deletions(-)
 
 diff --git a/Lib/ctypes/macholib/dyld.py b/Lib/ctypes/macholib/dyld.py
 index c158e67..e1c58fc 100644
@@ -369,6 +370,23 @@ index b01709e..a61e04b 100644
      def test_issue3151(self):
          e = ET.XML('<prefix:localname xmlns:prefix="${stuff}"/>')
          self.assertEqual(e.tag, '{${stuff}}localname')
+diff --git a/Makefile.pre.in b/Makefile.pre.in
+index d15d935..7704b03 100644
+--- a/Makefile.pre.in
++++ b/Makefile.pre.in
+@@ -249,7 +249,11 @@ TCLTK_LIBS=	@TCLTK_LIBS@
+ # The task to run while instrumented when building the profile-opt target.
+ # We exclude unittests with -x that take a rediculious amount of time to
+ # run in the instrumented training build or do not provide much value.
+-PROFILE_TASK=-m test.regrtest --pgo
++# CUSTOM NOTE: The default profile task executed almost all the tests,
++# and given these are executed using a single thread, it took an insane
++# amount of time, so we took the tests being executed during profiling
++# from Python 3.8, and inserted those here
++PROFILE_TASK=-m test.regrtest --pgo test_array test_base64 test_binascii test_binop test_bisect test_bytes test_bz2 test_cmath test_codecs test_collections test_complex test_dataclasses test_datetime test_decimal test_difflib test_embed test_float test_fstring test_functools test_generators test_hashlib test_heapq test_int test_itertools test_json test_long test_lzma test_math test_memoryview test_operator test_ordered_dict test_pickle test_pprint test_re test_set test_sqlite test_statistics test_struct test_tabnanny test_time test_unicode test_xml_etree test_xml_etree_c
+ 
+ # report files for gcov / lcov coverage report
+ COVERAGE_INFO=	$(abs_builddir)/coverage.info
 diff --git a/Modules/Setup.dist b/Modules/Setup.dist
 index e469d5e..19f8303 100644
 --- a/Modules/Setup.dist
@@ -1414,5 +1432,5 @@ index e2c1898..6f7496b 100644
              depends = ['_decimal/docstrings.h']
          else:
 -- 
-2.38.1
+2.39.0
 
