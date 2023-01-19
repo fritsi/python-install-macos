@@ -315,10 +315,10 @@ if ! $P_DRY_RUN_MODE; then
         sysout ""
 
         if ! $P_KEEP_WORKING_DIR; then
-            sysout "[EXIT] Deleting $WORKING_DIR"
+            sysout "${FNT_BLD}[EXIT]${FNT_RST} Deleting $WORKING_DIR"
             rm -rf "$WORKING_DIR"
         else
-            sysout "[EXIT] Keeping $WORKING_DIR"
+            sysout "${FNT_BLD}[EXIT]${FNT_RST} Keeping $WORKING_DIR"
         fi
     }
 
@@ -488,6 +488,11 @@ CONFIGURE_PARAMS=(
     "--with-system-expat"
     "--with-system-ffi"
 )
+
+# --enable-unicode=ucs4 is only available for Python 2
+if [[ "$PY_VERSION_NUM" -lt 300 ]]; then
+    CONFIGURE_PARAMS+=("--enable-unicode=ucs4")
+fi
 
 # --with-system-libmpdec is only available from Python 3
 if [[ "$PY_VERSION_NUM" -ge 300 ]]; then
