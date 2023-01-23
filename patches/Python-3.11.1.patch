@@ -1,6 +1,6 @@
-From dbf913ec2d9f1399e502cbe6bf6f7dc43b567a49 Mon Sep 17 00:00:00 2001
+From 20840af3e2b20d453882ee5ac77042c1d13f67fb Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
-Date: Mon, 16 Jan 2023 15:29:00 +0100
+Date: Wed, 18 Jan 2023 13:19:17 +0100
 Subject: [PATCH] Python 3.11.1 patching
 
 ---
@@ -13,13 +13,13 @@ Subject: [PATCH] Python 3.11.1 patching
  Lib/test/test_posix.py                    |  8 +--
  Lib/tkinter/test/test_ttk/test_widgets.py |  9 ++-
  Makefile.pre.in                           |  7 +-
- Modules/Setup                             | 20 ++++--
+ Modules/Setup                             | 22 +++++--
  Modules/getaddrinfo.c                     |  1 +
  Modules/getnameinfo.c                     |  1 +
  Modules/socketmodule.c                    |  1 +
  Modules/socketmodule.h                    |  1 +
  setup.py                                  | 79 ++++++++++++++++++++++-
- 15 files changed, 141 insertions(+), 52 deletions(-)
+ 15 files changed, 143 insertions(+), 52 deletions(-)
 
 diff --git a/Lib/distutils/tests/test_build_ext.py b/Lib/distutils/tests/test_build_ext.py
 index 4ebeafe..fa303e3 100644
@@ -272,10 +272,10 @@ index b356f62..2a6388a 100644
  
  # Module state, compiler flags and linker flags
 diff --git a/Modules/Setup b/Modules/Setup
-index d3647ec..0791668 100644
+index d3647ec..9dc0010 100644
 --- a/Modules/Setup
 +++ b/Modules/Setup
-@@ -205,15 +205,22 @@ PYTHONPATH=$(COREPYTHONPATH)
+@@ -205,15 +205,24 @@ PYTHONPATH=$(COREPYTHONPATH)
  #_gdbm _gdbmmodule.c -lgdbm
  #_lzma _lzmamodule.c -llzma
  #_uuid _uuidmodule.c -luuid
@@ -290,9 +290,11 @@ index d3647ec..0791668 100644
  # Some systems may require -ltermcap or -ltermlib.
 -#readline readline.c -lreadline -ltermcap
 +readline readline.c \
++    -DWITH_EDITLINE \
 +    -I__readline_install_dir__/include \
++    -I__readline_install_dir__/include/editline \
 +    -L__readline_install_dir__/lib \
-+    -lreadline -ltermcap
++    -ledit
  
  # OpenSSL bindings
 -#_ssl _ssl.c $(OPENSSL_INCLUDES) $(OPENSSL_LDFLAGS) $(OPENSSL_LIBS)
@@ -302,7 +304,7 @@ index d3647ec..0791668 100644
  
  # To statically link OpenSSL:
  # _ssl _ssl.c $(OPENSSL_INCLUDES) $(OPENSSL_LDFLAGS) \
-@@ -234,7 +241,10 @@ PYTHONPATH=$(COREPYTHONPATH)
+@@ -234,7 +243,10 @@ PYTHONPATH=$(COREPYTHONPATH)
  # every system.
  
  # *** Always uncomment this (leave the leading underscore in!):
@@ -456,4 +458,4 @@ index 15d0d45..7ad963e 100644
          )
  
 -- 
-2.39.0
+2.39.1

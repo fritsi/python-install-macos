@@ -26,6 +26,11 @@ if $G_PYTHON_COMPILE; then
     fi
 fi
 
+# From Python 3.10 we should use libedit instead of readline
+if $G_PYTHON_COMPILE && [[ "$PY_VERSION_NUM" -ge 310 ]]; then
+    T_LIBRARIES_TO_LOOKUP="${T_LIBRARIES_TO_LOOKUP//readline/libedit}"
+fi
+
 # Extra paths we'll add to the 'PATH' variable
 T_EXTRA_PATH=""
 
@@ -70,12 +75,28 @@ for libraryName in $T_LIBRARIES_TO_LOOKUP; do
         fi
     fi
 
+    # For libedit we also need to include libedit/editline
+    if [[ "$libraryName" == "libedit" ]]; then
+        if [[ ! -d "$libraryDir/include/editline" ]]; then
+            sysout >&2 "[ERROR] Could not find $libraryDir/include/editline, did you install $libraryName correctly ?"
+            sysout >&2 ""
+            exit 1
+        else
+            export CPPFLAGS="${CPPFLAGS:+$CPPFLAGS }-I$libraryDir/include/editline"
+        fi
+    fi
+
     # Some of the library locations are also needed by install-python-macos.sh directly, so saving those
     case "$libraryName" in
         openssl*)
             export L_OPENSSL_BASE="$libraryDir"
             ;;
-        readline)
+        readline | libedit)
+            if [[ "${L_READLINE_BASE:-}" != "" ]]; then
+                sysout >&2 "[ERROR] L_READLINE_BASE was already set"
+                sysout >&2 ""
+                exit 1
+            fi
             export L_READLINE_BASE="$libraryDir"
             ;;
         tcl-tk)

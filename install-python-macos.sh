@@ -82,9 +82,9 @@ function printPreparationSteps() {
     sysout "${FNT_BLD}${FNT_ULN}As a preparation we suggest to perform the following:${FNT_RST}"
     sysout ""
     sysout "${FNT_BLD}brew install${FNT_RST} asciidoc autoconf bzip2 coreutils diffutils expat findutils gawk \\"
-    sysout "             gcc gdbm gnu-sed gnu-tar gnu-which gnunet grep jq libffi libtool \\"
-    sysout "             libx11 libxcrypt libzip lzo mpdecimal ncurses openssl@1.1 openssl@3 \\"
-    sysout "             p7zip pkg-config readline sqlite tcl-tk unzip wget xz zlib"
+    sysout "             gcc gdbm gnu-sed gnu-tar gnu-which gnunet grep jq libedit libffi \\"
+    sysout "             libtool libx11 libxcrypt libzip lzo mpdecimal ncurses openssl@1.1 \\"
+    sysout "             openssl@3 p7zip pkg-config readline sqlite tcl-tk unzip wget xz zlib"
     sysout ""
     sysout "${FNT_BLD}${FNT_ULN}NOTE:${FNT_RST} The above command does ${FNT_BLD}not${FNT_RST} only install libraries, but also a couple of ${FNT_BLD}GNU${FNT_RST} executables."
     sysout "      These will not be used by default, but ${FNT_ITC}search-libraries.sh${FNT_RST} will temporarily add it to PATH."
@@ -525,6 +525,11 @@ fi
 if [[ "$PY_VERSION_NUM" -lt 311 ]]; then
     CONFIGURE_PARAMS+=("--with-tcltk-includes=-I$L_TCL_TK_BASE/include")
     CONFIGURE_PARAMS+=("--with-tcltk-libs=-L$L_TCL_TK_BASE/lib -ltk8.6 -ltcl8.6 -DWITH_APPINIT")
+fi
+
+# Using editline instead of readline since Python 3.10
+if [[ "$PY_VERSION_NUM" -ge 310 ]]; then
+    CONFIGURE_PARAMS+=("--with-readline=editline")
 fi
 
 function macOsVersion() {
