@@ -68,7 +68,7 @@ function printUsage() {
     sysout ""
     sysout "    ${FNT_BLD}--keep-working-dir${FNT_RST} - We'll keep the working directory after the script finished / exited."
     sysout ""
-    sysout "    ${FNT_BLD}--keep-test-results${FNT_RST} - We'll keep the test log and test result xml files even in case everything passed."
+    sysout "    ${FNT_BLD}--keep-test-results${FNT_RST} - We'll keep the test log file even in case everything passed."
     sysout ""
     sysout "    ${FNT_BLD}--dry-run${FNT_RST} - We'll only print out the commands which would be executed."
     sysout "                ${FNT_BLD}NOTE:${FNT_RST} Collecting GNU binaries will still be executed."
@@ -576,7 +576,7 @@ fi
 
 # Compiling Python
 # We'll be using half the available cores for make
-echoAndExec make -j "$((PROC_COUNT / 2))" 2>&1
+echoAndExec make "-j$((PROC_COUNT / 2))" 2>&1
 
 if ! $P_DRY_RUN_MODE; then
     sysout ""
@@ -591,10 +591,9 @@ fi
 function runTests() {
     local testLogDir
     local testLogFile
-    local testResultXmlFile
     local testsExitCode
 
-    # The directory where we'll put the test logs, and the test result xml file in case of Python 3
+    # The directory where we'll put the test log
     testLogDir="$PYTHON_INSTALL_BASE/python-install-logs"
 
     # Creating the directory if it does not exist
@@ -603,7 +602,6 @@ function runTests() {
     fi
 
     testLogFile="$testLogDir/python-$PYTHON_VERSION-tests.log"
-    testResultXmlFile="$testLogDir/python-$PYTHON_VERSION-test-results.xml"
 
     # Turning off exit in case of a failure, so we can explicitly check the exit code of the python -m test command
     set +euo pipefail
@@ -621,9 +619,6 @@ function runTests() {
 
             # Getting rid of some warnings in the tests
             export TK_SILENCE_DEPRECATION=1
-
-            # We don't want to run the Tkinter related tests as they are too unstable
-            export UI_TESTS_ENABLED=0
         else
             {
                 echo "# To run the tests, execute:"
@@ -635,25 +630,8 @@ function runTests() {
                 echo "    unset PYTHONHTTPSVERIFY DISPLAY"
                 echo ""
                 echo "    export TK_SILENCE_DEPRECATION=1"
-                echo "    export UI_TESTS_ENABLED=0"
                 echo ""
             } >> "$G_PY_COMPILE_COMMANDS_FILE"
-        fi
-
-        EXTRA_TEST_ARGS=()
-
-        # --junit-xml is not available for Python 2.7, so for Python 2.7 we use verbose test output,
-        # and for Python 3.x we use non-verbose output with --junit-xml
-        if [[ "$PY_VERSION_NUM" -ge 300 ]]; then
-            EXTRA_TEST_ARGS+=("-w")
-
-            if ! $P_DRY_RUN_MODE; then
-                EXTRA_TEST_ARGS+=("--junit-xml=$testResultXmlFile")
-            else
-                EXTRA_TEST_ARGS+=("--junit-xml=\"{SET THE JUNIT XML FILENAME}\"")
-            fi
-        else
-            EXTRA_TEST_ARGS+=("--verbose")
         fi
 
         # Running the tests
@@ -665,10 +643,10 @@ function runTests() {
         #
         # * Yes, in its native compiled-only state, it's python.exe :D
         if ! $P_DRY_RUN_MODE; then
-            echoAndExec ./python.exe -W default -bb -m test -j "$((PROC_COUNT / 2))" -u all "${EXTRA_TEST_ARGS[@]}" 2>&1 | tee "$testLogFile"
+            echoAndExec ./python.exe -W default -bb -m test "-j$((PROC_COUNT / 2))" -w -u all 2>&1 | tee "$testLogFile"
         else
             {
-                echo "    ./python.exe -W default -bb -m test -j $((PROC_COUNT / 2)) -u all ${EXTRA_TEST_ARGS[*]}"
+                echo "    ./python.exe -W default -bb -m test -j$((PROC_COUNT / 2)) -w -u all"
                 echo ")"
             } >> "$G_PY_COMPILE_COMMANDS_FILE"
         fi
@@ -692,9 +670,9 @@ function runTests() {
         # Turning on exit code check again
         set -euo pipefail
 
-        # Deleting the test log and test result xml files if we don't want to keep them
+        # Deleting the test log if we don't want to keep them
         if ! $P_KEEP_TEST_RESULTS; then
-            rm -rf "$testLogFile" "$testResultXmlFile"
+            rm -rf "$testLogFile"
         fi
 
         # Nothing else to do here
@@ -702,12 +680,7 @@ function runTests() {
     else
         sysout >&2 ""
         sysout >&2 "[ERROR] THERE WERE TEST FAILURES"
-        if [[ -f "$testResultXmlFile" ]]; then
-            sysout >&2 "[ERROR] PLEASE CHECK THE FOLLOWING LOG FILE FOR MORE INFORMATION: $testLogFile,"
-            sysout >&2 "[ERROR] OR THE TEST RESULT XML FILE: $testResultXmlFile"
-        else
-            sysout >&2 "[ERROR] PLEASE CHECK THE FOLLOWING LOG FILE FOR MORE INFORMATION: $testLogFile"
-        fi
+        sysout >&2 "[ERROR] PLEASE CHECK THE FOLLOWING LOG FILE FOR MORE INFORMATION: $testLogFile"
         sysout >&2 ""
 
         # Ask the user if they want to continue
@@ -918,7 +891,7 @@ if ! $P_DRY_RUN_MODE; then
     sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} For that execute: export PATH=\"$PYTHON_INSTALL_BASE:\$PATH\""
 
     sysout ""
-    sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Python $PY_POSTFIX successfully completed :)"
+    sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Python $PY_POSTFIX installation successfully completed :)"
 else
     sysout "${FNT_BLD}${FNT_ULN}THE PYTHON INSTALL SCRIPT:${FNT_RST}"
     sysout ""

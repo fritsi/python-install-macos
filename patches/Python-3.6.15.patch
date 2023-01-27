@@ -1,39 +1,42 @@
-From bda616c3fac17439f79457499cc37f5cea19f8c2 Mon Sep 17 00:00:00 2001
+From 0ae720384aa35bc4faa67bd5d90cd694a83fa9be Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
 Date: Mon, 16 Jan 2023 15:26:52 +0100
 Subject: [PATCH] Python 3.6.15 patching
 
 ---
- Lib/ctypes/macholib/dyld.py           |  10 +
- Lib/ctypes/test/test_macholib.py      |  15 +-
- Lib/distutils/tests/test_build_ext.py |   8 +-
- Lib/sysconfig.py                      |  12 ++
- Lib/test/support/__init__.py          |  26 ++-
- Lib/test/test_bytes.py                |   1 +
- Lib/test/test_gdb.py                  |   2 +-
- Lib/test/test_minidom.py              |  17 +-
- Lib/test/test_platform.py             |   2 +-
- Lib/test/test_posix.py                |   8 +-
- Lib/test/test_unicode.py              |   3 +
- Lib/test/test_xml_etree.py            |   1 +
- Makefile.pre.in                       |   6 +-
- Modules/Setup.dist                    |  25 ++-
- Modules/_ctypes/_ctypes.c             |  31 +++
- Modules/_ctypes/callproc.c            | 114 +++++++++--
- Modules/_ctypes/ctypes.h              |   1 +
- Modules/_decimal/_decimal.c           |  10 +-
- Modules/_decimal/libmpdec/mpdecimal.h |   3 +
- Modules/getaddrinfo.c                 |   1 +
- Modules/getnameinfo.c                 |   1 +
- Modules/posixmodule.c                 |  74 +++++---
- Modules/socketmodule.c                |   1 +
- Modules/socketmodule.h                |   1 +
- Python/random.c                       |   3 +
- configure                             |  39 +++-
- configure.ac                          |  19 +-
- pyconfig.h.in                         |   3 +
- setup.py                              | 262 ++++++++++++++++++++------
- 29 files changed, 561 insertions(+), 138 deletions(-)
+ Lib/ctypes/macholib/dyld.py                   |  10 +
+ Lib/ctypes/test/test_macholib.py              |  15 +-
+ Lib/distutils/tests/test_build_ext.py         |   8 +-
+ Lib/idlelib/idle_test/test_outwin.py          |   1 +
+ Lib/sysconfig.py                              |  12 +
+ Lib/test/support/__init__.py                  |  18 +-
+ Lib/test/test_bytes.py                        |   1 +
+ Lib/test/test_gdb.py                          |   2 +-
+ Lib/test/test_minidom.py                      |  17 +-
+ Lib/test/test_platform.py                     |   2 +-
+ Lib/test/test_posix.py                        |   8 +-
+ Lib/test/test_unicode.py                      |   3 +
+ Lib/test/test_xml_etree.py                    |   1 +
+ Lib/tkinter/test/test_tkinter/test_widgets.py |   3 +-
+ Lib/tkinter/test/test_ttk/test_widgets.py     |  25 +-
+ Makefile.pre.in                               |   6 +-
+ Modules/Setup.dist                            |  25 +-
+ Modules/_ctypes/_ctypes.c                     |  31 +++
+ Modules/_ctypes/callproc.c                    | 114 +++++++-
+ Modules/_ctypes/ctypes.h                      |   1 +
+ Modules/_decimal/_decimal.c                   |  10 +-
+ Modules/_decimal/libmpdec/mpdecimal.h         |   3 +
+ Modules/getaddrinfo.c                         |   1 +
+ Modules/getnameinfo.c                         |   1 +
+ Modules/posixmodule.c                         |  74 +++--
+ Modules/socketmodule.c                        |   1 +
+ Modules/socketmodule.h                        |   1 +
+ Python/random.c                               |   3 +
+ configure                                     |  39 ++-
+ configure.ac                                  |  19 +-
+ pyconfig.h.in                                 |   3 +
+ setup.py                                      | 262 +++++++++++++-----
+ 32 files changed, 568 insertions(+), 152 deletions(-)
 
 diff --git a/Lib/ctypes/macholib/dyld.py b/Lib/ctypes/macholib/dyld.py
 index c158e67..e1c58fc 100644
@@ -126,6 +129,18 @@ index c6502d6..85219f0 100644
              # for 10.1 through 10.9.x -> "10n0"
              target = '%02d%01d0' % target
          else:
+diff --git a/Lib/idlelib/idle_test/test_outwin.py b/Lib/idlelib/idle_test/test_outwin.py
+index cd099ec..a2b05a4 100644
+--- a/Lib/idlelib/idle_test/test_outwin.py
++++ b/Lib/idlelib/idle_test/test_outwin.py
+@@ -18,6 +18,7 @@ class OutputWindowTest(unittest.TestCase):
+         root.withdraw()
+         w = cls.window = outwin.OutputWindow(None, None, None, root)
+         cls.text = w.text = Text(root)
++        cls.text.update = cls.text.update_idletasks
+ 
+     @classmethod
+     def tearDownClass(cls):
 diff --git a/Lib/sysconfig.py b/Lib/sysconfig.py
 index 9314e71..b12ff9f 100644
 --- a/Lib/sysconfig.py
@@ -171,25 +186,10 @@ index 9314e71..b12ff9f 100644
              except ValueError:
                  pass
 diff --git a/Lib/test/support/__init__.py b/Lib/test/support/__init__.py
-index 66c0fed..70e4245 100644
+index 66c0fed..5d24fc0 100644
 --- a/Lib/test/support/__init__.py
 +++ b/Lib/test/support/__init__.py
-@@ -467,7 +467,14 @@ def forget(modname):
- def _is_gui_available():
-     if hasattr(_is_gui_available, 'result'):
-         return _is_gui_available.result
-+
-+    if os.environ.get("UI_TESTS_ENABLED", "") != "1":
-+        _is_gui_available.reason = "fritsi: UI tests are disabled, because the 'UI_TESTS_ENABLED' environment variable is not set to '1'"
-+        _is_gui_available.result = False
-+        return _is_gui_available.result
-+
-     reason = None
-+
-     if sys.platform.startswith('win'):
-         # if Python is running as a service (such as the buildbot service),
-         # gui interaction may be disallowed
-@@ -508,15 +515,15 @@ def _is_gui_available():
+@@ -508,15 +508,15 @@ def _is_gui_available():
  
          if app_services.CGMainDisplayID() == 0:
              reason = "gui tests cannot run without OS X window manager"
@@ -214,14 +214,6 @@ index 66c0fed..70e4245 100644
  
      # check on every platform whether tkinter can actually do anything
      if not reason:
-@@ -526,6 +533,7 @@ def _is_gui_available():
-             root.withdraw()
-             root.update()
-             root.destroy()
-+            root.quit()
-         except Exception as e:
-             err_string = str(e)
-             if len(err_string) > 50:
 diff --git a/Lib/test/test_bytes.py b/Lib/test/test_bytes.py
 index 7fa2a38..624cae7 100644
 --- a/Lib/test/test_bytes.py
@@ -370,6 +362,85 @@ index b01709e..a61e04b 100644
      def test_issue3151(self):
          e = ET.XML('<prefix:localname xmlns:prefix="${stuff}"/>')
          self.assertEqual(e.tag, '{${stuff}}localname')
+diff --git a/Lib/tkinter/test/test_tkinter/test_widgets.py b/Lib/tkinter/test/test_tkinter/test_widgets.py
+index 3fb6411..5cfab68 100644
+--- a/Lib/tkinter/test/test_tkinter/test_widgets.py
++++ b/Lib/tkinter/test/test_tkinter/test_widgets.py
+@@ -864,7 +864,8 @@ class ScaleTest(AbstractWidgetTest, unittest.TestCase):
+ 
+     def test_from(self):
+         widget = self.create()
+-        self.checkFloatParam(widget, 'from', 100, 14.9, 15.1, conv=float_round)
++        conv = False if get_tk_patchlevel() >= (8, 6, 10) else float_round
++        self.checkFloatParam(widget, 'from', 100, 14.9, 15.1, conv=conv)
+ 
+     def test_label(self):
+         widget = self.create()
+diff --git a/Lib/tkinter/test/test_ttk/test_widgets.py b/Lib/tkinter/test/test_ttk/test_widgets.py
+index 13e0568..d2529e6 100644
+--- a/Lib/tkinter/test/test_ttk/test_widgets.py
++++ b/Lib/tkinter/test/test_ttk/test_widgets.py
+@@ -170,10 +170,13 @@ class AbstractLabelTest(AbstractWidgetTest):
+                 errmsg='image "spam" doesn\'t exist')
+ 
+     def test_compound(self):
++        options = 'none text image center top bottom left right'.split()
++        errmsg = (
++            'bad compound "{{}}": must be {}, or {}'.format(
++                ", ".join(options[:-1]), options[-1])
++        )
+         widget = self.create()
+-        self.checkEnumParam(widget, 'compound',
+-                'none', 'text', 'image', 'center',
+-                'top', 'bottom', 'left', 'right')
++        self.checkEnumParam(widget, 'compound', *options, errmsg=errmsg)
+ 
+     def test_state(self):
+         widget = self.create()
+@@ -285,6 +288,7 @@ class EntryTest(AbstractWidgetTest, unittest.TestCase):
+         'show', 'state', 'style', 'takefocus', 'textvariable',
+         'validate', 'validatecommand', 'width', 'xscrollcommand',
+     )
++    IDENTIFY_AS = ('Entry.field',) if sys.platform == 'darwin' else ('textarea',)
+ 
+     def setUp(self):
+         super().setUp()
+@@ -329,12 +333,7 @@ class EntryTest(AbstractWidgetTest, unittest.TestCase):
+         self.entry.wait_visibility()
+         self.entry.update_idletasks()
+ 
+-        # bpo-27313: macOS Cocoa widget differs from X, allow either
+-        if sys.platform == 'darwin':
+-            self.assertIn(self.entry.identify(5, 5),
+-                ("textarea", "Combobox.button") )
+-        else:
+-            self.assertEqual(self.entry.identify(5, 5), "textarea")
++        self.assertIn(self.entry.identify(5, 5), self.IDENTIFY_AS)
+         self.assertEqual(self.entry.identify(-1, -1), "")
+ 
+         self.assertRaises(tkinter.TclError, self.entry.identify, None, 5)
+@@ -423,6 +422,7 @@ class ComboboxTest(EntryTest, unittest.TestCase):
+         'validate', 'validatecommand', 'values',
+         'width', 'xscrollcommand',
+     )
++    IDENTIFY_AS = ('Combobox.button', 'textarea') if sys.platform == 'darwin' else ('textarea',)
+ 
+     def setUp(self):
+         super().setUp()
+@@ -1104,10 +1104,9 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
+         self.nb.enable_traversal()
+         self.nb.focus_force()
+         simulate_mouse_click(self.nb, 5, 5)
+-        if sys.platform == 'darwin':
+-            self.nb.event_generate('<Option-a>')
+-        else:
+-            self.nb.event_generate('<Alt-a>')
++        # on macOS Emacs-style keyboard shortcuts are region-dependent;
++        # let's use the regular arrow keys instead
++        self.nb.event_generate('<Left>' if sys.platform == 'darwin' else '<Alt-a>')
+         self.assertEqual(self.nb.select(), str(self.child1))
+ 
+ 
 diff --git a/Makefile.pre.in b/Makefile.pre.in
 index d15d935..7704b03 100644
 --- a/Makefile.pre.in
@@ -1433,4 +1504,3 @@ index e2c1898..6f7496b 100644
          else:
 -- 
 2.39.0
-

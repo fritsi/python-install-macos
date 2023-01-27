@@ -1,19 +1,23 @@
-From 3b4afb8c9a618ec1218a7de559b3ac9b4f00a0da Mon Sep 17 00:00:00 2001
+From 79e8ea51342f6e0374b4202e50ca9a94d7edd661 Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
-Date: Tue, 20 Dec 2022 16:16:24 +0100
+Date: Mon, 16 Jan 2023 15:28:36 +0100
 Subject: [PATCH] Python 3.10.9 patching
 
 ---
- Lib/distutils/tests/test_build_ext.py |  6 ++++++
- Lib/test/support/__init__.py          | 27 +++++++++++++++--------
- Lib/test/test_gdb.py                  |  2 +-
- Lib/test/test_posix.py                |  8 +++----
- Modules/Setup                         | 31 +++++++++++++++++----------
- Modules/getaddrinfo.c                 |  1 +
- Modules/getnameinfo.c                 |  1 +
- Modules/socketmodule.c                |  1 +
- Modules/socketmodule.h                |  1 +
- 9 files changed, 53 insertions(+), 25 deletions(-)
+ Lib/distutils/tests/test_build_ext.py     |  6 ++++
+ Lib/idlelib/idle_test/test_colorizer.py   |  1 +
+ Lib/idlelib/idle_test/test_outwin.py      |  1 +
+ Lib/idlelib/idle_test/test_sidebar.py     | 38 ++++++++++-------------
+ Lib/test/support/__init__.py              | 18 +++++------
+ Lib/test/test_gdb.py                      |  2 +-
+ Lib/test/test_posix.py                    |  8 ++---
+ Lib/tkinter/test/test_ttk/test_widgets.py |  9 +++---
+ Modules/Setup                             | 31 +++++++++++-------
+ Modules/getaddrinfo.c                     |  1 +
+ Modules/getnameinfo.c                     |  1 +
+ Modules/socketmodule.c                    |  1 +
+ Modules/socketmodule.h                    |  1 +
+ 13 files changed, 66 insertions(+), 52 deletions(-)
 
 diff --git a/Lib/distutils/tests/test_build_ext.py b/Lib/distutils/tests/test_build_ext.py
 index 8e7364d..4916642 100644
@@ -39,28 +43,103 @@ index 8e7364d..4916642 100644
          target = tuple(map(int, target.split('.')[0:2]))
          # format the target value as defined in the Apple
          # Availability Macros.  We can't use the macro names since
+diff --git a/Lib/idlelib/idle_test/test_colorizer.py b/Lib/idlelib/idle_test/test_colorizer.py
+index 308bc38..e4fb890 100644
+--- a/Lib/idlelib/idle_test/test_colorizer.py
++++ b/Lib/idlelib/idle_test/test_colorizer.py
+@@ -171,6 +171,7 @@ class ColorDelegatorTest(unittest.TestCase):
+         root = cls.root = Tk()
+         root.withdraw()
+         text = cls.text = Text(root)
++        cls.text.update = cls.text.update_idletasks
+         cls.percolator = Percolator(text)
+         # Delegator stack = [Delegator(text)]
+ 
+diff --git a/Lib/idlelib/idle_test/test_outwin.py b/Lib/idlelib/idle_test/test_outwin.py
+index e347bfc..6b3bf48 100644
+--- a/Lib/idlelib/idle_test/test_outwin.py
++++ b/Lib/idlelib/idle_test/test_outwin.py
+@@ -18,6 +18,7 @@ class OutputWindowTest(unittest.TestCase):
+         root.withdraw()
+         w = cls.window = outwin.OutputWindow(None, None, None, root)
+         cls.text = w.text = Text(root)
++        cls.text.update = cls.text.update_idletasks
+ 
+     @classmethod
+     def tearDownClass(cls):
+diff --git a/Lib/idlelib/idle_test/test_sidebar.py b/Lib/idlelib/idle_test/test_sidebar.py
+index 049531e..9f1d745 100644
+--- a/Lib/idlelib/idle_test/test_sidebar.py
++++ b/Lib/idlelib/idle_test/test_sidebar.py
+@@ -40,28 +40,22 @@ class LineNumbersTest(unittest.TestCase):
+     @classmethod
+     def setUpClass(cls):
+         requires('gui')
+-        cls.root = tk.Tk()
+-        cls.root.withdraw()
+ 
+-        cls.text_frame = tk.Frame(cls.root)
+-        cls.text_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+-        cls.text_frame.rowconfigure(1, weight=1)
+-        cls.text_frame.columnconfigure(1, weight=1)
++    def setUp(self):
++        self.root = tk.Tk()
++        self.root.withdraw()
+ 
+-        cls.text = tk.Text(cls.text_frame, width=80, height=24, wrap=tk.NONE)
+-        cls.text.grid(row=1, column=1, sticky=tk.NSEW)
++        self.text_frame = tk.Frame(self.root)
++        self.text_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
++        self.text_frame.rowconfigure(1, weight=1)
++        self.text_frame.columnconfigure(1, weight=1)
+ 
+-        cls.editwin = Dummy_editwin(cls.text)
+-        cls.editwin.vbar = tk.Scrollbar(cls.text_frame)
++        self.text = tk.Text(self.text_frame, width=80, height=24, wrap=tk.NONE)
++        self.text.grid(row=1, column=1, sticky=tk.NSEW)
+ 
+-    @classmethod
+-    def tearDownClass(cls):
+-        cls.editwin.per.close()
+-        cls.root.update()
+-        cls.root.destroy()
+-        del cls.text, cls.text_frame, cls.editwin, cls.root
++        self.editwin = Dummy_editwin(self.text)
++        self.editwin.vbar = tk.Scrollbar(self.text_frame)
+ 
+-    def setUp(self):
+         self.linenumber = idlelib.sidebar.LineNumbers(self.editwin)
+ 
+         self.highlight_cfg = {"background": '#abcdef',
+@@ -85,7 +79,10 @@ class LineNumbersTest(unittest.TestCase):
+         self.addCleanup(GetFont_patcher.stop)
+ 
+     def tearDown(self):
+-        self.text.delete('1.0', 'end')
++        self.root.destroy()
++        self.root.quit()
++
++        del self.text, self.text_frame, self.editwin, self.root
+ 
+     def get_selection(self):
+         return tuple(map(str, self.text.tag_ranges('sel')))
+@@ -690,10 +687,7 @@ class ShellSidebarTest(unittest.TestCase):
+         last_lineno = get_end_linenumber(text)
+         self.assertIsNotNone(text.dlineinfo(text.index(f'{last_lineno}.0')))
+ 
+-        # Scroll up using the <MouseWheel> event.
+-        # The meaning delta is platform-dependant.
+-        delta = -1 if sys.platform == 'darwin' else 120
+-        sidebar.canvas.event_generate('<MouseWheel>', x=0, y=0, delta=delta)
++        sidebar.canvas.event_generate('<MouseWheel>', x=0, y=0, delta=120)
+         yield
+         self.assertIsNone(text.dlineinfo(text.index(f'{last_lineno}.0')))
+ 
 diff --git a/Lib/test/support/__init__.py b/Lib/test/support/__init__.py
-index b7cf1e2..fdb22ff 100644
+index b7cf1e2..b9f66b2 100644
 --- a/Lib/test/support/__init__.py
 +++ b/Lib/test/support/__init__.py
-@@ -202,8 +202,16 @@ def _force_run(path, func, *args):
- def _is_gui_available():
-     if hasattr(_is_gui_available, 'result'):
-         return _is_gui_available.result
-+
-+    if os.environ.get("UI_TESTS_ENABLED", "") != "1":
-+        _is_gui_available.reason = "fritsi: UI tests are disabled, because the 'UI_TESTS_ENABLED' environment variable is not set to '1'"
-+        _is_gui_available.result = False
-+        return _is_gui_available.result
-+
-     import platform
-+
-     reason = None
-+
-     if sys.platform.startswith('win') and platform.win32_is_iot():
-         reason = "gui is not available on Windows IoT Core"
-     elif sys.platform.startswith('win'):
-@@ -246,15 +254,15 @@ def _is_gui_available():
+@@ -246,15 +246,15 @@ def _is_gui_available():
  
          if app_services.CGMainDisplayID() == 0:
              reason = "gui tests cannot run without OS X window manager"
@@ -85,14 +164,6 @@ index b7cf1e2..fdb22ff 100644
  
      # check on every platform whether tkinter can actually do anything
      if not reason:
-@@ -264,6 +272,7 @@ def _is_gui_available():
-             root.withdraw()
-             root.update()
-             root.destroy()
-+            root.quit()
-         except Exception as e:
-             err_string = str(e)
-             if len(err_string) > 50:
 diff --git a/Lib/test/test_gdb.py b/Lib/test/test_gdb.py
 index 5f55489..b840613 100644
 --- a/Lib/test/test_gdb.py
@@ -139,6 +210,47 @@ index 19bc885..43d4ec0 100644
          # groups, ignoring order, duplicates, and the effective gid.
          # #10822/#26944 - It is implementation defined whether
          # posix.getgroups() includes the effective gid.
+diff --git a/Lib/tkinter/test/test_ttk/test_widgets.py b/Lib/tkinter/test/test_ttk/test_widgets.py
+index c314296..065d80a 100644
+--- a/Lib/tkinter/test/test_ttk/test_widgets.py
++++ b/Lib/tkinter/test/test_ttk/test_widgets.py
+@@ -300,7 +300,7 @@ class EntryTest(AbstractWidgetTest, unittest.TestCase):
+         'show', 'state', 'style', 'takefocus', 'textvariable',
+         'validate', 'validatecommand', 'width', 'xscrollcommand',
+     )
+-    IDENTIFY_AS = 'Entry.field' if sys.platform == 'darwin' else 'textarea'
++    IDENTIFY_AS = ('Entry.field',) if sys.platform == 'darwin' else ('textarea',)
+ 
+     def setUp(self):
+         super().setUp()
+@@ -342,8 +342,7 @@ class EntryTest(AbstractWidgetTest, unittest.TestCase):
+         self.entry.pack()
+         self.entry.update()
+ 
+-        # bpo-27313: macOS Cocoa widget differs from X, allow either
+-        self.assertEqual(self.entry.identify(5, 5), self.IDENTIFY_AS)
++        self.assertIn(self.entry.identify(5, 5), self.IDENTIFY_AS)
+         self.assertEqual(self.entry.identify(-1, -1), "")
+ 
+         self.assertRaises(tkinter.TclError, self.entry.identify, None, 5)
+@@ -429,7 +428,7 @@ class ComboboxTest(EntryTest, unittest.TestCase):
+         'validate', 'validatecommand', 'values',
+         'width', 'xscrollcommand',
+     )
+-    IDENTIFY_AS = 'Combobox.button' if sys.platform == 'darwin' else 'textarea'
++    IDENTIFY_AS = ('Combobox.button', 'textarea') if sys.platform == 'darwin' else ('textarea',)
+ 
+     def setUp(self):
+         super().setUp()
+@@ -1123,7 +1122,7 @@ class SpinboxTest(EntryTest, unittest.TestCase):
+         'takefocus', 'textvariable', 'to', 'validate', 'validatecommand',
+         'values', 'width', 'wrap', 'xscrollcommand',
+     )
+-    IDENTIFY_AS = 'Spinbox.field' if sys.platform == 'darwin' else 'textarea'
++    IDENTIFY_AS = ('Spinbox.field',) if sys.platform == 'darwin' else ('textarea',)
+ 
+     def setUp(self):
+         super().setUp()
 diff --git a/Modules/Setup b/Modules/Setup
 index 87c6a15..2daa5c5 100644
 --- a/Modules/Setup
@@ -255,4 +367,3 @@ index e4f375d..4f799e4 100644
  #  include <netinet/tcp.h>
 -- 
 2.39.0
-

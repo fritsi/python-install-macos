@@ -1,21 +1,24 @@
-From 1291df614e739343512073b7f778686e7c82a5d7 Mon Sep 17 00:00:00 2001
+From 4e71dc2e330c08916a7215dbeaec4ab4d3683677 Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
-Date: Tue, 20 Dec 2022 16:15:52 +0100
+Date: Mon, 16 Jan 2023 15:27:40 +0100
 Subject: [PATCH] Python 3.8.16 patching
 
 ---
- Lib/distutils/tests/test_build_ext.py |  6 ++++++
- Lib/test/support/__init__.py          | 26 +++++++++++++++++---------
- Lib/test/test_gdb.py                  |  2 +-
- Lib/test/test_posix.py                |  8 ++++----
- Modules/Setup                         | 25 +++++++++++++++++--------
- Modules/_decimal/_decimal.c           |  4 ++--
- Modules/getaddrinfo.c                 |  1 +
- Modules/getnameinfo.c                 |  1 +
- Modules/socketmodule.c                |  1 +
- Modules/socketmodule.h                |  1 +
- setup.py                              |  2 +-
- 11 files changed, 52 insertions(+), 25 deletions(-)
+ Lib/distutils/tests/test_build_ext.py     |  6 ++++++
+ Lib/idlelib/idle_test/test_colorizer.py   |  1 +
+ Lib/idlelib/idle_test/test_outwin.py      |  1 +
+ Lib/test/support/__init__.py              | 18 ++++++++--------
+ Lib/test/test_gdb.py                      |  2 +-
+ Lib/test/test_posix.py                    |  8 ++++----
+ Lib/tkinter/test/test_ttk/test_widgets.py | 25 +++++++++++------------
+ Modules/Setup                             | 25 +++++++++++++++--------
+ Modules/_decimal/_decimal.c               |  4 ++--
+ Modules/getaddrinfo.c                     |  1 +
+ Modules/getnameinfo.c                     |  1 +
+ Modules/socketmodule.c                    |  1 +
+ Modules/socketmodule.h                    |  1 +
+ setup.py                                  |  2 +-
+ 14 files changed, 58 insertions(+), 38 deletions(-)
 
 diff --git a/Lib/distutils/tests/test_build_ext.py b/Lib/distutils/tests/test_build_ext.py
 index 808c0dc..7e4632f 100644
@@ -41,26 +44,35 @@ index 808c0dc..7e4632f 100644
          target = tuple(map(int, target.split('.')[0:2]))
          # format the target value as defined in the Apple
          # Availability Macros.  We can't use the macro names since
+diff --git a/Lib/idlelib/idle_test/test_colorizer.py b/Lib/idlelib/idle_test/test_colorizer.py
+index c31c492..6ed4e5e 100644
+--- a/Lib/idlelib/idle_test/test_colorizer.py
++++ b/Lib/idlelib/idle_test/test_colorizer.py
+@@ -147,6 +147,7 @@ class ColorDelegatorTest(unittest.TestCase):
+         root = cls.root = Tk()
+         root.withdraw()
+         text = cls.text = Text(root)
++        cls.text.update = cls.text.update_idletasks
+         cls.percolator = Percolator(text)
+         # Delegator stack = [Delegator(text)]
+ 
+diff --git a/Lib/idlelib/idle_test/test_outwin.py b/Lib/idlelib/idle_test/test_outwin.py
+index e347bfc..6b3bf48 100644
+--- a/Lib/idlelib/idle_test/test_outwin.py
++++ b/Lib/idlelib/idle_test/test_outwin.py
+@@ -18,6 +18,7 @@ class OutputWindowTest(unittest.TestCase):
+         root.withdraw()
+         w = cls.window = outwin.OutputWindow(None, None, None, root)
+         cls.text = w.text = Text(root)
++        cls.text.update = cls.text.update_idletasks
+ 
+     @classmethod
+     def tearDownClass(cls):
 diff --git a/Lib/test/support/__init__.py b/Lib/test/support/__init__.py
-index fa5a028..5eea095 100644
+index fa5a028..dcd877c 100644
 --- a/Lib/test/support/__init__.py
 +++ b/Lib/test/support/__init__.py
-@@ -491,7 +491,14 @@ def forget(modname):
- def _is_gui_available():
-     if hasattr(_is_gui_available, 'result'):
-         return _is_gui_available.result
-+
-+    if os.environ.get("UI_TESTS_ENABLED", "") != "1":
-+        _is_gui_available.reason = "fritsi: UI tests are disabled, because the 'UI_TESTS_ENABLED' environment variable is not set to '1'"
-+        _is_gui_available.result = False
-+        return _is_gui_available.result
-+
-     reason = None
-+
-     if sys.platform.startswith('win'):
-         # if Python is running as a service (such as the buildbot service),
-         # gui interaction may be disallowed
-@@ -532,15 +539,15 @@ def _is_gui_available():
+@@ -532,15 +532,15 @@ def _is_gui_available():
  
          if app_services.CGMainDisplayID() == 0:
              reason = "gui tests cannot run without OS X window manager"
@@ -85,14 +97,6 @@ index fa5a028..5eea095 100644
  
      # check on every platform whether tkinter can actually do anything
      if not reason:
-@@ -550,6 +557,7 @@ def _is_gui_available():
-             root.withdraw()
-             root.update()
-             root.destroy()
-+            root.quit()
-         except Exception as e:
-             err_string = str(e)
-             if len(err_string) > 50:
 diff --git a/Lib/test/test_gdb.py b/Lib/test/test_gdb.py
 index d90ca5a..4be2c0e 100644
 --- a/Lib/test/test_gdb.py
@@ -139,6 +143,85 @@ index 9bdd284..3f6028d 100644
          # groups, ignoring order, duplicates, and the effective gid.
          # #10822/#26944 - It is implementation defined whether
          # posix.getgroups() includes the effective gid.
+diff --git a/Lib/tkinter/test/test_ttk/test_widgets.py b/Lib/tkinter/test/test_ttk/test_widgets.py
+index 88a800d..0681304 100644
+--- a/Lib/tkinter/test/test_ttk/test_widgets.py
++++ b/Lib/tkinter/test/test_ttk/test_widgets.py
+@@ -287,6 +287,7 @@ class EntryTest(AbstractWidgetTest, unittest.TestCase):
+         'show', 'state', 'style', 'takefocus', 'textvariable',
+         'validate', 'validatecommand', 'width', 'xscrollcommand',
+     )
++    IDENTIFY_AS = ('Entry.field',) if sys.platform == 'darwin' else ('textarea',)
+ 
+     def setUp(self):
+         super().setUp()
+@@ -330,12 +331,7 @@ class EntryTest(AbstractWidgetTest, unittest.TestCase):
+         self.entry.pack()
+         self.entry.update()
+ 
+-        # bpo-27313: macOS Cocoa widget differs from X, allow either
+-        if sys.platform == 'darwin':
+-            self.assertIn(self.entry.identify(5, 5),
+-                ("textarea", "Combobox.button") )
+-        else:
+-            self.assertEqual(self.entry.identify(5, 5), "textarea")
++        self.assertIn(self.entry.identify(5, 5), self.IDENTIFY_AS)
+         self.assertEqual(self.entry.identify(-1, -1), "")
+ 
+         self.assertRaises(tkinter.TclError, self.entry.identify, None, 5)
+@@ -424,6 +420,7 @@ class ComboboxTest(EntryTest, unittest.TestCase):
+         'validate', 'validatecommand', 'values',
+         'width', 'xscrollcommand',
+     )
++    IDENTIFY_AS = ('Combobox.button', 'textarea') if sys.platform == 'darwin' else ('textarea',)
+ 
+     def setUp(self):
+         super().setUp()
+@@ -439,7 +436,8 @@ class ComboboxTest(EntryTest, unittest.TestCase):
+     def _show_drop_down_listbox(self):
+         width = self.combo.winfo_width()
+         x, y = width - 5, 5
+-        self.assertRegex(self.combo.identify(x, y), r'.*downarrow\Z')
++        if sys.platform != 'darwin':  # there's no down arrow on macOS
++            self.assertRegex(self.combo.identify(x, y), r'.*downarrow\Z')
+         self.combo.event_generate('<ButtonPress-1>', x=x, y=y)
+         self.combo.event_generate('<ButtonRelease-1>', x=x, y=y)
+         self.combo.update_idletasks()
+@@ -1089,7 +1087,8 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
+ 
+         self.nb.select(0)
+ 
+-        self.assertEqual(self.nb.identify(5, 5), 'focus')
++        focus_identify_as = 'focus' if sys.platform != 'darwin' else ''
++        self.assertEqual(self.nb.identify(5, 5), focus_identify_as)
+         simulate_mouse_click(self.nb, 5, 5)
+         self.nb.focus_force()
+         self.nb.event_generate('<Control-Tab>')
+@@ -1104,12 +1103,11 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
+         self.nb.tab(self.child1, text='a', underline=0)
+         self.nb.enable_traversal()
+         self.nb.focus_force()
+-        self.assertEqual(self.nb.identify(5, 5), 'focus')
++        self.assertEqual(self.nb.identify(5, 5), focus_identify_as)
+         simulate_mouse_click(self.nb, 5, 5)
+-        if sys.platform == 'darwin':
+-            self.nb.event_generate('<Option-a>')
+-        else:
+-            self.nb.event_generate('<Alt-a>')
++        # on macOS Emacs-style keyboard shortcuts are region-dependent;
++        # let's use the regular arrow keys instead
++        self.nb.event_generate('<Left>' if sys.platform == 'darwin' else '<Alt-a>')
+         self.assertEqual(self.nb.select(), str(self.child1))
+ 
+ @add_standard_options(IntegerSizeTests, StandardTtkOptionsTests)
+@@ -1121,6 +1119,7 @@ class SpinboxTest(EntryTest, unittest.TestCase):
+         'takefocus', 'textvariable', 'to', 'validate', 'validatecommand',
+         'values', 'width', 'wrap', 'xscrollcommand',
+     )
++    IDENTIFY_AS = ('Spinbox.field',) if sys.platform == 'darwin' else ('textarea',)
+ 
+     def setUp(self):
+         super().setUp()
 diff --git a/Modules/Setup b/Modules/Setup
 index 983fa01..13e7150 100644
 --- a/Modules/Setup
@@ -284,4 +367,3 @@ index 57be07a..3b01f9c 100644
          else:
 -- 
 2.39.0
-
