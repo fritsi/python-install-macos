@@ -1,7 +1,7 @@
-From dbf913ec2d9f1399e502cbe6bf6f7dc43b567a49 Mon Sep 17 00:00:00 2001
+From b70ca5a9cc82a8c31d1b9a34a92248f15f519abc Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
 Date: Mon, 16 Jan 2023 15:29:00 +0100
-Subject: [PATCH] Python 3.11.1 patching
+Subject: [PATCH] Python 3.11.2 patching
 
 ---
  Lib/distutils/tests/test_build_ext.py     |  6 ++
@@ -339,7 +339,7 @@ index 335021f..b2c2e4a 100644
  #include <arpa/inet.h>
  #include <arpa/nameser.h>
 diff --git a/Modules/socketmodule.c b/Modules/socketmodule.c
-index 14af496..69a8858 100644
+index 0e319a4..7b900aa 100644
 --- a/Modules/socketmodule.c
 +++ b/Modules/socketmodule.c
 @@ -219,6 +219,7 @@ shutdown(how) -- shut down traffic in one or both directions\n\
@@ -363,10 +363,10 @@ index 1b35b11..61bc720 100644
  # include <netinet/tcp.h>
  
 diff --git a/setup.py b/setup.py
-index 15d0d45..7ad963e 100644
+index 4f122b6..0cb2ad3 100644
 --- a/setup.py
 +++ b/setup.py
-@@ -1468,12 +1468,85 @@ class PyBuildExt(build_ext):
+@@ -1471,12 +1471,85 @@ class PyBuildExt(build_ext):
  
      def detect_decimal(self):
          # Stefan Krah's _decimal module
@@ -456,4 +456,4 @@ index 15d0d45..7ad963e 100644
          )
  
 -- 
-2.39.0
+2.39.2

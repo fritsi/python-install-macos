@@ -12,8 +12,8 @@ This script will download the given version of the Python source code, compile i
 
 **NOTE:** Currently only macOS is supported!
 
-**Supported Python versions:** `2.7.18`**,** `3.6.15`**,** `3.7.16`**,** `3.8.16`**,** `3.9.16`**,** `3.10.9`
-**,** `3.11.1`.
+**Supported Python versions:** `2.7.18`**,** `3.6.15`**,** `3.7.16`**,** `3.8.16`**,** `3.9.16`**,** `3.10.10`
+**,** `3.11.2`.
 
 The given `installBaseDir` will not be the final install directory, but a subdirectory in that.
 For example in case of Python 3.8 it will be `{installBaseDir}/python-3.8`.
@@ -30,8 +30,6 @@ If there are test failures, the script will stop and ask you if you'd like to co
 **NOTE 2:** While running the tests, you might see a pop-up window asking you to allow Python to connect to the network.
 These are for the socket/ssl related tests. It's safe to allow.
 
-**NOTE 3:** Currently the UI (Tkinter) related tests are deliberately skipped as they are unstable.
-
 <ins>**Optional arguments:**</ins>
 
 * **--non-interactive** - If given then we won't ask for confirmations.
@@ -41,7 +39,7 @@ These are for the socket/ssl related tests. It's safe to allow.
 
 * **--keep-working-dir** - We'll keep the working directory after the script finished / exited.
 
-* **--keep-test-results** - We'll keep the test log and test result xml files even in case everything passed.
+* **--keep-test-logs** - We'll keep the test log file even in case everything passed.
 
 * **--dry-run** - We'll only print out the commands which would be executed. **NOTE:** Collecting GNU binaries will
   still be executed.

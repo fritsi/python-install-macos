@@ -29,7 +29,7 @@ source "$SCRIPTS_DIR/utils/fonts.sh"
 source "$SCRIPTS_DIR/utils/print-func.sh"
 source "$SCRIPTS_DIR/utils/exec-func.sh"
 
-SUPPORTED_VERSIONS=("2.7.18" "3.6.15" "3.7.16" "3.8.16" "3.9.16" "3.10.9" "3.11.1")
+SUPPORTED_VERSIONS=("2.7.18" "3.6.15" "3.7.16" "3.8.16" "3.9.16" "3.10.10" "3.11.2")
 
 SUPPORTED_VERSIONS_TEXT="$(versions="${SUPPORTED_VERSIONS[*]}" && echo "${versions// /, }")"
 
@@ -68,7 +68,7 @@ function printUsage() {
     sysout ""
     sysout "    ${FNT_BLD}--keep-working-dir${FNT_RST} - We'll keep the working directory after the script finished / exited."
     sysout ""
-    sysout "    ${FNT_BLD}--keep-test-results${FNT_RST} - We'll keep the test log file even in case everything passed."
+    sysout "    ${FNT_BLD}--keep-test-logs${FNT_RST} - We'll keep the test log file even in case everything passed."
     sysout ""
     sysout "    ${FNT_BLD}--dry-run${FNT_RST} - We'll only print out the commands which would be executed."
     sysout "                ${FNT_BLD}NOTE:${FNT_RST} Collecting GNU binaries will still be executed."
@@ -181,7 +181,7 @@ export G_PY_COMPILE_CURRENT_MILLIS
 export P_NON_INTERACTIVE=false
 export P_EXTRA_LINKS=false
 export P_KEEP_WORKING_DIR=false
-export P_KEEP_TEST_RESULTS=false
+export P_KEEP_TEST_LOGS=false
 export P_DRY_RUN_MODE=false
 
 # Checking the rest of the arguments
@@ -200,8 +200,8 @@ while [[ "$#" -gt 0 ]]; do
         --keep-working-dir)
             export P_KEEP_WORKING_DIR=true
             ;;
-        --keep-test-results)
-            export P_KEEP_TEST_RESULTS=true
+        --keep-test-logs)
+            export P_KEEP_TEST_LOGS=true
             ;;
         --dry-run)
             export P_DRY_RUN_MODE=true
@@ -227,7 +227,7 @@ if $P_DRY_RUN_MODE; then
     # When we are in dry run mode, then we control these variables
     export P_NON_INTERACTIVE=true
     export P_KEEP_WORKING_DIR=false
-    export P_KEEP_TEST_RESULTS=false
+    export P_KEEP_TEST_LOGS=false
 
     {
         echo "export WORKING_DIR=\"{SET THIS TO A TEMPORARY DIRECTORY}\""
@@ -675,8 +675,8 @@ function runTests() {
         # Turning on exit code check again
         set -euo pipefail
 
-        # Deleting the test log if we don't want to keep them
-        if ! $P_KEEP_TEST_RESULTS; then
+        # Deleting the test log if we don't want to keep it
+        if ! $P_KEEP_TEST_LOGS; then
             rm -rf "$testLogFile"
         fi
 

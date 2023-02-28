@@ -1,7 +1,7 @@
-From 79e8ea51342f6e0374b4202e50ca9a94d7edd661 Mon Sep 17 00:00:00 2001
+From fb1c368ed2fa4e5dcdf4919bf9f9178af4175cdb Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
-Date: Mon, 16 Jan 2023 15:28:36 +0100
-Subject: [PATCH] Python 3.10.9 patching
+Date: Sun, 26 Feb 2023 20:34:05 +0100
+Subject: [PATCH] Python 3.10.10 patching
 
 ---
  Lib/distutils/tests/test_build_ext.py     |  6 ++++
@@ -342,7 +342,7 @@ index db3e8ee..1924c64 100644
  #include <arpa/inet.h>
  #include <arpa/nameser.h>
 diff --git a/Modules/socketmodule.c b/Modules/socketmodule.c
-index 6a9ac2c..60825a4 100644
+index 0762a8d..a2b812d 100644
 --- a/Modules/socketmodule.c
 +++ b/Modules/socketmodule.c
 @@ -212,6 +212,7 @@ shutdown(how) -- shut down traffic in one or both directions\n\
@@ -366,4 +366,4 @@ index e4f375d..4f799e4 100644
  # if !defined(__CYGWIN__)
  #  include <netinet/tcp.h>
 -- 
-2.39.0
+2.39.2
