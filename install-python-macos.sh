@@ -28,6 +28,7 @@ SCRIPTS_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "$SCRIPTS_DIR/utils/fonts.sh"
 source "$SCRIPTS_DIR/utils/print-func.sh"
 source "$SCRIPTS_DIR/utils/exec-func.sh"
+source "$SCRIPTS_DIR/utils/utils.sh"
 
 SUPPORTED_VERSIONS=("2.7.18" "3.6.15" "3.7.16" "3.8.16" "3.9.16" "3.10.10" "3.11.2")
 
@@ -83,8 +84,8 @@ function printPreparationSteps() {
     sysout ""
     sysout "${FNT_BLD}brew install${FNT_RST} asciidoc autoconf bzip2 coreutils diffutils expat findutils gawk \\"
     sysout "             gcc gdbm gnu-sed gnu-tar gnu-which gnunet grep jq libffi libtool \\"
-    sysout "             libx11 libxcrypt libzip lzo mpdecimal ncurses openssl@1.1 openssl@3 \\"
-    sysout "             p7zip pkg-config readline sqlite tcl-tk unzip wget xz zlib"
+    sysout "             libx11 libxcrypt libzip lzo mpdecimal ncurses openssl@1.1 p7zip \\"
+    sysout "             pkg-config readline sqlite tcl-tk unzip wget xz zlib"
     sysout ""
     sysout "${FNT_BLD}${FNT_ULN}NOTE:${FNT_RST} The above command does ${FNT_BLD}not${FNT_RST} only install libraries, but also a couple of ${FNT_BLD}GNU${FNT_RST} executables."
     sysout "      These will not be used by default, but ${FNT_ITC}search-libraries.sh${FNT_RST} will temporarily add it to PATH."
@@ -369,59 +370,18 @@ else
     } >> "$G_PY_COMPILE_COMMANDS_FILE"
 fi
 
-if ! $P_DRY_RUN_MODE; then
-    sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Applying the patch file onto the Python source code"
-
-    # Copying the patch file to our working directory as we need to replace '__openssl_install_dir__' in it
-    cp "$SCRIPTS_DIR/patches/Python-$PYTHON_VERSION.patch" "$WORKING_DIR/Python-$PYTHON_VERSION.patch"
-else
-    echo "cp \"$SCRIPTS_DIR/patches/Python-$PYTHON_VERSION.patch\" \"\$WORKING_DIR/Python-$PYTHON_VERSION.patch\"" >> "$G_PY_COMPILE_COMMANDS_FILE"
-fi
-
-# Function to replace variables with a value in the patch file
-function substituteVariableInPatch() {
-    local variableName
-    local variableValue
-
-    variableName="$1"
-    variableValue="$2"
-
-    if ! $P_DRY_RUN_MODE; then
-        sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Substituting '$variableName' with '$variableValue' in the patch file"
-
-        sed -i "s/$variableName/$(echo "$variableValue" | sed 's/\//\\\//g' | sed 's/\./\\\./g')/g" "$WORKING_DIR/Python-$PYTHON_VERSION.patch"
-    else
-        echo "sed -i \"s/$variableName/$(echo "$variableValue" | sed 's/\//\\\//g' | sed 's/\./\\\./g')/g\" \"\$WORKING_DIR/Python-$PYTHON_VERSION.patch\"" >> "$G_PY_COMPILE_COMMANDS_FILE"
-    fi
-}
-
-if ! $P_DRY_RUN_MODE; then
-    sysout ""
-else
-    echo "" >> "$G_PY_COMPILE_COMMANDS_FILE"
-fi
-
-# Substituting some variable in the patch file
-substituteVariableInPatch "__openssl_install_dir__" "$L_OPENSSL_BASE"
-substituteVariableInPatch "__readline_install_dir__" "$L_READLINE_BASE"
-substituteVariableInPatch "__tcl_tk_install_dir__" "$L_TCL_TK_BASE"
-substituteVariableInPatch "__zlib_install_dir__" "$L_ZLIB_BASE"
-
-if ! $P_DRY_RUN_MODE; then
-    sysout ""
-else
-    echo "" >> "$G_PY_COMPILE_COMMANDS_FILE"
-fi
-
 # Applying the patch file
 
 if ! $P_DRY_RUN_MODE; then
-    patch -p1 < "$WORKING_DIR/Python-$PYTHON_VERSION.patch"
+    sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Applying the patch file onto the Python source code"
+    sysout ""
+
+    patch -p1 < "$SCRIPTS_DIR/patches/Python-$PYTHON_VERSION.patch"
 
     sysout ""
 else
     {
-        echo "patch -p1 < \"\$WORKING_DIR/Python-$PYTHON_VERSION.patch\""
+        echo "patch -p1 < \"$SCRIPTS_DIR/patches/Python-$PYTHON_VERSION.patch\""
         echo ""
     } >> "$G_PY_COMPILE_COMMANDS_FILE"
 fi
@@ -514,16 +474,9 @@ if [[ "$PY_VERSION_NUM" -ge 300 ]]; then
     CONFIGURE_PARAMS+=("--enable-loadable-sqlite-extensions")
 fi
 
-# On non Apple-Silicon machines if the Python version is >= 3.7, then
-# we add --enable-universalsdk and --with-universal-archs=intel-64 as well
-if ! $IS_APPLE_SILICON && [[ "$PY_VERSION_NUM" -ge 307 ]]; then
-    CONFIGURE_PARAMS+=("--enable-universalsdk")
-    CONFIGURE_PARAMS+=("--with-universal-archs=intel-64")
-fi
-
 # --with-tcltk-includes and --with-tcltk-libs is NOT available since Python 3.11
 if [[ "$PY_VERSION_NUM" -lt 311 ]]; then
-    CONFIGURE_PARAMS+=("--with-tcltk-includes=-I$L_TCL_TK_BASE/include")
+    CONFIGURE_PARAMS+=("--with-tcltk-includes=-I$L_TCL_TK_BASE/include -I$L_TCL_TK_BASE/include/tcl-tk")
     CONFIGURE_PARAMS+=("--with-tcltk-libs=-L$L_TCL_TK_BASE/lib -ltk8.6 -ltcl8.6 -DWITH_APPINIT")
 fi
 
@@ -558,6 +511,19 @@ function macOsVersion() {
 # Avoid linking to libgcc https://mail.python.org/pipermail/python-dev/2012-February/116205.html
 CONFIGURE_PARAMS+=("MACOSX_DEPLOYMENT_TARGET=$(macOsVersion)")
 
+# Setting the extra compiler flags we use in the setup files
+if ! $P_DRY_RUN_MODE; then
+    sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} export EXT_COMPILER_FLAGS=\"\$CPPFLAGS \$LDFLAGS\""
+    sysout ""
+
+    export EXT_COMPILER_FLAGS="$CPPFLAGS $LDFLAGS"
+else
+    {
+        echo "export EXT_COMPILER_FLAGS=\"\$CPPFLAGS \$LDFLAGS\""
+        echo ""
+    } >> "$G_PY_COMPILE_COMMANDS_FILE"
+fi
+
 # Configuring Python
 echoAndExec ./configure "${CONFIGURE_PARAMS[@]}" 2>&1
 
@@ -585,8 +551,15 @@ echoAndExec make "-j$((PROC_COUNT / 2))" 2>&1
 
 if ! $P_DRY_RUN_MODE; then
     sysout ""
+
+    # No longer need this
+    unset EXT_COMPILER_FLAGS
 else
-    echo "" >> "$G_PY_COMPILE_COMMANDS_FILE"
+    {
+        echo ""
+        echo "unset EXT_COMPILER_FLAGS"
+        echo ""
+    } >> "$G_PY_COMPILE_COMMANDS_FILE"
 fi
 
 if ! $P_NON_INTERACTIVE; then
@@ -724,11 +697,11 @@ echoAndExec make install 2>&1
 if ! $P_DRY_RUN_MODE; then
     sysout ""
 
-    unset LDFLAGS CPPFLAGS LD_LIBRARY_PATH PKG_CONFIG_PATH CC CXX LD
+    unset LDFLAGS CFLAGS CPPFLAGS CPATH LIBRARY_PATH PKG_CONFIG_PATH CC CXX LD
 else
     {
         echo ""
-        echo "unset LDFLAGS CPPFLAGS LD_LIBRARY_PATH PKG_CONFIG_PATH CC CXX LD"
+        echo "unset LDFLAGS CFLAGS CPPFLAGS CPATH LIBRARY_PATH PKG_CONFIG_PATH CC CXX LD"
         echo ""
     } >> "$G_PY_COMPILE_COMMANDS_FILE"
 fi
@@ -780,9 +753,10 @@ fi
 
 if ! $P_DRY_RUN_MODE; then
     # Adding our new and shiny Python installation to the PATH
-    export PATH="$PYTHON_INSTALL_BASE:$PATH"
+    prependVar PATH ':' "$PYTHON_INSTALL_BASE"
 
     sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Locations:"
+
     if [[ "$PY_POSTFIX" == "2.7" ]]; then
         sysout "    * python2: $(command -v "python2")"
         sysout "    * pip2: $(command -v "pip2")"
@@ -796,6 +770,7 @@ if ! $P_DRY_RUN_MODE; then
             sysout "    * pip3: $(command -v "pip3")"
         fi
     fi
+
     sysout ""
 
     sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Upgrading pip and setuptools"

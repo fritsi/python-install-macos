@@ -16,14 +16,14 @@ fi
 if [[ "$PY_VERSION_NUM" -ge 308 ]]; then
     # The latest libffi which comes from brew is fine for us
     # Let's prepend that to 'T_LIBRARIES_TO_LOOKUP' which is declared in libraries/search-libraries.sh
-    T_LIBRARIES_TO_LOOKUP="libffi $T_LIBRARIES_TO_LOOKUP"
+    prependVar T_LIBRARIES_TO_LOOKUP ' ' "libffi"
 
     # Nothing else to do
     return
 fi
 
 # We'll need to use libffi 3.3.x, let's prepend that to 'T_LIBRARIES_TO_LOOKUP'
-T_LIBRARIES_TO_LOOKUP="libffi33 $T_LIBRARIES_TO_LOOKUP"
+prependVar T_LIBRARIES_TO_LOOKUP ' ' "libffi33"
 
 sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Checking libffi33 ..."
 sysout ""

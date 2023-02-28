@@ -1,4 +1,4 @@
-From 0ae720384aa35bc4faa67bd5d90cd694a83fa9be Mon Sep 17 00:00:00 2001
+From 86ca8d70ea0344918911cb4b7c3fc1a09fc89e81 Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
 Date: Mon, 16 Jan 2023 15:26:52 +0100
 Subject: [PATCH] Python 3.6.15 patching
@@ -9,18 +9,19 @@ Subject: [PATCH] Python 3.6.15 patching
  Lib/distutils/tests/test_build_ext.py         |   8 +-
  Lib/idlelib/idle_test/test_outwin.py          |   1 +
  Lib/sysconfig.py                              |  12 +
- Lib/test/support/__init__.py                  |  18 +-
+ Lib/test/support/__init__.py                  |  20 +-
  Lib/test/test_bytes.py                        |   1 +
  Lib/test/test_gdb.py                          |   2 +-
  Lib/test/test_minidom.py                      |  17 +-
  Lib/test/test_platform.py                     |   2 +-
  Lib/test/test_posix.py                        |   8 +-
+ Lib/test/test_regrtest.py                     |  12 +
  Lib/test/test_unicode.py                      |   3 +
  Lib/test/test_xml_etree.py                    |   1 +
  Lib/tkinter/test/test_tkinter/test_widgets.py |   3 +-
  Lib/tkinter/test/test_ttk/test_widgets.py     |  25 +-
  Makefile.pre.in                               |   6 +-
- Modules/Setup.dist                            |  25 +-
+ Modules/Setup.dist                            |  12 +-
  Modules/_ctypes/_ctypes.c                     |  31 +++
  Modules/_ctypes/callproc.c                    | 114 +++++++-
  Modules/_ctypes/ctypes.h                      |   1 +
@@ -36,7 +37,7 @@ Subject: [PATCH] Python 3.6.15 patching
  configure.ac                                  |  19 +-
  pyconfig.h.in                                 |   3 +
  setup.py                                      | 262 +++++++++++++-----
- 32 files changed, 568 insertions(+), 152 deletions(-)
+ 33 files changed, 569 insertions(+), 152 deletions(-)
 
 diff --git a/Lib/ctypes/macholib/dyld.py b/Lib/ctypes/macholib/dyld.py
 index c158e67..e1c58fc 100644
@@ -186,7 +187,7 @@ index 9314e71..b12ff9f 100644
              except ValueError:
                  pass
 diff --git a/Lib/test/support/__init__.py b/Lib/test/support/__init__.py
-index 66c0fed..5d24fc0 100644
+index 66c0fed..978c8ad 100644
 --- a/Lib/test/support/__init__.py
 +++ b/Lib/test/support/__init__.py
 @@ -508,15 +508,15 @@ def _is_gui_available():
@@ -214,6 +215,15 @@ index 66c0fed..5d24fc0 100644
  
      # check on every platform whether tkinter can actually do anything
      if not reason:
+@@ -1923,7 +1923,7 @@ def _run_suite(suite):
+     if junit_xml_list is not None:
+         junit_xml_list.append(result.get_xml_element())
+ 
+-    if not result.testsRun:
++    if not result.testsRun and not result.skipped:
+         raise TestDidNotRun
+     if not result.wasSuccessful():
+         if len(result.errors) == 1 and not result.failures:
 diff --git a/Lib/test/test_bytes.py b/Lib/test/test_bytes.py
 index 7fa2a38..624cae7 100644
 --- a/Lib/test/test_bytes.py
@@ -331,6 +341,29 @@ index 2dae473..c7d0a76 100644
          # groups, ignoring order, duplicates, and the effective gid.
          # #10822/#26944 - It is implementation defined whether
          # posix.getgroups() includes the effective gid.
+diff --git a/Lib/test/test_regrtest.py b/Lib/test/test_regrtest.py
+index 5347bb1..459b672 100644
+--- a/Lib/test/test_regrtest.py
++++ b/Lib/test/test_regrtest.py
+@@ -1022,6 +1022,18 @@ class ArgsTestCase(BaseTestCase):
+         output = self.run_tests(testname, "-m", "nosuchtest", exitcode=0)
+         self.check_executed_tests(output, [testname], no_test_ran=testname)
+ 
++    def test_no_tests_ran_skip(self):
++        code = textwrap.dedent("""
++            import unittest
++            class Tests(unittest.TestCase):
++                def test_skipped(self):
++                    self.skipTest("because")
++        """)
++        testname = self.create_test(code=code)
++
++        output = self.run_tests(testname, exitcode=0)
++        self.check_executed_tests(output, [testname])
++
+     def test_no_tests_ran_multiple_tests_nonexistent(self):
+         code = textwrap.dedent("""
+             import unittest
 diff --git a/Lib/test/test_unicode.py b/Lib/test/test_unicode.py
 index 56ab0ad..013b1e9 100644
 --- a/Lib/test/test_unicode.py
@@ -459,62 +492,50 @@ index d15d935..7704b03 100644
  # report files for gcov / lcov coverage report
  COVERAGE_INFO=	$(abs_builddir)/coverage.info
 diff --git a/Modules/Setup.dist b/Modules/Setup.dist
-index e469d5e..19f8303 100644
+index e469d5e..c3d13f8 100644
 --- a/Modules/Setup.dist
 +++ b/Modules/Setup.dist
-@@ -164,7 +164,10 @@ _symtable symtablemodule.c
+@@ -164,7 +164,7 @@ _symtable symtablemodule.c
  # it, depending on your system -- see the GNU readline instructions.
  # It's okay for this to be a shared library, too.
  
 -#readline readline.c -lreadline -ltermcap
-+readline readline.c \
-+    -I__readline_install_dir__/include \
-+    -L__readline_install_dir__/lib \
-+    -lreadline -ltermcap
++readline readline.c $(EXT_COMPILER_FLAGS) -lreadline -ltermcap
  
  
  # Modules that should always be present (non UNIX dependent):
-@@ -202,14 +205,14 @@ _symtable symtablemodule.c
+@@ -202,14 +202,12 @@ _symtable symtablemodule.c
  #_csv _csv.c
  
  # Socket module helper for socket(2)
 -#_socket socketmodule.c
-+_socket socketmodule.c
++_socket socketmodule.c $(EXT_COMPILER_FLAGS)
  
  # Socket module helper for SSL support; you must comment out the other
  # socket line above, and possibly edit the SSL variable:
--#SSL=/usr/local/ssl
+ #SSL=/usr/local/ssl
 -#_ssl _ssl.c \
 -#	-DUSE_SSL -I$(SSL)/include -I$(SSL)/include/openssl \
 -#	-L$(SSL)/lib -lssl -lcrypto
-+SSL=__openssl_install_dir__
-+_ssl _ssl.c \
-+    -DUSE_SSL -I$(SSL)/include -I$(SSL)/include/openssl \
-+    -L$(SSL)/lib -lssl -lcrypto
++_ssl _ssl.c -DUSE_SSL $(EXT_COMPILER_FLAGS) -lssl -lcrypto
  
  # The crypt module is now disabled by default because it breaks builds
  # on many systems (where -lcrypt is needed), e.g. Linux (I believe).
-@@ -267,7 +270,10 @@ _symtable symtablemodule.c
+@@ -267,7 +265,7 @@ _symtable symtablemodule.c
  # every system.
  
  # *** Always uncomment this (leave the leading underscore in!):
 -# _tkinter _tkinter.c tkappinit.c -DWITH_APPINIT \
-+_tkinter _tkinter.c tkappinit.c -DWITH_APPINIT \
-+    -L__tcl_tk_install_dir__/lib \
-+    -I__tcl_tk_install_dir__/include \
-+    -ltk8.6 -ltcl8.6
++_tkinter _tkinter.c tkappinit.c -DWITH_APPINIT $(EXT_COMPILER_FLAGS) -ltk8.6 -ltcl8.6
  # *** Uncomment and edit to reflect where your Tcl/Tk libraries are:
  #	-L/usr/local/lib \
  # *** Uncomment and edit to reflect where your Tcl/Tk headers are:
-@@ -363,7 +369,10 @@ _symtable symtablemodule.c
+@@ -363,7 +361,7 @@ _symtable symtablemodule.c
  # Andrew Kuchling's zlib module.
  # This require zlib 1.1.3 (or later).
  # See http://www.gzip.org/zlib/
 -#zlib zlibmodule.c -I$(prefix)/include -L$(exec_prefix)/lib -lz
-+zlib zlibmodule.c \
-+    -I__zlib_install_dir__/include \
-+    -L__zlib_install_dir__/lib \
-+    -lz
++zlib zlibmodule.c $(EXT_COMPILER_FLAGS) -lz
  
  # Interface to the Expat XML parser
  # More information on Expat can be found at www.libexpat.org.
@@ -1503,4 +1524,4 @@ index e2c1898..6f7496b 100644
              depends = ['_decimal/docstrings.h']
          else:
 -- 
-2.39.0
+2.39.2

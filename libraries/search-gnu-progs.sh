@@ -6,25 +6,25 @@
 #############################################################################
 
 # Extra paths we'll add to 'PATH'
-G_PY_COMPILE_GNU_PROG_PATH=""
+export G_PY_COMPILE_GNU_PROG_PATH=""
 
 # Iterating over some programs which should be present on the PATH
-for programName in wget jq grep gnu-which gnu-tar gnu-sed gawk findutils coreutils autoconf asciidoc pkg-config; do
+for programName in pkg-config asciidoc autoconf coreutils findutils gawk gnu-sed gnu-tar gnu-which grep jq wget; do
     # Getting their base directory
     programDir="$(brew --prefix "$programName" 2> /dev/null || true)"
 
     # Validating the external program
     if [[ "$programDir" == "" ]] || [[ ! -d "$programDir" ]] || { [[ ! -d "$programDir/libexec/gnubin" ]] && [[ ! -d "$programDir/bin" ]]; }; then
-        sysout >&2 "[ERROR] Could not find $programName, did you install it with brew install $programName ?"
+        sysout >&2 "[ERROR] Could not find $programName, did you install it with brew install $programName?"
         sysout >&2 ""
         exit 1
     fi
 
     # Adding it to 'G_PY_COMPILE_GNU_PROG_PATH'
     if [[ -d "$programDir/libexec/gnubin" ]]; then
-        G_PY_COMPILE_GNU_PROG_PATH="$programDir/libexec/gnubin${G_PY_COMPILE_GNU_PROG_PATH:+:$G_PY_COMPILE_GNU_PROG_PATH}"
+        prependVar G_PY_COMPILE_GNU_PROG_PATH ':' "$programDir/libexec/gnubin"
     elif [[ -d "$programDir/bin" ]]; then
-        G_PY_COMPILE_GNU_PROG_PATH="$programDir/bin${G_PY_COMPILE_GNU_PROG_PATH:+:$G_PY_COMPILE_GNU_PROG_PATH}"
+        prependVar G_PY_COMPILE_GNU_PROG_PATH ':' "$programDir/bin"
     fi
 done
 
@@ -35,7 +35,7 @@ unset programName programDir
 sysout "${FNT_BLD}GNU_PROG_PATHS:${FNT_RST} $G_PY_COMPILE_GNU_PROG_PATH" && sysout ""
 
 # Prepending 'PATH' with 'G_PY_COMPILE_GNU_PROG_PATH' which we've assembled based on the libraries
-export PATH="$G_PY_COMPILE_GNU_PROG_PATH:$PATH"
+prependVar PATH ':' "$G_PY_COMPILE_GNU_PROG_PATH"
 
 # No longer unsetting this as we need it in case of dry run mode
 # unset G_PY_COMPILE_GNU_PROG_PATH

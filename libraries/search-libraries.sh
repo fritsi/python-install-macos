@@ -4,33 +4,41 @@
 
 # Initializing the compiler "flags" as empty strings
 export LDFLAGS=""
+export CFLAGS=""
 export CPPFLAGS=""
-export LD_LIBRARY_PATH=""
+export CPATH=""
+export LIBRARY_PATH=""
 export PKG_CONFIG_PATH=""
 
 # The list of libraries we need to look-up, and set include / lib directories based on them for the compiler
 # Some of them are definitely mandatory, others are optional for the Python build
-T_LIBRARIES_TO_LOOKUP="bzip2 expat gdbm libxcrypt libzip mpdecimal ncurses readline sqlite tcl-tk xz zlib"
+export T_LIBRARIES_TO_LOOKUP="zlib xz tcl-tk sqlite readline ncurses mpdecimal libzip libxcrypt gdbm expat bzip2"
 
 # Checking which version of libffi we need to use, and whether we need to install an older version or not
 source "$SCRIPTS_DIR/libraries/setup-libffi.sh"
 
 # Adding OpenSSL to the libraries to look-up when we are compiling Python
 if $G_PYTHON_COMPILE; then
-    # From Python 3.8 we can use OpenSSL 3
-    if [[ "$PY_VERSION_NUM" -ge 308 ]]; then
-        T_LIBRARIES_TO_LOOKUP="openssl@3 $T_LIBRARIES_TO_LOOKUP"
-    # For older Python versions we need OpenSSL 1.1
-    else
-        T_LIBRARIES_TO_LOOKUP="openssl@1.1 $T_LIBRARIES_TO_LOOKUP"
-    fi
+    export T_LIBRARIES_TO_LOOKUP="$T_LIBRARIES_TO_LOOKUP openssl@1.1"
 fi
 
 # Extra paths we'll add to the 'PATH' variable
-T_EXTRA_PATH=""
+export T_EXTRA_PATH=""
 
 sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Searching for libraries ..."
 sysout ""
+
+function prependIncludeDir() {
+    if [[ ! -d "$2" ]]; then
+        sysout >&2 "[ERROR] Could not find $2, did you install $1 correctly?"
+        sysout >&2 ""
+        return 1
+    else
+        prependVar CFLAGS ' ' "-I$2"
+        prependVar CPPFLAGS ' ' "-I$2"
+        prependVar CPATH ':' "$2"
+    fi
+}
 
 # Iterating over all libraries we are interested in
 for libraryName in $T_LIBRARIES_TO_LOOKUP; do
@@ -39,35 +47,41 @@ for libraryName in $T_LIBRARIES_TO_LOOKUP; do
 
     # Validating the library
     if [[ "$libraryDir" == "" ]] || [[ ! -d "$libraryDir" ]] || [[ ! -d "$libraryDir/lib" ]] || [[ ! -d "$libraryDir/include" ]]; then
-        sysout >&2 "[ERROR] Could not find $libraryName, did you install it with brew install $libraryName ?"
+        sysout >&2 "[ERROR] Could not find $libraryName, did you install it with brew install $libraryName?"
         sysout >&2 ""
         exit 1
     fi
 
     # If the library has a bin folder, we add it to 'T_EXTRA_PATH'
     if [[ -d "$libraryDir/bin" ]]; then
-        T_EXTRA_PATH="${T_EXTRA_PATH:+$T_EXTRA_PATH:}$libraryDir/bin"
+        prependVar T_EXTRA_PATH ':' "$libraryDir/bin"
     fi
 
     # Adding the library to the compiler flags
-    export LDFLAGS="${LDFLAGS:+$LDFLAGS }-L$libraryDir/lib"
-    export CPPFLAGS="${CPPFLAGS:+$CPPFLAGS }-I$libraryDir/include"
-    export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}$libraryDir/lib"
+    prependVar LDFLAGS ' ' "-Wl,-rpath,$libraryDir/lib" "-L$libraryDir/lib"
+    prependVar LIBRARY_PATH ':' "$libraryDir/lib"
+
+    # OpenSSL also has an include/openssl subdirectory, handling that
+    # NOTE: This needs to be before the regular include directories
+    if [[ "$libraryName" =~ ^openssl.*$ ]]; then
+        prependIncludeDir "$libraryName" "$libraryDir/include/openssl"
+    # Similar to OpenSSL, handling an extra include directory for Tcl-Tk
+    elif [[ "$libraryName" == "tcl-tk" ]]; then
+        prependIncludeDir "$libraryName" "$libraryDir/include/tcl-tk"
+    fi
+
+    # Adding the include directory itself to the compiler flags
+    prependIncludeDir "$libraryName" "$libraryDir/include"
+
+    # ncurses also has an include/ncursesw subdirectory, handling that
+    # NOTE: This needs to be after the regular include directories
+    if [[ "$libraryName" == "ncurses" ]]; then
+        prependIncludeDir "$libraryName" "$libraryDir/include/ncursesw"
+    fi
 
     # Adding the optional package config to 'PKG_CONFIG_PATH'
     if [[ -d "$libraryDir/lib/pkgconfig" ]]; then
-        export PKG_CONFIG_PATH="${PKG_CONFIG_PATH:+$PKG_CONFIG_PATH:}$libraryDir/lib/pkgconfig"
-    fi
-
-    # OpenSSL also has an include/openssl subdirectory, handling that
-    if [[ "$libraryName" =~ ^openssl.*$ ]]; then
-        if [[ ! -d "$libraryDir/include/openssl" ]]; then
-            sysout >&2 "[ERROR] Could not find $libraryDir/include/openssl, did you install $libraryName correctly ?"
-            sysout >&2 ""
-            exit 1
-        else
-            export CPPFLAGS="${CPPFLAGS:+$CPPFLAGS }-I$libraryDir/include/openssl"
-        fi
+        prependVar PKG_CONFIG_PATH ':' "$libraryDir/lib/pkgconfig"
     fi
 
     # Some of the library locations are also needed by install-python-macos.sh directly, so saving those
@@ -75,17 +89,14 @@ for libraryName in $T_LIBRARIES_TO_LOOKUP; do
         openssl*)
             export L_OPENSSL_BASE="$libraryDir"
             ;;
-        readline)
-            export L_READLINE_BASE="$libraryDir"
-            ;;
         tcl-tk)
             export L_TCL_TK_BASE="$libraryDir"
             ;;
-        zlib)
-            export L_ZLIB_BASE="$libraryDir"
-            ;;
     esac
 done
+
+# We no longer need this function, and we don't want to expose it
+unset prependIncludeDir
 
 # Unsetting the loop variables
 unset T_LIBRARIES_TO_LOOKUP libraryName libraryDir
@@ -98,9 +109,13 @@ if ! ${P_DRY_RUN_MODE:-false}; then
     sysout ""
     sysout "    * ${FNT_BLD}LDFLAGS:${FNT_RST} $LDFLAGS"
     sysout ""
+    sysout "    * ${FNT_BLD}LIBRARY_PATH:${FNT_RST} $LIBRARY_PATH"
+    sysout ""
+    sysout "    * ${FNT_BLD}CFLAGS:${FNT_RST} $CFLAGS"
+    sysout ""
     sysout "    * ${FNT_BLD}CPPFLAGS:${FNT_RST} $CPPFLAGS"
     sysout ""
-    sysout "    * ${FNT_BLD}LD_LIBRARY_PATH:${FNT_RST} $LD_LIBRARY_PATH"
+    sysout "    * ${FNT_BLD}CPATH:${FNT_RST} $CPATH"
     sysout ""
     sysout "    * ${FNT_BLD}PKG_CONFIG_PATH:${FNT_RST} $PKG_CONFIG_PATH"
     sysout ""
@@ -110,9 +125,13 @@ else
         echo ""
         echo "export LDFLAGS=\"$LDFLAGS\""
         echo ""
+        echo "export LIBRARY_PATH=\"$LIBRARY_PATH\""
+        echo ""
+        echo "export CFLAGS=\"$CFLAGS\""
+        echo ""
         echo "export CPPFLAGS=\"$CPPFLAGS\""
         echo ""
-        echo "export LD_LIBRARY_PATH=\"$LD_LIBRARY_PATH\""
+        echo "export CPATH=\"$CPATH\""
         echo ""
         echo "export PKG_CONFIG_PATH=\"$PKG_CONFIG_PATH\""
         echo ""
@@ -120,7 +139,7 @@ else
 fi
 
 # Prepending 'PATH' with 'T_EXTRA_PATH' which we've assembled based on the libraries
-export PATH="$T_EXTRA_PATH:$PATH"
+prependVar PATH ':' "$T_EXTRA_PATH"
 
 # And finally, unsetting 'T_EXTRA_PATH' as we don't need it anymore
 unset T_EXTRA_PATH

@@ -1,4 +1,4 @@
-From ad4c00ebc2eb1d9c20cbdb8e16857cb9cf4765bb Mon Sep 17 00:00:00 2001
+From a7a9174c90d715eb8e9c895b73423e3f097c9e65 Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
 Date: Mon, 16 Jan 2023 15:26:35 +0100
 Subject: [PATCH] Python 2.7.18 patching
@@ -22,7 +22,7 @@ Subject: [PATCH] Python 2.7.18 patching
  Mac/Modules/qt/setup.py                      |   2 +-
  Mac/Tools/pythonw.c                          |   6 +
  Makefile.pre.in                              |   6 +-
- Modules/Setup.dist                           |  20 +-
+ Modules/Setup.dist                           |  10 +-
  Modules/_ctypes/_ctypes.c                    |  31 +++
  Modules/_ctypes/_ctypes_test.c               |   6 +-
  Modules/_ctypes/callproc.c                   | 131 +++++++++--
@@ -36,7 +36,7 @@ Subject: [PATCH] Python 2.7.18 patching
  configure.ac                                 |   9 +
  pyconfig.h.in                                |   3 +
  setup.py                                     | 216 ++++++++++++++-----
- 32 files changed, 475 insertions(+), 126 deletions(-)
+ 32 files changed, 466 insertions(+), 125 deletions(-)
 
 diff --git a/Lib/ctypes/macholib/dyld.py b/Lib/ctypes/macholib/dyld.py
 index 1fdf8d6..8553106 100644
@@ -488,50 +488,41 @@ index 2a14f33..f661fb8 100644
  # report files for gcov / lcov coverage report
  COVERAGE_INFO=	$(abs_builddir)/coverage.info
 diff --git a/Modules/Setup.dist b/Modules/Setup.dist
-index bbc9222..29ee786 100644
+index bbc9222..31cd1e6 100644
 --- a/Modules/Setup.dist
 +++ b/Modules/Setup.dist
-@@ -163,7 +163,10 @@ GLHACK=-Dclear=__GLclear
+@@ -163,7 +163,7 @@ GLHACK=-Dclear=__GLclear
  # it, depending on your system -- see the GNU readline instructions.
  # It's okay for this to be a shared library, too.
  
 -#readline readline.c -lreadline -ltermcap
-+readline readline.c \
-+    -I__readline_install_dir__/include \
-+    -L__readline_install_dir__/lib \
-+    -lreadline -ltermcap
++readline readline.c $(EXT_COMPILER_FLAGS) -lreadline -ltermcap
  
  
  # Modules that should always be present (non UNIX dependent):
-@@ -211,14 +214,14 @@ GLHACK=-Dclear=__GLclear
+@@ -211,14 +211,12 @@ GLHACK=-Dclear=__GLclear
  #_csv _csv.c
  
  # Socket module helper for socket(2)
 -#_socket socketmodule.c timemodule.c
-+_socket socketmodule.c timemodule.c
++_socket socketmodule.c timemodule.c $(EXT_COMPILER_FLAGS)
  
  # Socket module helper for SSL support; you must comment out the other
  # socket line above, and possibly edit the SSL variable:
--#SSL=/usr/local/ssl
+ #SSL=/usr/local/ssl
 -#_ssl _ssl.c \
 -#	-DUSE_SSL -I$(SSL)/include -I$(SSL)/include/openssl \
 -#	-L$(SSL)/lib -lssl -lcrypto
-+SSL=__openssl_install_dir__
-+_ssl _ssl.c \
-+    -DUSE_SSL -I$(SSL)/include -I$(SSL)/include/openssl \
-+    -L$(SSL)/lib -lssl -lcrypto
++_ssl _ssl.c -DUSE_SSL $(EXT_COMPILER_FLAGS) -lssl -lcrypto
  
  # The crypt module is now disabled by default because it breaks builds
  # on many systems (where -lcrypt is needed), e.g. Linux (I believe).
-@@ -464,7 +467,10 @@ GLHACK=-Dclear=__GLclear
+@@ -464,7 +462,7 @@ GLHACK=-Dclear=__GLclear
  # Andrew Kuchling's zlib module.
  # This require zlib 1.1.3 (or later).
  # See http://www.gzip.org/zlib/
 -#zlib zlibmodule.c -I$(prefix)/include -L$(exec_prefix)/lib -lz
-+zlib zlibmodule.c \
-+    -I__zlib_install_dir__/include \
-+    -L__zlib_install_dir__/lib \
-+    -lz
++zlib zlibmodule.c $(EXT_COMPILER_FLAGS) -lz
  
  # Interface to the Expat XML parser
  # More information on Expat can be found at www.libexpat.org.
@@ -1312,4 +1303,4 @@ index f764223..ff2298a 100644
              self.use_system_libffi = True
  
 -- 
-2.39.0
+2.39.2

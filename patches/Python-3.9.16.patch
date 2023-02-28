@@ -1,4 +1,4 @@
-From a8fe0a6467e38d61468d995677f0eaef157fd9d7 Mon Sep 17 00:00:00 2001
+From 85c3da4dc2d164781e36364554b4ac9392f24e4a Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
 Date: Mon, 16 Jan 2023 15:28:14 +0100
 Subject: [PATCH] Python 3.9.16 patching
@@ -7,18 +7,18 @@ Subject: [PATCH] Python 3.9.16 patching
  Lib/distutils/tests/test_build_ext.py     |  6 ++++++
  Lib/idlelib/idle_test/test_colorizer.py   |  1 +
  Lib/idlelib/idle_test/test_outwin.py      |  1 +
- Lib/test/support/__init__.py              | 18 ++++++++--------
+ Lib/test/support/__init__.py              | 18 +++++++++---------
  Lib/test/test_gdb.py                      |  2 +-
  Lib/test/test_posix.py                    |  8 ++++----
- Lib/tkinter/test/test_ttk/test_widgets.py |  9 ++++----
- Modules/Setup                             | 25 +++++++++++++++--------
+ Lib/tkinter/test/test_ttk/test_widgets.py |  9 ++++-----
+ Modules/Setup                             | 12 +++++-------
  Modules/_decimal/_decimal.c               |  4 ++--
  Modules/getaddrinfo.c                     |  1 +
  Modules/getnameinfo.c                     |  1 +
  Modules/socketmodule.c                    |  1 +
  Modules/socketmodule.h                    |  1 +
  setup.py                                  |  2 +-
- 14 files changed, 50 insertions(+), 30 deletions(-)
+ 14 files changed, 38 insertions(+), 29 deletions(-)
 
 diff --git a/Lib/distutils/tests/test_build_ext.py b/Lib/distutils/tests/test_build_ext.py
 index 808c0dc..7e4632f 100644
@@ -185,62 +185,50 @@ index 1cb7e74..08265ce 100644
      def setUp(self):
          super().setUp()
 diff --git a/Modules/Setup b/Modules/Setup
-index 02cfb67..7d806eb 100644
+index 02cfb67..bd8d3b3 100644
 --- a/Modules/Setup
 +++ b/Modules/Setup
-@@ -164,7 +164,10 @@ _symtable symtablemodule.c
+@@ -164,7 +164,7 @@ _symtable symtablemodule.c
  # it, depending on your system -- see the GNU readline instructions.
  # It's okay for this to be a shared library, too.
  
 -#readline readline.c -lreadline -ltermcap
-+readline readline.c \
-+    -I__readline_install_dir__/include \
-+    -L__readline_install_dir__/lib \
-+    -lreadline -ltermcap
++readline readline.c $(EXT_COMPILER_FLAGS) -lreadline -ltermcap
  
  
  # Modules that should always be present (non UNIX dependent):
-@@ -207,14 +210,14 @@ _symtable symtablemodule.c
+@@ -207,14 +207,12 @@ _symtable symtablemodule.c
  #_csv _csv.c
  
  # Socket module helper for socket(2)
 -#_socket socketmodule.c
-+_socket socketmodule.c
++_socket socketmodule.c $(EXT_COMPILER_FLAGS)
  
  # Socket module helper for SSL support; you must comment out the other
  # socket line above, and possibly edit the SSL variable:
--#SSL=/usr/local/ssl
+ #SSL=/usr/local/ssl
 -#_ssl _ssl.c \
 -#	-DUSE_SSL -I$(SSL)/include -I$(SSL)/include/openssl \
 -#	-L$(SSL)/lib -lssl -lcrypto
-+SSL=__openssl_install_dir__
-+_ssl _ssl.c \
-+    -DUSE_SSL -I$(SSL)/include -I$(SSL)/include/openssl \
-+    -L$(SSL)/lib -lssl -lcrypto
++_ssl _ssl.c -DUSE_SSL $(EXT_COMPILER_FLAGS) -lssl -lcrypto
  
  # The crypt module is now disabled by default because it breaks builds
  # on many systems (where -lcrypt is needed), e.g. Linux (I believe).
-@@ -270,7 +273,10 @@ _symtable symtablemodule.c
+@@ -270,7 +268,7 @@ _symtable symtablemodule.c
  # every system.
  
  # *** Always uncomment this (leave the leading underscore in!):
 -# _tkinter _tkinter.c tkappinit.c -DWITH_APPINIT \
-+_tkinter _tkinter.c tkappinit.c -DWITH_APPINIT \
-+    -L__tcl_tk_install_dir__/lib \
-+    -I__tcl_tk_install_dir__/include \
-+    -ltk8.6 -ltcl8.6
++_tkinter _tkinter.c tkappinit.c -DWITH_APPINIT $(EXT_COMPILER_FLAGS) -ltk8.6 -ltcl8.6
  # *** Uncomment and edit to reflect where your Tcl/Tk libraries are:
  #	-L/usr/local/lib \
  # *** Uncomment and edit to reflect where your Tcl/Tk headers are:
-@@ -338,7 +344,10 @@ _symtable symtablemodule.c
+@@ -338,7 +336,7 @@ _symtable symtablemodule.c
  # Andrew Kuchling's zlib module.
  # This require zlib 1.1.3 (or later).
  # See http://www.gzip.org/zlib/
 -#zlib zlibmodule.c -I$(prefix)/include -L$(exec_prefix)/lib -lz
-+zlib zlibmodule.c \
-+    -I__zlib_install_dir__/include \
-+    -L__zlib_install_dir__/lib \
-+    -lz
++zlib zlibmodule.c $(EXT_COMPILER_FLAGS) -lz
  
  # Interface to the Expat XML parser
  # More information on Expat can be found at www.libexpat.org.
@@ -328,4 +316,4 @@ index 0bec170..9b75e53 100644
              depends = ['_decimal/docstrings.h']
          else:
 -- 
-2.39.0
+2.39.2

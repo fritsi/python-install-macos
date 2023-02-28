@@ -55,8 +55,8 @@ If you want to move it, you need to re-compile the whole thing again into the ne
 ```shell
 brew install asciidoc autoconf bzip2 coreutils diffutils expat findutils gawk \
              gcc gdbm gnu-sed gnu-tar gnu-which gnunet grep jq libffi libtool \
-             libx11 libxcrypt libzip lzo mpdecimal ncurses openssl@1.1 openssl@3 \
-             p7zip pkg-config readline sqlite tcl-tk unzip wget xz zlib
+             libx11 libxcrypt libzip lzo mpdecimal ncurses openssl@1.1 p7zip \
+             pkg-config readline sqlite tcl-tk unzip wget xz zlib
 ```
 
 The above command does **not** only install libraries, but also a couple of **GNU** executables.

@@ -40,6 +40,7 @@ SCRIPTS_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "$SCRIPTS_DIR/utils/fonts.sh"
 source "$SCRIPTS_DIR/utils/print-func.sh"
 source "$SCRIPTS_DIR/utils/exec-func.sh"
+source "$SCRIPTS_DIR/utils/utils.sh"
 
 # Searching for GNU programs and adding them to the PATH
 source "$SCRIPTS_DIR/libraries/search-gnu-progs.sh"
@@ -115,7 +116,7 @@ export CXX="/usr/bin/g++"
 export LD="/usr/bin/g++"
 
 # We don't need these
-unset LDFLAGS CPPFLAGS LD_LIBRARY_PATH PKG_CONFIG_PATH
+unset LDFLAGS CFLAGS CPPFLAGS CPATH LIBRARY_PATH PKG_CONFIG_PATH
 
 # OpenSSL 1.0 does not have Apple Silicon support by default, so let's add it
 if $IS_APPLE_SILICON; then

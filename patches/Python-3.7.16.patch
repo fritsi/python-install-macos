@@ -1,4 +1,4 @@
-From 56c2af37d9f84cfd17ae57a848d0be115759392a Mon Sep 17 00:00:00 2001
+From 86661619b88d783b4ab4aee1c479cfeb1b58b6d9 Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
 Date: Mon, 16 Jan 2023 15:27:12 +0100
 Subject: [PATCH] Python 3.7.16 patching
@@ -19,7 +19,7 @@ Subject: [PATCH] Python 3.7.16 patching
  Lib/tkinter/test/test_tkinter/test_misc.py |   1 +
  Lib/tkinter/test/test_ttk/test_widgets.py  |  26 ++---
  Makefile.pre.in                            |   6 +-
- Modules/Setup.dist                         |  25 +++--
+ Modules/Setup.dist                         |  12 +--
  Modules/_ctypes/_ctypes.c                  |  31 ++++++
  Modules/_ctypes/callproc.c                 | 114 ++++++++++++++++++---
  Modules/_ctypes/ctypes.h                   |   1 +
@@ -33,7 +33,7 @@ Subject: [PATCH] Python 3.7.16 patching
  configure.ac                               |   6 ++
  pyconfig.h.in                              |   3 +
  setup.py                                   |  67 +++++++++---
- 29 files changed, 319 insertions(+), 68 deletions(-)
+ 29 files changed, 307 insertions(+), 67 deletions(-)
 
 diff --git a/Lib/ctypes/macholib/dyld.py b/Lib/ctypes/macholib/dyld.py
 index 9d86b05..931a9e7 100644
@@ -389,62 +389,50 @@ index ef2bfb1..f38c5a8 100644
  # report files for gcov / lcov coverage report
  COVERAGE_INFO=	$(abs_builddir)/coverage.info
 diff --git a/Modules/Setup.dist b/Modules/Setup.dist
-index 344e03a..87cfa29 100644
+index 344e03a..cb88987 100644
 --- a/Modules/Setup.dist
 +++ b/Modules/Setup.dist
-@@ -165,7 +165,10 @@ _symtable symtablemodule.c
+@@ -165,7 +165,7 @@ _symtable symtablemodule.c
  # it, depending on your system -- see the GNU readline instructions.
  # It's okay for this to be a shared library, too.
  
 -#readline readline.c -lreadline -ltermcap
-+readline readline.c \
-+    -I__readline_install_dir__/include \
-+    -L__readline_install_dir__/lib \
-+    -lreadline -ltermcap
++readline readline.c $(EXT_COMPILER_FLAGS) -lreadline -ltermcap
  
  
  # Modules that should always be present (non UNIX dependent):
-@@ -204,14 +207,14 @@ _symtable symtablemodule.c
+@@ -204,14 +204,12 @@ _symtable symtablemodule.c
  #_csv _csv.c
  
  # Socket module helper for socket(2)
 -#_socket socketmodule.c
-+_socket socketmodule.c
++_socket socketmodule.c $(EXT_COMPILER_FLAGS)
  
  # Socket module helper for SSL support; you must comment out the other
  # socket line above, and possibly edit the SSL variable:
--#SSL=/usr/local/ssl
+ #SSL=/usr/local/ssl
 -#_ssl _ssl.c \
 -#	-DUSE_SSL -I$(SSL)/include -I$(SSL)/include/openssl \
 -#	-L$(SSL)/lib -lssl -lcrypto
-+SSL=__openssl_install_dir__
-+_ssl _ssl.c \
-+    -DUSE_SSL -I$(SSL)/include -I$(SSL)/include/openssl \
-+    -L$(SSL)/lib -lssl -lcrypto
++_ssl _ssl.c -DUSE_SSL $(EXT_COMPILER_FLAGS) -lssl -lcrypto
  
  # The crypt module is now disabled by default because it breaks builds
  # on many systems (where -lcrypt is needed), e.g. Linux (I believe).
-@@ -267,7 +270,10 @@ _symtable symtablemodule.c
+@@ -267,7 +265,7 @@ _symtable symtablemodule.c
  # every system.
  
  # *** Always uncomment this (leave the leading underscore in!):
 -# _tkinter _tkinter.c tkappinit.c -DWITH_APPINIT \
-+_tkinter _tkinter.c tkappinit.c -DWITH_APPINIT \
-+    -L__tcl_tk_install_dir__/lib \
-+    -I__tcl_tk_install_dir__/include \
-+    -ltk8.6 -ltcl8.6
++_tkinter _tkinter.c tkappinit.c -DWITH_APPINIT $(EXT_COMPILER_FLAGS) -ltk8.6 -ltcl8.6
  # *** Uncomment and edit to reflect where your Tcl/Tk libraries are:
  #	-L/usr/local/lib \
  # *** Uncomment and edit to reflect where your Tcl/Tk headers are:
-@@ -335,7 +341,10 @@ _symtable symtablemodule.c
+@@ -335,7 +333,7 @@ _symtable symtablemodule.c
  # Andrew Kuchling's zlib module.
  # This require zlib 1.1.3 (or later).
  # See http://www.gzip.org/zlib/
 -#zlib zlibmodule.c -I$(prefix)/include -L$(exec_prefix)/lib -lz
-+zlib zlibmodule.c \
-+    -I__zlib_install_dir__/include \
-+    -L__zlib_install_dir__/lib \
-+    -lz
++zlib zlibmodule.c $(EXT_COMPILER_FLAGS) -lz
  
  # Interface to the Expat XML parser
  # More information on Expat can be found at www.libexpat.org.
@@ -958,4 +946,4 @@ index bf90600..b530d36 100644
              depends = ['_decimal/docstrings.h']
          else:
 -- 
-2.39.0
+2.39.2
