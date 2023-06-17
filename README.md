@@ -1,66 +1,66 @@
 ## Description
 
-These scripts will help you in compiling Python from source for Apple Intel and Apple Silicon.
+This documentation provides scripts that assist in compiling Python from source for both Apple Intel and Apple Silicon platforms.
 
-**Tested on Apple Intel macOS BigSur and Apple M1 macOS Montgomery.**
+**Tested on Apple Intel macOS Big Sur and Apple M1 macOS Montgomery.**
 
 ## Usage
 
 **Usage:** `./install-python-macos.sh {pythonVersion} {installBaseDir}`
 
-This script will download the given version of the Python source code, compile it, and install it to the given location.
+Running this script will download the specified version of the Python source code, compile it, and install it in the designated location.
 
-**NOTE:** Currently only macOS is supported!
+**NOTE:** Currently, only macOS is supported!
 
 **Supported Python versions:** `2.7.18`**,** `3.6.15`**,** `3.7.17`**,** `3.8.17`**,** `3.9.17`**,** `3.10.12`
 **,** `3.11.4`.
 
-The given `installBaseDir` will not be the final install directory, but a subdirectory in that.
-For example in case of Python 3.8 it will be `{installBaseDir}/python-3.8`.
+The provided `installBaseDir` is not the final installation directory, but a subdirectory within it.
+For example, for Python 3.8, it will be `{installBaseDir}/python-3.8`.
 
-The script will ask you whether you want to run the Python tests or not.
-This can be used to check whether everything is okay with the compiled Python or not.
+The script will prompt you to choose whether you want to run the Python tests or not.
+This allows you to verify the integrity of the compiled Python installation.
 
-**If you followed the instructions, you should have no failures.**
+**If you followed the instructions, there should be no failures.**
 
-If there are test failures, the script will stop and ask you if you'd like to continue.
+If any test failures occur, the script will pause and ask if you want to proceed.
 
-**NOTE:** In case of non-interactive mode, the script will always run these tests.
+**NOTE:** In non-interactive mode, the script will always run the tests.
 
-**NOTE 2:** While running the tests, you might see a pop-up window asking you to allow Python to connect to the network.
-These are for the socket/ssl related tests. It's safe to allow.
+**NOTE 2:** During the test execution, you may see a pop-up window requesting permission for Python to connect to the network.
+This is related to socket/ssl tests and is safe to allow.
 
 <ins>**Optional arguments:**</ins>
 
-* **--non-interactive** - If given then we won't ask for confirmations.
+* **--non-interactive** - If provided, no confirmation prompts will be displayed.
 
-* **--extra-links** - In case of Python 3 besides the pip3.x, python3.x and virtualenv3.x symbolic links, this will also
-  create the pip3, python3 and virtualenv3 links.
+* **--extra-links** - For Python 3, this option creates additional symbolic links for pip3.x, python3.x, and virtualenv3.x,
+  in addition to pip3, python3, and virtualenv3.
 
-* **--keep-working-dir** - We'll keep the working directory after the script finished / exited.
+* **--keep-working-dir** - The working directory will be retained after script completion or exit.
 
-* **--keep-test-logs** - We'll keep the test log file even in case everything passed.
+* **--keep-test-logs** - The test log file will be preserved even if all tests pass.
 
-* **--dry-run** - We'll only print out the commands which would be executed. **NOTE:** Collecting GNU binaries will
-  still be executed.
+* **--dry-run** - Only the commands that would be executed will be printed. **NOTE:** Collection of GNU binaries will still be performed.
 
 ## Requirements
 
-The `installBaseDir` should be a directory where you have write access.
-After you've compiled and installed Python into this directory, you cannot move it from here.
-If you want to move it, you need to re-compile the whole thing again into the new desired directory.
+The `installBaseDir` must be a directory with write access.
+Once you compile and install Python in this directory, it cannot be moved.
+If you wish to relocate it, you must recompile Python in the desired new directory.
 
-**You need to install a couple of dependencies with brew:**
+**You need to install several dependencies using Homebrew:**
 
 ```shell
 brew install asciidoc autoconf bzip2 coreutils diffutils expat findutils gawk \
              gcc gdbm gnu-sed gnu-tar gnu-which gnunet grep jq libffi libtool \
-             libx11 libxcrypt libzip lzo mpdecimal ncurses openssl@1.1 p7zip \
-             pkg-config readline sqlite tcl-tk unzip wget xz zlib
+             libx11 libxcrypt lzo mpdecimal openssl@1.1 openssl@3.0 p7zip \
+             pkg-config unzip wget xz zlib
 ```
 
-The above command does **not** only install libraries, but also a couple of **GNU** executables.
-These will not be used by default, but [search-libraries.sh](libraries/search-libraries.sh) will temporarily add it to
-`PATH`.
+The above command **not** only installs libraries but also some **GNU** executables.
+These executables are not used by default, but [search-libraries.sh](libraries/search-libraries.sh) will temporarily add them to the `PATH`.
 
-These are useful, because their default macOS counterpart might be very old in some cases.
+These dependencies are helpful because the default macOS counterparts may be outdated in certain cases.
+
+Once you have completed the above steps, you also **need to install [additional dependencies](formulas)**.

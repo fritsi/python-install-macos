@@ -15,7 +15,7 @@ for programName in pkg-config asciidoc autoconf coreutils findutils gawk gnu-sed
 
     # Validating the external program
     if [[ "$programDir" == "" ]] || [[ ! -d "$programDir" ]] || { [[ ! -d "$programDir/libexec/gnubin" ]] && [[ ! -d "$programDir/bin" ]]; }; then
-        sysout >&2 "[ERROR] Could not find $programName, did you install it with brew install $programName?"
+        sysout >&2 "${FNT_BLD}[ERROR]${FNT_RST} Could not find $programName, did you install it with brew install $programName?"
         sysout >&2 ""
         exit 1
     fi

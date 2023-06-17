@@ -1,4 +1,4 @@
-From e2c71f406819e4590b0e1d72957697c80da307c4 Mon Sep 17 00:00:00 2001
+From f2d8bb4e09d7152f620efc61298140c7ed557b4c Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
 Date: Sun, 11 Jun 2023 13:31:48 +0200
 Subject: [PATCH] Python 3.11.4 patching
@@ -6,20 +6,22 @@ Subject: [PATCH] Python 3.11.4 patching
 ---
  Lib/distutils/tests/test_build_ext.py     |  6 ++
  Lib/idlelib/idle_test/test_colorizer.py   |  4 ++
+ Lib/idlelib/idle_test/test_editor.py      |  3 +
  Lib/idlelib/idle_test/test_outwin.py      |  3 +
  Lib/idlelib/idle_test/test_sidebar.py     | 38 +++++------
  Lib/test/support/__init__.py              | 18 +++---
  Lib/test/test_gdb.py                      |  2 +-
+ Lib/test/test_httpservers.py              |  4 +-
  Lib/test/test_posix.py                    |  8 +--
  Lib/test/test_tools/test_freeze.py        |  1 +
  Lib/tkinter/test/test_ttk/test_widgets.py |  9 ++-
- Modules/Setup                             | 13 ++--
+ Modules/Setup                             | 17 ++---
  Modules/getaddrinfo.c                     |  3 +
  Modules/getnameinfo.c                     |  3 +
  Modules/socketmodule.c                    |  3 +
  Modules/socketmodule.h                    |  3 +
  setup.py                                  | 79 ++++++++++++++++++++++-
- 15 files changed, 143 insertions(+), 50 deletions(-)
+ 17 files changed, 150 insertions(+), 54 deletions(-)
 
 diff --git a/Lib/distutils/tests/test_build_ext.py b/Lib/distutils/tests/test_build_ext.py
 index 4ebeafe..fa303e3 100644
@@ -65,6 +67,26 @@ index 308bc38..714f1a6 100644
          cls.percolator = Percolator(text)
          # Delegator stack = [Delegator(text)]
  
+diff --git a/Lib/idlelib/idle_test/test_editor.py b/Lib/idlelib/idle_test/test_editor.py
+index 9296a6d..e676c3a 100644
+--- a/Lib/idlelib/idle_test/test_editor.py
++++ b/Lib/idlelib/idle_test/test_editor.py
+@@ -1,5 +1,6 @@
+ "Test editor, coverage 53%."
+ 
++import sys
+ from idlelib import editor
+ import unittest
+ from collections import namedtuple
+@@ -189,6 +190,8 @@ class IndentSearcherTest(unittest.TestCase):
+         cls.root = Tk()
+         cls.root.withdraw()
+         cls.text = Text(cls.root)
++        if sys.platform == "darwin":
++            cls.text.update = cls.text.update_idletasks
+ 
+     @classmethod
+     def tearDownClass(cls):
 diff --git a/Lib/idlelib/idle_test/test_outwin.py b/Lib/idlelib/idle_test/test_outwin.py
 index d6e85ad..9e49d09 100644
 --- a/Lib/idlelib/idle_test/test_outwin.py
@@ -195,6 +217,23 @@ index 0f39b8f..166ff9f 100644
  class DebuggerTests(unittest.TestCase):
  
      """Test that the debugger can debug Python."""
+diff --git a/Lib/test/test_httpservers.py b/Lib/test/test_httpservers.py
+index cdd1bea..95c4cd1 100644
+--- a/Lib/test/test_httpservers.py
++++ b/Lib/test/test_httpservers.py
+@@ -442,10 +442,10 @@ class SimpleHTTPServerTestCase(BaseTestCase):
+     def test_undecodable_parameter(self):
+         # sanity check using a valid parameter
+         response = self.request(self.base_url + '/?x=123').read()
+-        self.assertRegex(response, f'listing for {self.base_url}/\?x=123'.encode('latin1'))
++        self.assertRegex(response, f'listing for {self.base_url}/\\?x=123'.encode('latin1'))
+         # now the bogus encoding
+         response = self.request(self.base_url + '/?x=%bb').read()
+-        self.assertRegex(response, f'listing for {self.base_url}/\?x=\xef\xbf\xbd'.encode('latin1'))
++        self.assertRegex(response, f'listing for {self.base_url}/\\?x=\xef\xbf\xbd'.encode('latin1'))
+ 
+     def test_get_dir_redirect_location_domain_injection_bug(self):
+         """Ensure //evil.co/..%2f../../X does not put //evil.co/ in Location.
 diff --git a/Lib/test/test_posix.py b/Lib/test/test_posix.py
 index e643d8e..b201941 100644
 --- a/Lib/test/test_posix.py
@@ -282,7 +321,7 @@ index 96d2afc..dde4b3a 100644
      def setUp(self):
          super().setUp()
 diff --git a/Modules/Setup b/Modules/Setup
-index d3647ec..3a1f3aa 100644
+index d3647ec..c0c732f 100644
 --- a/Modules/Setup
 +++ b/Modules/Setup
 @@ -144,7 +144,7 @@ PYTHONPATH=$(COREPYTHONPATH)
@@ -324,6 +363,17 @@ index d3647ec..3a1f3aa 100644
  # *** Uncomment and edit to reflect where your Tcl/Tk libraries are:
  #	-L/usr/local/lib \
  # *** Uncomment and edit to reflect where your Tcl/Tk headers are:
+@@ -264,8 +265,8 @@ PYTHONPATH=$(COREPYTHONPATH)
+ #	-lX11
+ 
+ # Some system have -lcurses 
+-#_curses -lncurses -lncursesw -ltermcap _cursesmodule.c
+-#_curses_panel -lpanel -lncurses _curses_panel.c
++_curses _cursesmodule.c $(EXT_COMPILER_FLAGS) -lncursesw -ltermcap
++_curses_panel _curses_panel.c $(EXT_COMPILER_FLAGS) -lpanelw -lncursesw
+ 
+ # macOS specific module, needs SystemConfiguration and CoreFoundation framework
+ # _scproxy _scproxy.c
 diff --git a/Modules/getaddrinfo.c b/Modules/getaddrinfo.c
 index 0b4620e..3fd52ef 100644
 --- a/Modules/getaddrinfo.c

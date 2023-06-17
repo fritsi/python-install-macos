@@ -1,4 +1,4 @@
-From 1ef22d701336b532daa61ee5a0976d1842005e68 Mon Sep 17 00:00:00 2001
+From 085dd74d99a23ddbceb961f1f2f349f9f42f363d Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
 Date: Mon, 16 Jan 2023 15:26:35 +0100
 Subject: [PATCH] Python 2.7.18 patching
@@ -22,7 +22,7 @@ Subject: [PATCH] Python 2.7.18 patching
  Mac/Modules/qt/setup.py                      |   2 +-
  Mac/Tools/pythonw.c                          |   6 +
  Makefile.pre.in                              |   6 +-
- Modules/Setup.dist                           |  10 +-
+ Modules/Setup.dist                           |  14 +-
  Modules/_ctypes/_ctypes.c                    |  31 +++
  Modules/_ctypes/_ctypes_test.c               |   6 +-
  Modules/_ctypes/callproc.c                   | 131 +++++++++--
@@ -36,7 +36,7 @@ Subject: [PATCH] Python 2.7.18 patching
  configure.ac                                 |   9 +
  pyconfig.h.in                                |   3 +
  setup.py                                     | 216 ++++++++++++++-----
- 32 files changed, 474 insertions(+), 125 deletions(-)
+ 32 files changed, 476 insertions(+), 127 deletions(-)
 
 diff --git a/Lib/ctypes/macholib/dyld.py b/Lib/ctypes/macholib/dyld.py
 index 1fdf8d6..8553106 100644
@@ -488,7 +488,7 @@ index 2a14f33..f661fb8 100644
  # report files for gcov / lcov coverage report
  COVERAGE_INFO=	$(abs_builddir)/coverage.info
 diff --git a/Modules/Setup.dist b/Modules/Setup.dist
-index bbc9222..31cd1e6 100644
+index bbc9222..19ac0c4 100644
 --- a/Modules/Setup.dist
 +++ b/Modules/Setup.dist
 @@ -163,7 +163,7 @@ GLHACK=-Dclear=__GLclear
@@ -517,6 +517,18 @@ index bbc9222..31cd1e6 100644
  
  # The crypt module is now disabled by default because it breaks builds
  # on many systems (where -lcrypt is needed), e.g. Linux (I believe).
+@@ -367,9 +365,9 @@ GLHACK=-Dclear=__GLclear
+ #
+ # First, look at Setup.config; configure may have set this for you.
+ 
+-#_curses _cursesmodule.c -lcurses -ltermcap
++_curses _cursesmodule.c $(EXT_COMPILER_FLAGS) -lncursesw -ltermcap
+ # Wrapper for the panel library that's part of ncurses and SYSV curses.
+-#_curses_panel _curses_panel.c -lpanel -lncurses 
++_curses_panel _curses_panel.c $(EXT_COMPILER_FLAGS) -lpanelw -lncursesw
+ 
+ 
+ # Generic (SunOS / SVR4) dynamic loading module.
 @@ -464,7 +462,7 @@ GLHACK=-Dclear=__GLclear
  # Andrew Kuchling's zlib module.
  # This require zlib 1.1.3 (or later).

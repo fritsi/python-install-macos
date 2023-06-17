@@ -1,4 +1,4 @@
-From 365e773a2c8eee8b87bf6560d112fc39c78a2c48 Mon Sep 17 00:00:00 2001
+From 5e3758d85f63599cc99bab55d8521f055ac00136 Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
 Date: Mon, 16 Jan 2023 15:27:40 +0100
 Subject: [PATCH] Python 3.8.17 patching
@@ -9,16 +9,17 @@ Subject: [PATCH] Python 3.8.17 patching
  Lib/idlelib/idle_test/test_outwin.py      |  3 +++
  Lib/test/support/__init__.py              | 18 ++++++++--------
  Lib/test/test_gdb.py                      |  2 +-
+ Lib/test/test_httpservers.py              |  4 ++--
  Lib/test/test_posix.py                    |  8 ++++----
  Lib/tkinter/test/test_ttk/test_widgets.py | 25 +++++++++++------------
- Modules/Setup                             | 12 +++++------
+ Modules/Setup                             | 16 +++++++--------
  Modules/_decimal/_decimal.c               |  4 ++--
  Modules/getaddrinfo.c                     |  3 +++
  Modules/getnameinfo.c                     |  3 +++
  Modules/socketmodule.c                    |  3 +++
  Modules/socketmodule.h                    |  3 +++
  setup.py                                  |  2 +-
- 14 files changed, 58 insertions(+), 37 deletions(-)
+ 15 files changed, 62 insertions(+), 41 deletions(-)
 
 diff --git a/Lib/distutils/tests/test_build_ext.py b/Lib/distutils/tests/test_build_ext.py
 index 808c0dc..7e4632f 100644
@@ -126,6 +127,23 @@ index d90ca5a..3b3a17a 100644
  class DebuggerTests(unittest.TestCase):
  
      """Test that the debugger can debug Python."""
+diff --git a/Lib/test/test_httpservers.py b/Lib/test/test_httpservers.py
+index 3806f7a..6b7c35f 100644
+--- a/Lib/test/test_httpservers.py
++++ b/Lib/test/test_httpservers.py
+@@ -417,10 +417,10 @@ class SimpleHTTPServerTestCase(BaseTestCase):
+     def test_undecodable_parameter(self):
+         # sanity check using a valid parameter
+         response = self.request(self.base_url + '/?x=123').read()
+-        self.assertRegex(response, f'listing for {self.base_url}/\?x=123'.encode('latin1'))
++        self.assertRegex(response, f'listing for {self.base_url}/\\?x=123'.encode('latin1'))
+         # now the bogus encoding
+         response = self.request(self.base_url + '/?x=%bb').read()
+-        self.assertRegex(response, f'listing for {self.base_url}/\?x=\xef\xbf\xbd'.encode('latin1'))
++        self.assertRegex(response, f'listing for {self.base_url}/\\?x=\xef\xbf\xbd'.encode('latin1'))
+ 
+     def test_get_dir_redirect_location_domain_injection_bug(self):
+         """Ensure //evil.co/..%2f../../X does not put //evil.co/ in Location.
 diff --git a/Lib/test/test_posix.py b/Lib/test/test_posix.py
 index 9bdd284..3f6028d 100644
 --- a/Lib/test/test_posix.py
@@ -239,7 +257,7 @@ index 88a800d..0681304 100644
      def setUp(self):
          super().setUp()
 diff --git a/Modules/Setup b/Modules/Setup
-index 983fa01..4979033 100644
+index 983fa01..3a0e588 100644
 --- a/Modules/Setup
 +++ b/Modules/Setup
 @@ -161,7 +161,7 @@ _symtable symtablemodule.c
@@ -277,6 +295,18 @@ index 983fa01..4979033 100644
  # *** Uncomment and edit to reflect where your Tcl/Tk libraries are:
  #	-L/usr/local/lib \
  # *** Uncomment and edit to reflect where your Tcl/Tk headers are:
+@@ -305,9 +303,9 @@ _symtable symtablemodule.c
+ # provided by the ncurses library.  e.g. on Linux, link with -lncurses
+ # instead of -lcurses).
+ 
+-#_curses _cursesmodule.c -lcurses -ltermcap
++_curses _cursesmodule.c $(EXT_COMPILER_FLAGS) -lncursesw -ltermcap
+ # Wrapper for the panel library that's part of ncurses and SYSV curses.
+-#_curses_panel _curses_panel.c -lpanel -lncurses
++_curses_panel _curses_panel.c $(EXT_COMPILER_FLAGS) -lpanelw -lncursesw
+ 
+ 
+ # Modules that provide persistent dictionary-like semantics.  You will
 @@ -334,7 +332,7 @@ _symtable symtablemodule.c
  # Andrew Kuchling's zlib module.
  # This require zlib 1.1.3 (or later).

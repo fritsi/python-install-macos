@@ -12,14 +12,22 @@ export PKG_CONFIG_PATH=""
 
 # The list of libraries we need to look-up, and set include / lib directories based on them for the compiler
 # Some of them are definitely mandatory, others are optional for the Python build
-export T_LIBRARIES_TO_LOOKUP="zlib xz tcl-tk sqlite readline ncurses mpdecimal libzip libxcrypt gdbm expat bzip2"
-
-# Checking which version of libffi we need to use, and whether we need to install an older version or not
-source "$SCRIPTS_DIR/libraries/setup-libffi.sh"
+export T_LIBRARIES_TO_LOOKUP="zlib xz tcl-tk-fritsi-mod sqlite-fritsi-mod readline-fritsi-mod openssl@3.0 ncurses-fritsi-mod mpdecimal libzip-fritsi-mod libxcrypt libffi gdbm expat bzip2 gettext-fritsi-mod"
 
 # Adding OpenSSL to the libraries to look-up when we are compiling Python
 if $G_PYTHON_COMPILE; then
-    export T_LIBRARIES_TO_LOOKUP="$T_LIBRARIES_TO_LOOKUP openssl@1.1"
+    if [[ "$PY_VERSION_NUM" -ge 308 ]]; then
+        # We replace some of the libraries compiled with OpenSSL with their OpenSSL 3 compilation counterparts
+        export T_LIBRARIES_TO_LOOKUP="${T_LIBRARIES_TO_LOOKUP//libzip-fritsi-mod/libzip-fritsi-mod-with-openssl3}"
+        export T_LIBRARIES_TO_LOOKUP="${T_LIBRARIES_TO_LOOKUP//sqlite-fritsi-mod/sqlite-fritsi-mod-with-openssl3}"
+        export T_LIBRARIES_TO_LOOKUP="${T_LIBRARIES_TO_LOOKUP//tcl-tk-fritsi-mod/tcl-tk-fritsi-mod-with-openssl3}"
+    else
+        # For older Python versions we still need OpenSSL 1.1 :(
+        export T_LIBRARIES_TO_LOOKUP="${T_LIBRARIES_TO_LOOKUP//openssl@3.0/openssl@1.1}"
+
+        # Also, for Python versions smaller than 3.8, we need to use an older libffi library :(
+        export T_LIBRARIES_TO_LOOKUP="${T_LIBRARIES_TO_LOOKUP//libffi/libffi33}"
+    fi
 fi
 
 # Extra paths we'll add to the 'PATH' variable
@@ -30,7 +38,7 @@ sysout ""
 
 function prependIncludeDir() {
     if [[ ! -d "$2" ]]; then
-        sysout >&2 "[ERROR] Could not find $2, did you install $1 correctly?"
+        sysout >&2 "${FNT_BLD}[ERROR]${FNT_RST} Could not find $2, did you install $1 correctly?"
         sysout >&2 ""
         return 1
     else
@@ -47,7 +55,12 @@ for libraryName in $T_LIBRARIES_TO_LOOKUP; do
 
     # Validating the library
     if [[ "$libraryDir" == "" ]] || [[ ! -d "$libraryDir" ]] || [[ ! -d "$libraryDir/lib" ]] || [[ ! -d "$libraryDir/include" ]]; then
-        sysout >&2 "[ERROR] Could not find $libraryName, did you install it with brew install $libraryName?"
+        if [[ "$libraryName" == *"fritsi-mod"* ]]; then
+            sysout >&2 "${FNT_BLD}[ERROR]${FNT_RST} Could not find $libraryName, did you install it with ${FNT_ITC}brew install --formula --build-from-source \"$SCRIPTS_DIR/formulas/$libraryName.rb\"${FNT_RST} ?"
+        else
+            sysout >&2 "${FNT_BLD}[ERROR]${FNT_RST} Could not find $libraryName, did you install it with ${FNT_ITC}brew install $libraryName${FNT_RST} ?"
+        fi
+
         sysout >&2 ""
         exit 1
     fi
@@ -65,9 +78,6 @@ for libraryName in $T_LIBRARIES_TO_LOOKUP; do
     # NOTE: This needs to be before the regular include directories
     if [[ "$libraryName" =~ ^openssl.*$ ]]; then
         prependIncludeDir "$libraryName" "$libraryDir/include/openssl"
-    # Similar to OpenSSL, handling an extra include directory for Tcl-Tk
-    elif [[ "$libraryName" == "tcl-tk" ]]; then
-        prependIncludeDir "$libraryName" "$libraryDir/include/tcl-tk"
     fi
 
     # Adding the include directory itself to the compiler flags
@@ -75,7 +85,7 @@ for libraryName in $T_LIBRARIES_TO_LOOKUP; do
 
     # ncurses also has an include/ncursesw subdirectory, handling that
     # NOTE: This needs to be after the regular include directories
-    if [[ "$libraryName" == "ncurses" ]]; then
+    if [[ "$libraryName" == "ncurses-fritsi-mod" ]]; then
         prependIncludeDir "$libraryName" "$libraryDir/include/ncursesw"
     fi
 
@@ -89,7 +99,7 @@ for libraryName in $T_LIBRARIES_TO_LOOKUP; do
         openssl*)
             export L_OPENSSL_BASE="$libraryDir"
             ;;
-        tcl-tk)
+        tcl-tk*)
             export L_TCL_TK_BASE="$libraryDir"
             ;;
     esac

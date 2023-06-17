@@ -1,4 +1,4 @@
-From 80f9e907d4a4a882e49ed86ac1a454fdc518b2cc Mon Sep 17 00:00:00 2001
+From cf7bb22834bfbabb2c8bea521fb069f3ed16b9eb Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
 Date: Mon, 16 Jan 2023 15:27:12 +0100
 Subject: [PATCH] Python 3.7.17 patching
@@ -13,13 +13,14 @@ Subject: [PATCH] Python 3.7.17 patching
  Lib/test/support/__init__.py               |  18 ++--
  Lib/test/test_bytes.py                     |   1 +
  Lib/test/test_gdb.py                       |   2 +-
+ Lib/test/test_httpservers.py               |   4 +-
  Lib/test/test_platform.py                  |   2 +-
  Lib/test/test_posix.py                     |   8 +-
  Lib/test/test_unicode.py                   |   3 +
  Lib/tkinter/test/test_tkinter/test_misc.py |   1 +
  Lib/tkinter/test/test_ttk/test_widgets.py  |  26 ++---
  Makefile.pre.in                            |   6 +-
- Modules/Setup.dist                         |  12 +--
+ Modules/Setup.dist                         |  16 ++-
  Modules/_ctypes/_ctypes.c                  |  31 ++++++
  Modules/_ctypes/callproc.c                 | 114 ++++++++++++++++++---
  Modules/_ctypes/ctypes.h                   |   1 +
@@ -33,7 +34,7 @@ Subject: [PATCH] Python 3.7.17 patching
  configure.ac                               |   6 ++
  pyconfig.h.in                              |   3 +
  setup.py                                   |  67 +++++++++---
- 29 files changed, 319 insertions(+), 67 deletions(-)
+ 30 files changed, 323 insertions(+), 71 deletions(-)
 
 diff --git a/Lib/ctypes/macholib/dyld.py b/Lib/ctypes/macholib/dyld.py
 index 9d86b05..931a9e7 100644
@@ -237,6 +238,23 @@ index fe603be..4f04ebc 100644
  class DebuggerTests(unittest.TestCase):
  
      """Test that the debugger can debug Python."""
+diff --git a/Lib/test/test_httpservers.py b/Lib/test/test_httpservers.py
+index 8c9be68..6a72234 100644
+--- a/Lib/test/test_httpservers.py
++++ b/Lib/test/test_httpservers.py
+@@ -416,10 +416,10 @@ class SimpleHTTPServerTestCase(BaseTestCase):
+     def test_undecodable_parameter(self):
+         # sanity check using a valid parameter
+         response = self.request(self.base_url + '/?x=123').read()
+-        self.assertRegex(response, f'listing for {self.base_url}/\?x=123'.encode('latin1'))
++        self.assertRegex(response, f'listing for {self.base_url}/\\?x=123'.encode('latin1'))
+         # now the bogus encoding
+         response = self.request(self.base_url + '/?x=%bb').read()
+-        self.assertRegex(response, f'listing for {self.base_url}/\?x=\xef\xbf\xbd'.encode('latin1'))
++        self.assertRegex(response, f'listing for {self.base_url}/\\?x=\xef\xbf\xbd'.encode('latin1'))
+ 
+     def test_get_dir_redirect_location_domain_injection_bug(self):
+         """Ensure //evil.co/..%2f../../X does not put //evil.co/ in Location.
 diff --git a/Lib/test/test_platform.py b/Lib/test/test_platform.py
 index 452a56e..9f3bf73 100644
 --- a/Lib/test/test_platform.py
@@ -405,7 +423,7 @@ index ef2bfb1..f38c5a8 100644
  # report files for gcov / lcov coverage report
  COVERAGE_INFO=	$(abs_builddir)/coverage.info
 diff --git a/Modules/Setup.dist b/Modules/Setup.dist
-index 344e03a..cb88987 100644
+index 344e03a..1cf6b5e 100644
 --- a/Modules/Setup.dist
 +++ b/Modules/Setup.dist
 @@ -165,7 +165,7 @@ _symtable symtablemodule.c
@@ -443,6 +461,18 @@ index 344e03a..cb88987 100644
  # *** Uncomment and edit to reflect where your Tcl/Tk libraries are:
  #	-L/usr/local/lib \
  # *** Uncomment and edit to reflect where your Tcl/Tk headers are:
+@@ -306,9 +304,9 @@ _symtable symtablemodule.c
+ # provided by the ncurses library.  e.g. on Linux, link with -lncurses
+ # instead of -lcurses).
+ 
+-#_curses _cursesmodule.c -lcurses -ltermcap
++_curses _cursesmodule.c $(EXT_COMPILER_FLAGS) -lncursesw -ltermcap
+ # Wrapper for the panel library that's part of ncurses and SYSV curses.
+-#_curses_panel _curses_panel.c -lpanel -lncurses
++_curses_panel _curses_panel.c $(EXT_COMPILER_FLAGS) -lpanelw -lncursesw
+ 
+ 
+ # Modules that provide persistent dictionary-like semantics.  You will
 @@ -335,7 +333,7 @@ _symtable symtablemodule.c
  # Andrew Kuchling's zlib module.
  # This require zlib 1.1.3 (or later).

@@ -6,14 +6,14 @@ clear
 
 # Checking whether we are running the script on macOS or not
 if [[ "$(uname)" != "Darwin" ]]; then
-    echo >&2 "[ERROR] This script must be run on macOS"
+    echo >&2 "${FNT_BLD}[ERROR]${FNT_RST} This script must be run on macOS"
     echo >&2 ""
     exit 1
 fi
 
 # Checking whether Homebrew is installed or not
 if [[ "$(command -v brew 2> /dev/null || true)" == "" ]]; then
-    echo >&2 "[ERROR] Homebrew is not installed"
+    echo >&2 "${FNT_BLD}[ERROR]${FNT_RST} Homebrew is not installed"
     echo >&2 ""
     exit 1
 fi
@@ -37,42 +37,40 @@ SUPPORTED_VERSIONS_TEXT="$(versions="${SUPPORTED_VERSIONS[*]}" && echo "${versio
 function printUsage() {
     sysout "${FNT_BLD}${FNT_ULN}Usage:${FNT_RST} ./$G_PROG_NAME.sh {pythonVersion} {installBaseDir}"
     sysout ""
-    sysout "This script will download the given version of the Python source code, compile it, and install it to the given location."
+    sysout "This script will assist you in compiling Python from source for both Apple Intel and Apple Silicon platforms"
     sysout ""
     sysout "${FNT_BLD}${FNT_ULN}NOTE:${FNT_RST} Currently only macOS is supported!"
     sysout ""
     sysout "${FNT_BLD}${FNT_ULN}Supported Python versions:${FNT_RST} $SUPPORTED_VERSIONS_TEXT"
     sysout ""
-    sysout "The given ${FNT_ITC}'installBaseDir'${FNT_RST} will not be the final install directory, but a subdirectory in that."
-    sysout "For example in case of Python 3.8 it will be ${FNT_BLD}${FNT_ITC}${FNT_ULN}{installBaseDir}/python-3.8${FNT_RST}"
+    sysout "The provided ${FNT_ITC}'installBaseDir'${FNT_RST} is not the final installation directory, but a subdirectory within it."
+    sysout "For example, for Python 3.8, it will be ${FNT_BLD}${FNT_ITC}${FNT_ULN}{installBaseDir}/python-3.8${FNT_RST}"
     sysout ""
-    sysout "The script will ask you whether you want to run the Python tests or not."
-    sysout "This can be used to check whether everything is okay with the compiled Python or not."
+    sysout "The script will prompt you to choose whether you want to run the Python tests or not."
+    sysout "This allows you to verify the integrity of the compiled Python installation."
     sysout ""
-    sysout "${FNT_BLD}If you followed the instructions, you should have no failures.${FNT_RST}"
+    sysout "${FNT_BLD}If you followed the instructions, there should be no failures.${FNT_RST}"
     sysout ""
-    sysout "If there are test failures, the script will stop and ask you if you'd like to continue."
+    sysout "If any test failures occur, the script will pause and ask if you want to proceed."
     sysout ""
-    sysout "${FNT_BLD}${FNT_ULN}NOTE:${FNT_RST} In case of non-interactive mode, the script will always run these tests."
+    sysout "${FNT_BLD}${FNT_ULN}NOTE:${FNT_RST} In non-interactive mode, the script will always run the tests."
     sysout ""
-    sysout "${FNT_BLD}${FNT_ULN}NOTE 2:${FNT_RST} While running the tests, you might see a pop-up window asking you to allow Python to connect to the network."
-    sysout "These are for the socket/ssl related tests. It's safe to allow."
-    sysout ""
-    sysout "${FNT_BLD}${FNT_ULN}NOTE 3:${FNT_RST} Currently the UI (Tkinter) related tests are deliberately skipped as they are unstable."
+    sysout "${FNT_BLD}${FNT_ULN}NOTE 2:${FNT_RST} During the test execution, you may see a pop-up window requesting permission for Python to connect to the network."
+    sysout "This is related to socket/ssl tests and is safe to allow."
     sysout ""
     sysout "${FNT_BLD}${FNT_ULN}Optional arguments:${FNT_RST}"
     sysout ""
-    sysout "    ${FNT_BLD}--non-interactive${FNT_RST} - If given then we won't ask for confirmations."
+    sysout "    ${FNT_BLD}--non-interactive${FNT_RST} - If provided, no confirmation prompts will be displayed."
     sysout ""
-    sysout "    ${FNT_BLD}--extra-links${FNT_RST} - In case of Python 3 besides the pip3.x, python3.x and virtualenv3.x symbolic links,"
-    sysout "                    this will also create the pip3, python3 and virtualenv3 links."
+    sysout "    ${FNT_BLD}--extra-links${FNT_RST} - For Python 3, this option creates additional symbolic links for pip3.x, python3.x,"
+    sysout "                     and virtualenv3.x, in addition to pip3, python3, and virtualenv3."
     sysout ""
-    sysout "    ${FNT_BLD}--keep-working-dir${FNT_RST} - We'll keep the working directory after the script finished / exited."
+    sysout "    ${FNT_BLD}--keep-working-dir${FNT_RST} - The working directory will be retained after script completion or exit."
     sysout ""
-    sysout "    ${FNT_BLD}--keep-test-logs${FNT_RST} - We'll keep the test log file even in case everything passed."
+    sysout "    ${FNT_BLD}--keep-test-logs${FNT_RST} - The test log file will be preserved even if all tests pass."
     sysout ""
-    sysout "    ${FNT_BLD}--dry-run${FNT_RST} - We'll only print out the commands which would be executed."
-    sysout "                ${FNT_BLD}NOTE:${FNT_RST} Collecting GNU binaries will still be executed."
+    sysout "    ${FNT_BLD}--dry-run${FNT_RST} - Only the commands that would be executed will be printed."
+    sysout "                ${FNT_BLD}NOTE:${FNT_RST} Collection of GNU binaries will still be performed."
     sysout ""
 
     # Also printing out the preparation steps
@@ -80,16 +78,37 @@ function printUsage() {
 }
 
 function printPreparationSteps() {
-    sysout "${FNT_BLD}${FNT_ULN}As a preparation we suggest to perform the following:${FNT_RST}"
+    sysout "${FNT_BLD}${FNT_ULN}You need to install several dependencies using Homebrew:${FNT_RST}"
     sysout ""
     sysout "${FNT_BLD}brew install${FNT_RST} asciidoc autoconf bzip2 coreutils diffutils expat findutils gawk \\"
     sysout "             gcc gdbm gnu-sed gnu-tar gnu-which gnunet grep jq libffi libtool \\"
-    sysout "             libx11 libxcrypt libzip lzo mpdecimal ncurses openssl@1.1 p7zip \\"
-    sysout "             pkg-config readline sqlite tcl-tk unzip wget xz zlib"
+    sysout "             libx11 libxcrypt lzo mpdecimal openssl@1.1 openssl@3.0 p7zip \\"
+    sysout "             pkg-config unzip wget xz zlib"
     sysout ""
-    sysout "${FNT_BLD}${FNT_ULN}NOTE:${FNT_RST} The above command does ${FNT_BLD}not${FNT_RST} only install libraries, but also a couple of ${FNT_BLD}GNU${FNT_RST} executables."
-    sysout "      These will not be used by default, but ${FNT_ITC}search-libraries.sh${FNT_RST} will temporarily add it to PATH."
-    sysout "      These are useful, because their default macOS counterpart might be very old in some cases."
+    sysout "${FNT_BLD}${FNT_ULN}NOTE:${FNT_RST} The above command ${FNT_BLD}not${FNT_RST} only installs libraries but also some ${FNT_BLD}GNU${FNT_RST} executables."
+    sysout "      These executables are not used by default, but ${FNT_ITC}search-libraries.sh${FNT_RST} will temporarily add them to the PATH."
+    sysout "      These dependencies are helpful because the default macOS counterparts may be outdated in certain cases."
+    sysout ""
+    sysout "${FNT_BLD}${FNT_ULN}NOTE:${FNT_RST} Once you have completed the above steps, you also need to install additional formulas:"
+    sysout "      >> ${FNT_ITC}brew install --formula --build-from-source \"formulas/ncurses-fritsi-mod.rb\"${FNT_RST}"
+    sysout "      >> ${FNT_ITC}brew install --formula --build-from-source \"formulas/readline-fritsi-mod.rb\"${FNT_RST}"
+    sysout "      >> ${FNT_ITC}brew install --formula --build-from-source \"formulas/gettext-fritsi-mod.rb\"${FNT_RST}"
+    sysout "      >> ${FNT_ITC}brew install --formula --build-from-source \"formulas/zstd-fritsi-mod.rb\"${FNT_RST}"
+    sysout ""
+    sysout "${FNT_BLD}${FNT_ULN}IMPORTANT:${FNT_RST} Please ensure that you install them in the specified order mentioned above."
+    sysout ""
+    sysout "${FNT_BLD}${FNT_ULN}NOTE:${FNT_RST} Finally, depending on the Python version you are compiling, you'll need:"
+    sysout ""
+    sysout "${FNT_BLD}a)${FNT_RST} for Python ${FNT_BLD}${FNT_ULN}3.8${FNT_RST}${FNT_BLD} or above:${FNT_RST}"
+    sysout "      >> ${FNT_ITC}brew install --formula --build-from-source \"formulas/libzip-fritsi-mod-with-openssl3.rb\"${FNT_RST}"
+    sysout "      >> ${FNT_ITC}brew install --formula --build-from-source \"formulas/tcl-tk-fritsi-mod-with-openssl3.rb\"${FNT_RST}"
+    sysout "      >> ${FNT_ITC}brew install --formula --build-from-source \"formulas/sqlite-fritsi-mod-with-openssl3.rb\"${FNT_RST}"
+    sysout ""
+    sysout "${FNT_BLD}b)${FNT_RST} for Python ${FNT_BLD}${FNT_ULN}3.7${FNT_RST}${FNT_BLD} or below:${FNT_RST}"
+    sysout "      >> ${FNT_ITC}brew install --formula --build-from-source \"formulas/libzip-fritsi-mod.rb\"${FNT_RST}"
+    sysout "      >> ${FNT_ITC}brew install --formula --build-from-source \"formulas/tcl-tk-fritsi-mod.rb\"${FNT_RST}"
+    sysout "      >> ${FNT_ITC}brew install --formula --build-from-source \"formulas/sqlite-fritsi-mod.rb\"${FNT_RST}"
+    sysout "      >> ${FNT_ITC}brew install --formula --build-from-source \"formulas/libffi33.rb\"${FNT_RST}"
     sysout ""
 }
 
@@ -107,7 +126,7 @@ if [[ "$(uname -m)" == "x86_64" ]]; then
 elif [[ "$(uname -m)" == "arm64" ]]; then
     IS_APPLE_SILICON=true
 else
-    sysout >&2 "[ERROR] Unsupported OS: $(uname) ($(uname -m))"
+    sysout >&2 "${FNT_BLD}[ERROR]${FNT_RST} Unsupported OS: $(uname) ($(uname -m))"
     sysout >&2 ""
     exit 1
 fi
@@ -145,7 +164,7 @@ PYTHON_INSTALL_BASE="$2"
         fi
     done
     if ! $__isValidVersion; then
-        sysout >&2 "[ERROR] Invalid Python versions: '$PYTHON_VERSION'. Supported versions are: $SUPPORTED_VERSIONS_TEXT"
+        sysout >&2 "${FNT_BLD}[ERROR]${FNT_RST} Invalid Python versions: '$PYTHON_VERSION'. Supported versions are: $SUPPORTED_VERSIONS_TEXT"
         sysout >&2 ""
         exit 1
     fi
@@ -154,7 +173,7 @@ PYTHON_INSTALL_BASE="$2"
 
 # Validating the installation base directory
 if [[ ! -d "$PYTHON_INSTALL_BASE" ]]; then
-    sysout >&2 "[ERROR] The install base directory does not exists: '$PYTHON_INSTALL_BASE'"
+    sysout >&2 "${FNT_BLD}[ERROR]${FNT_RST} The install base directory does not exists: '$PYTHON_INSTALL_BASE'"
     sysout >&2 ""
     exit 1
 fi
@@ -211,7 +230,7 @@ while [[ "$#" -gt 0 ]]; do
             export G_PY_COMPILE_COMMANDS_FILE
             ;;
         *)
-            sysout >&2 "[ERROR] Unrecognized argument: '$argument'"
+            sysout >&2 "${FNT_BLD}[ERROR]${FNT_RST} Unrecognized argument: '$argument'"
             sysout >&2 ""
             exit 1
             ;;
@@ -238,7 +257,7 @@ fi
 
 # Validating the --extra-links argument's purpose
 if $P_EXTRA_LINKS && [[ "$PY_VERSION_NUM" -lt 300 ]]; then
-    sysout >&2 "[ERROR] --extra-links can only be used with Python 3"
+    sysout >&2 "${FNT_BLD}[ERROR]${FNT_RST} --extra-links can only be used with Python 3"
     sysout >&2 ""
     exit 1
 fi
@@ -249,7 +268,7 @@ PYTHON_INSTALL_DIR="$PYTHON_INSTALL_BASE/python-$PY_POSTFIX"
 # Function to check whether a given path is not a file/directory/link
 function checkNotExists() {
     if [[ -f "$1" ]] || [[ -d "$1" ]] || [[ -L "$1" ]]; then
-        sysout >&2 "[ERROR] The following file or directory already exists: $1"
+        sysout >&2 "${FNT_BLD}[ERROR]${FNT_RST} The following file or directory already exists: $1"
         sysout >&2 ""
         return 1
     fi
@@ -476,7 +495,7 @@ fi
 
 # --with-tcltk-includes and --with-tcltk-libs is NOT available since Python 3.11
 if [[ "$PY_VERSION_NUM" -lt 311 ]]; then
-    CONFIGURE_PARAMS+=("--with-tcltk-includes=-I$L_TCL_TK_BASE/include -I$L_TCL_TK_BASE/include/tcl-tk")
+    CONFIGURE_PARAMS+=("--with-tcltk-includes=-I$L_TCL_TK_BASE/include")
     CONFIGURE_PARAMS+=("--with-tcltk-libs=-L$L_TCL_TK_BASE/lib -ltk8.6 -ltcl8.6 -DWITH_APPINIT")
 fi
 
@@ -657,8 +676,8 @@ function runTests() {
         return 0
     else
         sysout >&2 ""
-        sysout >&2 "[ERROR] THERE WERE TEST FAILURES"
-        sysout >&2 "[ERROR] PLEASE CHECK THE FOLLOWING LOG FILE FOR MORE INFORMATION: $testLogFile"
+        sysout >&2 "${FNT_BLD}[ERROR]${FNT_RST} THERE WERE TEST FAILURES"
+        sysout >&2 "${FNT_BLD}[ERROR]${FNT_RST} PLEASE CHECK THE FOLLOWING LOG FILE FOR MORE INFORMATION: $testLogFile"
         sysout >&2 ""
 
         # Ask the user if they want to continue

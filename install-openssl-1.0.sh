@@ -18,14 +18,14 @@ clear
 
 # Checking whether we are running the script on macOS or not
 if [[ "$(uname)" != "Darwin" ]]; then
-    echo >&2 "[ERROR] This script must be run on macOS"
+    echo >&2 "${FNT_BLD}[ERROR]${FNT_RST} This script must be run on macOS"
     echo >&2 ""
     exit 1
 fi
 
 # Checking whether Homebrew is installed or not
 if [[ "$(command -v brew 2> /dev/null || true)" == "" ]]; then
-    echo >&2 "[ERROR] Homebrew is not installed"
+    echo >&2 "${FNT_BLD}[ERROR]${FNT_RST} Homebrew is not installed"
     echo >&2 ""
     exit 1
 fi
@@ -56,7 +56,7 @@ if [[ "$(uname -m)" == "x86_64" ]]; then
 elif [[ "$(uname -m)" == "arm64" ]]; then
     IS_APPLE_SILICON=true
 else
-    sysout >&2 "[ERROR] Unsupported OS: $(uname) ($(uname -m))"
+    sysout >&2 "${FNT_BLD}[ERROR]${FNT_RST} Unsupported OS: $(uname) ($(uname -m))"
     sysout >&2 ""
     exit 1
 fi
@@ -65,7 +65,7 @@ fi
 # This will eventually delete our temporary directory
 function deleteTempDirectory() {
     sysout ""
-    sysout "[EXIT] Deleting $WORKING_DIR"
+    sysout "${FNT_BLD}[EXIT]${FNT_RST} Deleting $WORKING_DIR"
 
     rm -rf "$WORKING_DIR"
 }

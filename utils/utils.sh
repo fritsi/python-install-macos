@@ -13,44 +13,44 @@ function prependVar() {
         return 1
     fi
 
-    local variable_name
+    local variableName
     local separator
-    local values_to_prepend
-    local value_to_prepend
-    local current_value
-    local new_value
+    local valuesToPrepend
+    local valueToPrepend
+    local currentValue
+    local newValue
 
-    variable_name="$1"
+    variableName="$1"
     separator="$2"
 
     # Skipping the first 2 parameters
     shift 2
 
     # Adding the values to prepend to an array
-    values_to_prepend=("$@")
+    valuesToPrepend=("$@")
 
     # Getting the current value of the variable
     # Initializing this as an empty string if the variable was not set
-    current_value="${!variable_name:-}"
+    currentValue="${!variableName:-}"
 
-    # new_value should be the same as current_value at the beginning
-    new_value="$current_value"
+    # newValue should be the same as currentValue at the beginning
+    newValue="$currentValue"
 
     # Iterating over each value we need to prepend
-    for value_to_prepend in "${values_to_prepend[@]}"; do
+    for valueToPrepend in "${valuesToPrepend[@]}"; do
         # The variable already contains this value
-        if [[ "$separator$new_value$separator" == *"$separator$value_to_prepend$separator"* ]]; then
+        if [[ "$separator$newValue$separator" == *"$separator$valueToPrepend$separator"* ]]; then
             continue
         fi
 
         # Prepending the value, but keeping in mind that if the value was
         # empty or not set, then we don't add a separator
-        new_value="$value_to_prepend${new_value:+$separator$new_value}"
+        newValue="$valueToPrepend${newValue:+$separator$newValue}"
     done
 
     # Exporting the variable with its new value if it has been changed
-    if [[ "$new_value" != "$current_value" ]]; then
-        declare -xg "$variable_name"="$new_value"
+    if [[ "$newValue" != "$currentValue" ]]; then
+        declare -xg "$variableName"="$newValue"
     fi
 }
 

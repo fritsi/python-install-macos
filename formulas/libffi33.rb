@@ -12,7 +12,9 @@ class Libffi33 < Formula
 
   license "MIT"
 
-  keg_only :provided_by_macos
+  keg_only "This is a custom fork, so we do not want to symlink it into brew --prefix"
+
+  depends_on "pkg-config" => :build
 
   on_macos do
     if Hardware::CPU.arm?
