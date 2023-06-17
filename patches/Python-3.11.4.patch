@@ -1,12 +1,12 @@
-From 3c0981c8492077c844079077977cd1aa481baf96 Mon Sep 17 00:00:00 2001
+From e2c71f406819e4590b0e1d72957697c80da307c4 Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
 Date: Sun, 11 Jun 2023 13:31:48 +0200
 Subject: [PATCH] Python 3.11.4 patching
 
 ---
  Lib/distutils/tests/test_build_ext.py     |  6 ++
- Lib/idlelib/idle_test/test_colorizer.py   |  1 +
- Lib/idlelib/idle_test/test_outwin.py      |  1 +
+ Lib/idlelib/idle_test/test_colorizer.py   |  4 ++
+ Lib/idlelib/idle_test/test_outwin.py      |  3 +
  Lib/idlelib/idle_test/test_sidebar.py     | 38 +++++------
  Lib/test/support/__init__.py              | 18 +++---
  Lib/test/test_gdb.py                      |  2 +-
@@ -14,12 +14,12 @@ Subject: [PATCH] Python 3.11.4 patching
  Lib/test/test_tools/test_freeze.py        |  1 +
  Lib/tkinter/test/test_ttk/test_widgets.py |  9 ++-
  Modules/Setup                             | 13 ++--
- Modules/getaddrinfo.c                     |  1 +
- Modules/getnameinfo.c                     |  1 +
- Modules/socketmodule.c                    |  1 +
- Modules/socketmodule.h                    |  1 +
+ Modules/getaddrinfo.c                     |  3 +
+ Modules/getnameinfo.c                     |  3 +
+ Modules/socketmodule.c                    |  3 +
+ Modules/socketmodule.h                    |  3 +
  setup.py                                  | 79 ++++++++++++++++++++++-
- 15 files changed, 130 insertions(+), 50 deletions(-)
+ 15 files changed, 143 insertions(+), 50 deletions(-)
 
 diff --git a/Lib/distutils/tests/test_build_ext.py b/Lib/distutils/tests/test_build_ext.py
 index 4ebeafe..fa303e3 100644
@@ -46,26 +46,42 @@ index 4ebeafe..fa303e3 100644
          # format the target value as defined in the Apple
          # Availability Macros.  We can't use the macro names since
 diff --git a/Lib/idlelib/idle_test/test_colorizer.py b/Lib/idlelib/idle_test/test_colorizer.py
-index 308bc38..e4fb890 100644
+index 308bc38..714f1a6 100644
 --- a/Lib/idlelib/idle_test/test_colorizer.py
 +++ b/Lib/idlelib/idle_test/test_colorizer.py
-@@ -171,6 +171,7 @@ class ColorDelegatorTest(unittest.TestCase):
+@@ -1,4 +1,6 @@
+ "Test colorizer, coverage 99%."
++
++import sys
+ from idlelib import colorizer
+ from test.support import requires
+ import unittest
+@@ -171,6 +173,8 @@ class ColorDelegatorTest(unittest.TestCase):
          root = cls.root = Tk()
          root.withdraw()
          text = cls.text = Text(root)
-+        cls.text.update = cls.text.update_idletasks
++        if sys.platform == "darwin":
++            cls.text.update = cls.text.update_idletasks
          cls.percolator = Percolator(text)
          # Delegator stack = [Delegator(text)]
  
 diff --git a/Lib/idlelib/idle_test/test_outwin.py b/Lib/idlelib/idle_test/test_outwin.py
-index d6e85ad..90fc648 100644
+index d6e85ad..9e49d09 100644
 --- a/Lib/idlelib/idle_test/test_outwin.py
 +++ b/Lib/idlelib/idle_test/test_outwin.py
-@@ -18,6 +18,7 @@ class OutputWindowTest(unittest.TestCase):
+@@ -1,5 +1,6 @@
+ "Test outwin, coverage 76%."
+ 
++import sys
+ from idlelib import outwin
+ import unittest
+ from test.support import requires
+@@ -18,6 +19,8 @@ class OutputWindowTest(unittest.TestCase):
          root.withdraw()
          w = cls.window = outwin.OutputWindow(None, None, None, root)
          cls.text = w.text = Text(root)
-+        cls.text.update = cls.text.update_idletasks
++        if sys.platform == "darwin":
++            cls.text.update = cls.text.update_idletasks
  
      @classmethod
      def tearDownClass(cls):
@@ -167,7 +183,7 @@ index 98be9cd..d5257fc 100644
      # check on every platform whether tkinter can actually do anything
      if not reason:
 diff --git a/Lib/test/test_gdb.py b/Lib/test/test_gdb.py
-index 0f39b8f..295bef8 100644
+index 0f39b8f..166ff9f 100644
 --- a/Lib/test/test_gdb.py
 +++ b/Lib/test/test_gdb.py
 @@ -140,7 +140,7 @@ HAS_PYUP_PYDOWN = gdb_has_frame_select()
@@ -175,7 +191,7 @@ index 0f39b8f..295bef8 100644
  BREAKPOINT_FN='builtin_id'
  
 -@unittest.skipIf(support.PGO, "not useful for PGO")
-+@unittest.skipIf(True, "fritsi: gdb requires code signing on MacOS")
++@unittest.skipIf(sys.platform == "darwin", "Daniel Fritsi: gdb requires code signing on MacOS")
  class DebuggerTests(unittest.TestCase):
  
      """Test that the debugger can debug Python."""
@@ -213,14 +229,14 @@ index e643d8e..b201941 100644
          # #10822/#26944 - It is implementation defined whether
          # posix.getgroups() includes the effective gid.
 diff --git a/Lib/test/test_tools/test_freeze.py b/Lib/test/test_tools/test_freeze.py
-index 2ba36ca..1df1d93 100644
+index 2ba36ca..caf7579 100644
 --- a/Lib/test/test_tools/test_freeze.py
 +++ b/Lib/test/test_tools/test_freeze.py
 @@ -17,6 +17,7 @@ with imports_under_tool('freeze', 'test'):
  @support.skip_if_buildbot('not all buildbots have enough space')
  class TestFreeze(unittest.TestCase):
  
-+    @unittest.skipIf(True, "This does not seem to work")
++    @unittest.skipIf(True, "Daniel Fritsi: This does not seem to work")
      def test_freeze_simple_script(self):
          script = textwrap.dedent("""
              import sys
@@ -309,50 +325,58 @@ index d3647ec..3a1f3aa 100644
  #	-L/usr/local/lib \
  # *** Uncomment and edit to reflect where your Tcl/Tk headers are:
 diff --git a/Modules/getaddrinfo.c b/Modules/getaddrinfo.c
-index 0b4620e..9405328 100644
+index 0b4620e..3fd52ef 100644
 --- a/Modules/getaddrinfo.c
 +++ b/Modules/getaddrinfo.c
-@@ -43,6 +43,7 @@
+@@ -43,6 +43,9 @@
  #include <sys/param.h>
  #include <sys/sysctl.h>
  #include <sys/socket.h>
++#ifdef __APPLE__
 +#define __APPLE_USE_RFC_3542 1
++#endif
  #include <netinet/in.h>
  #include <arpa/inet.h>
  #include <arpa/nameser.h>
 diff --git a/Modules/getnameinfo.c b/Modules/getnameinfo.c
-index 335021f..b2c2e4a 100644
+index 335021f..c26d9aa 100644
 --- a/Modules/getnameinfo.c
 +++ b/Modules/getnameinfo.c
-@@ -37,6 +37,7 @@
+@@ -37,6 +37,9 @@
  #if 0
  #include <sys/types.h>
  #include <sys/socket.h>
++#ifdef __APPLE__
 +#define __APPLE_USE_RFC_3542 1
++#endif
  #include <netinet/in.h>
  #include <arpa/inet.h>
  #include <arpa/nameser.h>
 diff --git a/Modules/socketmodule.c b/Modules/socketmodule.c
-index 65d0e10..ae77bb4 100644
+index 65d0e10..162e2bf 100644
 --- a/Modules/socketmodule.c
 +++ b/Modules/socketmodule.c
-@@ -219,6 +219,7 @@ shutdown(how) -- shut down traffic in one or both directions\n\
+@@ -219,6 +219,9 @@ shutdown(how) -- shut down traffic in one or both directions\n\
  #undef _XOPEN_SOURCE
  #include <sys/socket.h>
  #include <sys/types.h>
++#ifdef __APPLE__
 +#define __APPLE_USE_RFC_3542 1
++#endif
  #include <netinet/in.h>
  #ifdef _SS_ALIGNSIZE
  #define HAVE_GETADDRINFO 1
 diff --git a/Modules/socketmodule.h b/Modules/socketmodule.h
-index 1b35b11..61bc720 100644
+index 1b35b11..7a9d5d1 100644
 --- a/Modules/socketmodule.h
 +++ b/Modules/socketmodule.h
-@@ -7,6 +7,7 @@
+@@ -7,6 +7,9 @@
  # else
  #   include <sys/socket.h>
  # endif
++#ifdef __APPLE__
 +#define __APPLE_USE_RFC_3542 1
++#endif
  # include <netinet/in.h>
  # include <netinet/tcp.h>
  
@@ -450,4 +474,4 @@ index 4f122b6..0cb2ad3 100644
          )
  
 -- 
-2.40.1
+2.41.0

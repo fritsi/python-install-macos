@@ -1,4 +1,4 @@
-From d8de24c22aa5f407b56e52ba656a483b17e41b82 Mon Sep 17 00:00:00 2001
+From 1ef22d701336b532daa61ee5a0976d1842005e68 Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
 Date: Mon, 16 Jan 2023 15:26:35 +0100
 Subject: [PATCH] Python 2.7.18 patching
@@ -27,16 +27,16 @@ Subject: [PATCH] Python 2.7.18 patching
  Modules/_ctypes/_ctypes_test.c               |   6 +-
  Modules/_ctypes/callproc.c                   | 131 +++++++++--
  Modules/_ctypes/ctypes.h                     |   1 +
- Modules/getaddrinfo.c                        |   1 +
- Modules/getnameinfo.c                        |   1 +
+ Modules/getaddrinfo.c                        |   3 +
+ Modules/getnameinfo.c                        |   3 +
  Modules/posixmodule.c                        |  10 +-
- Modules/socketmodule.c                       |   1 +
- Modules/socketmodule.h                       |   1 +
+ Modules/socketmodule.c                       |   3 +
+ Modules/socketmodule.h                       |   3 +
  configure                                    |  30 +++
  configure.ac                                 |   9 +
  pyconfig.h.in                                |   3 +
  setup.py                                     | 216 ++++++++++++++-----
- 32 files changed, 466 insertions(+), 125 deletions(-)
+ 32 files changed, 474 insertions(+), 125 deletions(-)
 
 diff --git a/Lib/ctypes/macholib/dyld.py b/Lib/ctypes/macholib/dyld.py
 index 1fdf8d6..8553106 100644
@@ -287,14 +287,14 @@ index ccc11c1..2b3b54f 100644
      # check on every platform whether tkinter can actually do anything
      if not reason:
 diff --git a/Lib/test/test_gdb.py b/Lib/test/test_gdb.py
-index b96acc0..5bd2f01 100644
+index b96acc0..5447b48 100644
 --- a/Lib/test/test_gdb.py
 +++ b/Lib/test/test_gdb.py
 @@ -132,6 +132,7 @@ def gdb_has_frame_select():
  
  HAS_PYUP_PYDOWN = gdb_has_frame_select()
  
-+@unittest.skipIf(True, "fritsi: gdb requires code signing on MacOS")
++@unittest.skipIf(sys.platform == "darwin", "Daniel Fritsi: gdb requires code signing on MacOS")
  class DebuggerTests(unittest.TestCase):
  
      """Test that the debugger can debug Python."""
@@ -392,14 +392,14 @@ index 73ed542..131f6d1 100644
  
          # basic tests
 diff --git a/Lib/test/test_test_support.py b/Lib/test/test_test_support.py
-index f9192a7..09d028a 100644
+index f9192a7..3c79235 100644
 --- a/Lib/test/test_test_support.py
 +++ b/Lib/test/test_test_support.py
 @@ -417,6 +417,7 @@ class TestSupport(unittest.TestCase):
              self.assertTrue(support.match_test(test_access))
              self.assertFalse(support.match_test(test_chdir))
  
-+    @unittest.skipIf(True, "fritsi: TODO figure out why this can crash the whole python process")
++    @unittest.skipIf(True, "Daniel Fritsi: TODO figure out why this can crash the whole python process")
      def test_fd_count(self):
          # We cannot test the absolute value of fd_count(): on old Linux
          # kernel or glibc versions, os.urandom() keeps a FD open on
@@ -425,14 +425,14 @@ index 92476f6..23e9e64 100644
  
          def PyUnicode_FromFormat(format, *args):
 diff --git a/Lib/test/test_xml_etree.py b/Lib/test/test_xml_etree.py
-index c75d55f..7635ac9 100644
+index c75d55f..5de32c8 100644
 --- a/Lib/test/test_xml_etree.py
 +++ b/Lib/test/test_xml_etree.py
 @@ -1482,6 +1482,7 @@ class BugsTest(unittest.TestCase):
                  b"<?xml version='1.0' encoding='ascii'?>\n"
                  b'<body>t&#227;g</body>')
  
-+    @unittest.skipIf(True, "fritsi: With using system expat, this is no longer needed")
++    @unittest.skipIf(True, "Daniel Fritsi: With using system expat, this is no longer needed")
      def test_issue3151(self):
          e = ET.XML('<prefix:localname xmlns:prefix="${stuff}"/>')
          self.assertEqual(e.tag, '{${stuff}}localname')
@@ -804,26 +804,30 @@ index 12b56c4..8aec3d1 100644
  #define TYPEFLAG_ISPOINTER 0x100
  #define TYPEFLAG_HASPOINTER 0x200
 diff --git a/Modules/getaddrinfo.c b/Modules/getaddrinfo.c
-index 99db7e7..52c3d1f 100644
+index 99db7e7..c47733c 100644
 --- a/Modules/getaddrinfo.c
 +++ b/Modules/getaddrinfo.c
-@@ -43,6 +43,7 @@
+@@ -43,6 +43,9 @@
  #include <sys/param.h>
  #include <sys/sysctl.h>
  #include <sys/socket.h>
++#ifdef __APPLE__
 +#define __APPLE_USE_RFC_3542 1
++#endif
  #include <netinet/in.h>
  #include <arpa/inet.h>
  #include <arpa/nameser.h>
 diff --git a/Modules/getnameinfo.c b/Modules/getnameinfo.c
-index f7985c9..bc3e74a 100644
+index f7985c9..0b8275b 100644
 --- a/Modules/getnameinfo.c
 +++ b/Modules/getnameinfo.c
-@@ -37,6 +37,7 @@
+@@ -37,6 +37,9 @@
  #if 0
  #include <sys/types.h>
  #include <sys/socket.h>
++#ifdef __APPLE__
 +#define __APPLE_USE_RFC_3542 1
++#endif
  #include <netinet/in.h>
  #include <arpa/inet.h>
  #include <arpa/nameser.h>
@@ -855,26 +859,30 @@ index 7a1a694..1a0c9e4 100644
  
      /* On MacOSX getgroups(2) can return more than MAX_GROUPS results
 diff --git a/Modules/socketmodule.c b/Modules/socketmodule.c
-index 4d5a8f6..b1279d0 100644
+index 4d5a8f6..94b5b4d 100644
 --- a/Modules/socketmodule.c
 +++ b/Modules/socketmodule.c
-@@ -259,6 +259,7 @@ http://cvsweb.netbsd.org/bsdweb.cgi/src/lib/libc/net/getaddrinfo.c.diff?r1=1.82&
+@@ -259,6 +259,9 @@ http://cvsweb.netbsd.org/bsdweb.cgi/src/lib/libc/net/getaddrinfo.c.diff?r1=1.82&
  #undef _XOPEN_SOURCE
  #include <sys/socket.h>
  #include <sys/types.h>
++#ifdef __APPLE__
 +#define __APPLE_USE_RFC_3542 1
++#endif
  #include <netinet/in.h>
  #ifdef _SS_ALIGNSIZE
  #define HAVE_GETADDRINFO 1
 diff --git a/Modules/socketmodule.h b/Modules/socketmodule.h
-index d98e00e..5f137a5 100644
+index d98e00e..3c7889d 100644
 --- a/Modules/socketmodule.h
 +++ b/Modules/socketmodule.h
-@@ -7,6 +7,7 @@
+@@ -7,6 +7,9 @@
  # else
  #   include <sys/socket.h>
  # endif
++#ifdef __APPLE__
 +#define __APPLE_USE_RFC_3542 1
++#endif
  # include <netinet/in.h>
  # if !(defined(__BEOS__) || defined(__CYGWIN__) || (defined(PYOS_OS2) && defined(PYCC_VACPP)))
  #  include <netinet/tcp.h>
@@ -1303,4 +1311,4 @@ index f764223..ff2298a 100644
              self.use_system_libffi = True
  
 -- 
-2.40.1
+2.41.0

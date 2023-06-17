@@ -1,4 +1,4 @@
-From ccdf9f79dbb03ad212193657635200717c160fe5 Mon Sep 17 00:00:00 2001
+From bb2d20d9c2cac5eff9ff5b1919ea023a4c367b4c Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
 Date: Mon, 16 Jan 2023 15:26:52 +0100
 Subject: [PATCH] Python 3.6.15 patching
@@ -7,7 +7,7 @@ Subject: [PATCH] Python 3.6.15 patching
  Lib/ctypes/macholib/dyld.py                   |  10 +
  Lib/ctypes/test/test_macholib.py              |  15 +-
  Lib/distutils/tests/test_build_ext.py         |   8 +-
- Lib/idlelib/idle_test/test_outwin.py          |   1 +
+ Lib/idlelib/idle_test/test_outwin.py          |   3 +
  Lib/sysconfig.py                              |  12 +
  Lib/test/support/__init__.py                  |  20 +-
  Lib/test/test_bytes.py                        |   1 +
@@ -27,17 +27,17 @@ Subject: [PATCH] Python 3.6.15 patching
  Modules/_ctypes/ctypes.h                      |   1 +
  Modules/_decimal/_decimal.c                   |  10 +-
  Modules/_decimal/libmpdec/mpdecimal.h         |   3 +
- Modules/getaddrinfo.c                         |   1 +
- Modules/getnameinfo.c                         |   1 +
+ Modules/getaddrinfo.c                         |   3 +
+ Modules/getnameinfo.c                         |   3 +
  Modules/posixmodule.c                         |  74 +++--
- Modules/socketmodule.c                        |   1 +
- Modules/socketmodule.h                        |   1 +
+ Modules/socketmodule.c                        |   3 +
+ Modules/socketmodule.h                        |   3 +
  Python/random.c                               |   3 +
  configure                                     |  39 ++-
  configure.ac                                  |  19 +-
  pyconfig.h.in                                 |   3 +
  setup.py                                      | 262 +++++++++++++-----
- 33 files changed, 569 insertions(+), 152 deletions(-)
+ 33 files changed, 579 insertions(+), 152 deletions(-)
 
 diff --git a/Lib/ctypes/macholib/dyld.py b/Lib/ctypes/macholib/dyld.py
 index c158e67..e1c58fc 100644
@@ -131,14 +131,22 @@ index c6502d6..85219f0 100644
              target = '%02d%01d0' % target
          else:
 diff --git a/Lib/idlelib/idle_test/test_outwin.py b/Lib/idlelib/idle_test/test_outwin.py
-index cd099ec..a2b05a4 100644
+index cd099ec..b921fdb 100644
 --- a/Lib/idlelib/idle_test/test_outwin.py
 +++ b/Lib/idlelib/idle_test/test_outwin.py
-@@ -18,6 +18,7 @@ class OutputWindowTest(unittest.TestCase):
+@@ -1,5 +1,6 @@
+ "Test outwin, coverage 76%."
+ 
++import sys
+ from idlelib import outwin
+ import unittest
+ from test.support import requires
+@@ -18,6 +19,8 @@ class OutputWindowTest(unittest.TestCase):
          root.withdraw()
          w = cls.window = outwin.OutputWindow(None, None, None, root)
          cls.text = w.text = Text(root)
-+        cls.text.update = cls.text.update_idletasks
++        if sys.platform == "darwin":
++            cls.text.update = cls.text.update_idletasks
  
      @classmethod
      def tearDownClass(cls):
@@ -237,7 +245,7 @@ index 7fa2a38..624cae7 100644
  
          # basic tests
 diff --git a/Lib/test/test_gdb.py b/Lib/test/test_gdb.py
-index 9c15fca..c65445e 100644
+index 9c15fca..a773657 100644
 --- a/Lib/test/test_gdb.py
 +++ b/Lib/test/test_gdb.py
 @@ -133,7 +133,7 @@ HAS_PYUP_PYDOWN = gdb_has_frame_select()
@@ -245,7 +253,7 @@ index 9c15fca..c65445e 100644
  BREAKPOINT_FN='builtin_id'
  
 -@unittest.skipIf(support.PGO, "not useful for PGO")
-+@unittest.skipIf(True, "fritsi: gdb requires code signing on MacOS")
++@unittest.skipIf(sys.platform == "darwin", "Daniel Fritsi: gdb requires code signing on MacOS")
  class DebuggerTests(unittest.TestCase):
  
      """Test that the debugger can debug Python."""
@@ -384,14 +392,14 @@ index 56ab0ad..013b1e9 100644
  
          def PyUnicode_FromFormat(format, *args):
 diff --git a/Lib/test/test_xml_etree.py b/Lib/test/test_xml_etree.py
-index b01709e..a61e04b 100644
+index b01709e..3eee447 100644
 --- a/Lib/test/test_xml_etree.py
 +++ b/Lib/test/test_xml_etree.py
 @@ -1668,6 +1668,7 @@ class BugsTest(unittest.TestCase):
                  b"<?xml version='1.0' encoding='ascii'?>\n"
                  b'<body>t&#227;g</body>')
  
-+    @unittest.skipIf(True, "fritsi: With using system expat, this is no longer needed")
++    @unittest.skipIf(True, "Daniel Fritsi: With using system expat, this is no longer needed")
      def test_issue3151(self):
          e = ET.XML('<prefix:localname xmlns:prefix="${stuff}"/>')
          self.assertEqual(e.tag, '{${stuff}}localname')
@@ -818,26 +826,30 @@ index a67dd9b..3e9c818 100644
      #error "unknown architecture for universal build."
    #endif
 diff --git a/Modules/getaddrinfo.c b/Modules/getaddrinfo.c
-index b6fb53c..b31a8f1 100644
+index b6fb53c..0219c04 100644
 --- a/Modules/getaddrinfo.c
 +++ b/Modules/getaddrinfo.c
-@@ -43,6 +43,7 @@
+@@ -43,6 +43,9 @@
  #include <sys/param.h>
  #include <sys/sysctl.h>
  #include <sys/socket.h>
++#ifdef __APPLE__
 +#define __APPLE_USE_RFC_3542 1
++#endif
  #include <netinet/in.h>
  #include <arpa/inet.h>
  #include <arpa/nameser.h>
 diff --git a/Modules/getnameinfo.c b/Modules/getnameinfo.c
-index f014c11..62f7433 100644
+index f014c11..a1554a5 100644
 --- a/Modules/getnameinfo.c
 +++ b/Modules/getnameinfo.c
-@@ -37,6 +37,7 @@
+@@ -37,6 +37,9 @@
  #if 0
  #include <sys/types.h>
  #include <sys/socket.h>
++#ifdef __APPLE__
 +#define __APPLE_USE_RFC_3542 1
++#endif
  #include <netinet/in.h>
  #include <arpa/inet.h>
  #include <arpa/nameser.h>
@@ -968,26 +980,30 @@ index 776a3d2..b861f34 100644
  
      /* On MacOSX getgroups(2) can return more than MAX_GROUPS results
 diff --git a/Modules/socketmodule.c b/Modules/socketmodule.c
-index 5208674..0775073 100644
+index 5208674..65b125a 100644
 --- a/Modules/socketmodule.c
 +++ b/Modules/socketmodule.c
-@@ -258,6 +258,7 @@ http://cvsweb.netbsd.org/bsdweb.cgi/src/lib/libc/net/getaddrinfo.c.diff?r1=1.82&
+@@ -258,6 +258,9 @@ http://cvsweb.netbsd.org/bsdweb.cgi/src/lib/libc/net/getaddrinfo.c.diff?r1=1.82&
  #undef _XOPEN_SOURCE
  #include <sys/socket.h>
  #include <sys/types.h>
++#ifdef __APPLE__
 +#define __APPLE_USE_RFC_3542 1
++#endif
  #include <netinet/in.h>
  #ifdef _SS_ALIGNSIZE
  #define HAVE_GETADDRINFO 1
 diff --git a/Modules/socketmodule.h b/Modules/socketmodule.h
-index af7c36a..fa97bae 100644
+index af7c36a..212ea56 100644
 --- a/Modules/socketmodule.h
 +++ b/Modules/socketmodule.h
-@@ -7,6 +7,7 @@
+@@ -7,6 +7,9 @@
  # else
  #   include <sys/socket.h>
  # endif
++#ifdef __APPLE__
 +#define __APPLE_USE_RFC_3542 1
++#endif
  # include <netinet/in.h>
  # if !defined(__CYGWIN__)
  #  include <netinet/tcp.h>
@@ -1524,4 +1540,4 @@ index e2c1898..6f7496b 100644
              depends = ['_decimal/docstrings.h']
          else:
 -- 
-2.40.1
+2.41.0

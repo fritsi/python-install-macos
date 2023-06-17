@@ -1,23 +1,23 @@
-From b4df8083b164606016b2f981d97740492707ca22 Mon Sep 17 00:00:00 2001
+From e0757fcf4d72031fdfbaadd62d28f5b57ca95143 Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
 Date: Sun, 26 Feb 2023 20:34:05 +0100
 Subject: [PATCH] Python 3.10.12 patching
 
 ---
  Lib/distutils/tests/test_build_ext.py     |  6 ++++
- Lib/idlelib/idle_test/test_colorizer.py   |  1 +
- Lib/idlelib/idle_test/test_outwin.py      |  1 +
+ Lib/idlelib/idle_test/test_colorizer.py   |  4 +++
+ Lib/idlelib/idle_test/test_outwin.py      |  3 ++
  Lib/idlelib/idle_test/test_sidebar.py     | 38 ++++++++++-------------
  Lib/test/support/__init__.py              | 18 +++++------
  Lib/test/test_gdb.py                      |  2 +-
  Lib/test/test_posix.py                    |  8 ++---
  Lib/tkinter/test/test_ttk/test_widgets.py |  9 +++---
  Modules/Setup                             | 16 ++++------
- Modules/getaddrinfo.c                     |  1 +
- Modules/getnameinfo.c                     |  1 +
- Modules/socketmodule.c                    |  1 +
- Modules/socketmodule.h                    |  1 +
- 13 files changed, 52 insertions(+), 51 deletions(-)
+ Modules/getaddrinfo.c                     |  3 ++
+ Modules/getnameinfo.c                     |  3 ++
+ Modules/socketmodule.c                    |  3 ++
+ Modules/socketmodule.h                    |  3 ++
+ 13 files changed, 65 insertions(+), 51 deletions(-)
 
 diff --git a/Lib/distutils/tests/test_build_ext.py b/Lib/distutils/tests/test_build_ext.py
 index 8e7364d..4916642 100644
@@ -44,26 +44,42 @@ index 8e7364d..4916642 100644
          # format the target value as defined in the Apple
          # Availability Macros.  We can't use the macro names since
 diff --git a/Lib/idlelib/idle_test/test_colorizer.py b/Lib/idlelib/idle_test/test_colorizer.py
-index 308bc38..e4fb890 100644
+index 308bc38..714f1a6 100644
 --- a/Lib/idlelib/idle_test/test_colorizer.py
 +++ b/Lib/idlelib/idle_test/test_colorizer.py
-@@ -171,6 +171,7 @@ class ColorDelegatorTest(unittest.TestCase):
+@@ -1,4 +1,6 @@
+ "Test colorizer, coverage 99%."
++
++import sys
+ from idlelib import colorizer
+ from test.support import requires
+ import unittest
+@@ -171,6 +173,8 @@ class ColorDelegatorTest(unittest.TestCase):
          root = cls.root = Tk()
          root.withdraw()
          text = cls.text = Text(root)
-+        cls.text.update = cls.text.update_idletasks
++        if sys.platform == "darwin":
++            cls.text.update = cls.text.update_idletasks
          cls.percolator = Percolator(text)
          # Delegator stack = [Delegator(text)]
  
 diff --git a/Lib/idlelib/idle_test/test_outwin.py b/Lib/idlelib/idle_test/test_outwin.py
-index e347bfc..6b3bf48 100644
+index e347bfc..f87c016 100644
 --- a/Lib/idlelib/idle_test/test_outwin.py
 +++ b/Lib/idlelib/idle_test/test_outwin.py
-@@ -18,6 +18,7 @@ class OutputWindowTest(unittest.TestCase):
+@@ -1,5 +1,6 @@
+ "Test outwin, coverage 76%."
+ 
++import sys
+ from idlelib import outwin
+ import unittest
+ from test.support import requires
+@@ -18,6 +19,8 @@ class OutputWindowTest(unittest.TestCase):
          root.withdraw()
          w = cls.window = outwin.OutputWindow(None, None, None, root)
          cls.text = w.text = Text(root)
-+        cls.text.update = cls.text.update_idletasks
++        if sys.platform == "darwin":
++            cls.text.update = cls.text.update_idletasks
  
      @classmethod
      def tearDownClass(cls):
@@ -165,7 +181,7 @@ index b7cf1e2..b9f66b2 100644
      # check on every platform whether tkinter can actually do anything
      if not reason:
 diff --git a/Lib/test/test_gdb.py b/Lib/test/test_gdb.py
-index 5f55489..b840613 100644
+index 5f55489..557644e 100644
 --- a/Lib/test/test_gdb.py
 +++ b/Lib/test/test_gdb.py
 @@ -137,7 +137,7 @@ HAS_PYUP_PYDOWN = gdb_has_frame_select()
@@ -173,7 +189,7 @@ index 5f55489..b840613 100644
  BREAKPOINT_FN='builtin_id'
  
 -@unittest.skipIf(support.PGO, "not useful for PGO")
-+@unittest.skipIf(True, "fritsi: gdb requires code signing on MacOS")
++@unittest.skipIf(sys.platform == "darwin", "Daniel Fritsi: gdb requires code signing on MacOS")
  class DebuggerTests(unittest.TestCase):
  
      """Test that the debugger can debug Python."""
@@ -304,52 +320,60 @@ index 87c6a15..2345241 100644
  # Interface to the Expat XML parser
  # More information on Expat can be found at www.libexpat.org.
 diff --git a/Modules/getaddrinfo.c b/Modules/getaddrinfo.c
-index 5aaa6e7..5291c97 100644
+index 5aaa6e7..d863ec9 100644
 --- a/Modules/getaddrinfo.c
 +++ b/Modules/getaddrinfo.c
-@@ -43,6 +43,7 @@
+@@ -43,6 +43,9 @@
  #include <sys/param.h>
  #include <sys/sysctl.h>
  #include <sys/socket.h>
++#ifdef __APPLE__
 +#define __APPLE_USE_RFC_3542 1
++#endif
  #include <netinet/in.h>
  #include <arpa/inet.h>
  #include <arpa/nameser.h>
 diff --git a/Modules/getnameinfo.c b/Modules/getnameinfo.c
-index db3e8ee..1924c64 100644
+index db3e8ee..6904561 100644
 --- a/Modules/getnameinfo.c
 +++ b/Modules/getnameinfo.c
-@@ -37,6 +37,7 @@
+@@ -37,6 +37,9 @@
  #if 0
  #include <sys/types.h>
  #include <sys/socket.h>
++#ifdef __APPLE__
 +#define __APPLE_USE_RFC_3542 1
++#endif
  #include <netinet/in.h>
  #include <arpa/inet.h>
  #include <arpa/nameser.h>
 diff --git a/Modules/socketmodule.c b/Modules/socketmodule.c
-index 0762a8d..a2b812d 100644
+index 0762a8d..4d6e623 100644
 --- a/Modules/socketmodule.c
 +++ b/Modules/socketmodule.c
-@@ -212,6 +212,7 @@ shutdown(how) -- shut down traffic in one or both directions\n\
+@@ -212,6 +212,9 @@ shutdown(how) -- shut down traffic in one or both directions\n\
  #undef _XOPEN_SOURCE
  #include <sys/socket.h>
  #include <sys/types.h>
++#ifdef __APPLE__
 +#define __APPLE_USE_RFC_3542 1
++#endif
  #include <netinet/in.h>
  #ifdef _SS_ALIGNSIZE
  #define HAVE_GETADDRINFO 1
 diff --git a/Modules/socketmodule.h b/Modules/socketmodule.h
-index e4f375d..4f799e4 100644
+index e4f375d..16bdb2e 100644
 --- a/Modules/socketmodule.h
 +++ b/Modules/socketmodule.h
-@@ -7,6 +7,7 @@
+@@ -7,6 +7,9 @@
  # else
  #   include <sys/socket.h>
  # endif
++#ifdef __APPLE__
 +#define __APPLE_USE_RFC_3542 1
++#endif
  # include <netinet/in.h>
  # if !defined(__CYGWIN__)
  #  include <netinet/tcp.h>
 -- 
-2.40.1
+2.41.0
