@@ -1,4 +1,4 @@
-From a7a9174c90d715eb8e9c895b73423e3f097c9e65 Mon Sep 17 00:00:00 2001
+From d8de24c22aa5f407b56e52ba656a483b17e41b82 Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
 Date: Mon, 16 Jan 2023 15:26:35 +0100
 Subject: [PATCH] Python 2.7.18 patching
@@ -1303,4 +1303,4 @@ index f764223..ff2298a 100644
              self.use_system_libffi = True
  
 -- 
-2.39.2
+2.40.1

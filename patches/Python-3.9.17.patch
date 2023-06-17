@@ -1,7 +1,7 @@
-From 85c3da4dc2d164781e36364554b4ac9392f24e4a Mon Sep 17 00:00:00 2001
+From 55f26b6e683b55159fcd98da15da249868ffe81d Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
 Date: Mon, 16 Jan 2023 15:28:14 +0100
-Subject: [PATCH] Python 3.9.16 patching
+Subject: [PATCH] Python 3.9.17 patching
 
 ---
  Lib/distutils/tests/test_build_ext.py     |  6 ++++++
@@ -316,4 +316,4 @@ index 0bec170..9b75e53 100644
              depends = ['_decimal/docstrings.h']
          else:
 -- 
-2.39.2
+2.40.1

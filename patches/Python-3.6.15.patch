@@ -1,4 +1,4 @@
-From 86ca8d70ea0344918911cb4b7c3fc1a09fc89e81 Mon Sep 17 00:00:00 2001
+From ccdf9f79dbb03ad212193657635200717c160fe5 Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
 Date: Mon, 16 Jan 2023 15:26:52 +0100
 Subject: [PATCH] Python 3.6.15 patching
@@ -1524,4 +1524,4 @@ index e2c1898..6f7496b 100644
              depends = ['_decimal/docstrings.h']
          else:
 -- 
-2.39.2
+2.40.1

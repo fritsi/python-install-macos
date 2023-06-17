@@ -30,7 +30,7 @@ source "$SCRIPTS_DIR/utils/print-func.sh"
 source "$SCRIPTS_DIR/utils/exec-func.sh"
 source "$SCRIPTS_DIR/utils/utils.sh"
 
-SUPPORTED_VERSIONS=("2.7.18" "3.6.15" "3.7.16" "3.8.16" "3.9.16" "3.10.10" "3.11.2")
+SUPPORTED_VERSIONS=("2.7.18" "3.6.15" "3.7.17" "3.8.17" "3.9.17" "3.10.12" "3.11.4")
 
 SUPPORTED_VERSIONS_TEXT="$(versions="${SUPPORTED_VERSIONS[*]}" && echo "${versions// /, }")"
 
@@ -341,12 +341,12 @@ if ! $P_DRY_RUN_MODE; then
     sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Downloading https://www.python.org/ftp/python/$PYTHON_VERSION/Python-$PYTHON_VERSION.tgz into $WORKING_DIR/Python-$PYTHON_VERSION.tgz"
     sysout ""
 
-    wget --no-verbose --no-check-certificate "https://www.python.org/ftp/python/$PYTHON_VERSION/Python-$PYTHON_VERSION.tgz" -O "$WORKING_DIR/Python-$PYTHON_VERSION.tgz"
+    wget --no-verbose --no-check-certificate --no-hsts "https://www.python.org/ftp/python/$PYTHON_VERSION/Python-$PYTHON_VERSION.tgz" -O "$WORKING_DIR/Python-$PYTHON_VERSION.tgz"
 
     cd "$WORKING_DIR"
 else
     {
-        echo "wget --no-verbose --no-check-certificate \"https://www.python.org/ftp/python/$PYTHON_VERSION/Python-$PYTHON_VERSION.tgz\" -O \"\$WORKING_DIR/Python-$PYTHON_VERSION.tgz\""
+        echo "wget --no-verbose --no-check-certificate --no-hsts \"https://www.python.org/ftp/python/$PYTHON_VERSION/Python-$PYTHON_VERSION.tgz\" -O \"\$WORKING_DIR/Python-$PYTHON_VERSION.tgz\""
         echo ""
         echo "cd \"\$WORKING_DIR\""
         echo ""
