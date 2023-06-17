@@ -792,7 +792,7 @@ if ! $P_DRY_RUN_MODE; then
 
     sysout ""
 
-    sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Upgrading pip and setuptools"
+    sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Upgrading pip, setuptools and wheel"
     sysout ""
 else
     {
@@ -817,18 +817,18 @@ else
     fi
 fi
 
-# Upgrading setuptools
+# Upgrading setuptools and wheel
 if [[ "$PY_POSTFIX" == "2.7" ]]; then
     if ! $P_DRY_RUN_MODE; then
-        pip2 install --upgrade setuptools
+        pip2 install --upgrade setuptools wheel
     else
-        echo "pip2 install --upgrade setuptools" >> "$G_PY_COMPILE_COMMANDS_FILE"
+        echo "pip2 install --upgrade setuptools wheel" >> "$G_PY_COMPILE_COMMANDS_FILE"
     fi
 else
     if ! $P_DRY_RUN_MODE; then
-        "pip$PY_POSTFIX" install --upgrade setuptools
+        "pip$PY_POSTFIX" install --upgrade setuptools wheel
     else
-        echo "pip$PY_POSTFIX install --upgrade setuptools" >> "$G_PY_COMPILE_COMMANDS_FILE"
+        echo "pip$PY_POSTFIX install --upgrade setuptools wheel" >> "$G_PY_COMPILE_COMMANDS_FILE"
     fi
 fi
 
