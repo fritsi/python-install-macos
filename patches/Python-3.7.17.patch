@@ -1,4 +1,4 @@
-From cf7bb22834bfbabb2c8bea521fb069f3ed16b9eb Mon Sep 17 00:00:00 2001
+From 0b5f4789a820a336b5b0ba4229d46bd1ab6854ea Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
 Date: Mon, 16 Jan 2023 15:27:12 +0100
 Subject: [PATCH] Python 3.7.17 patching
@@ -12,6 +12,7 @@ Subject: [PATCH] Python 3.7.17 patching
  Lib/sysconfig.py                           |  12 +++
  Lib/test/support/__init__.py               |  18 ++--
  Lib/test/test_bytes.py                     |   1 +
+ Lib/test/test_capi.py                      |  37 ++++---
  Lib/test/test_gdb.py                       |   2 +-
  Lib/test/test_httpservers.py               |   4 +-
  Lib/test/test_platform.py                  |   2 +-
@@ -26,6 +27,7 @@ Subject: [PATCH] Python 3.7.17 patching
  Modules/_ctypes/ctypes.h                   |   1 +
  Modules/_decimal/_decimal.c                |  10 +-
  Modules/_decimal/libmpdec/mpdecimal.h      |   3 +
+ Modules/_testcapimodule.c                  |  29 +++---
  Modules/getaddrinfo.c                      |   3 +
  Modules/getnameinfo.c                      |   3 +
  Modules/socketmodule.c                     |   3 +
@@ -34,7 +36,7 @@ Subject: [PATCH] Python 3.7.17 patching
  configure.ac                               |   6 ++
  pyconfig.h.in                              |   3 +
  setup.py                                   |  67 +++++++++---
- 30 files changed, 323 insertions(+), 71 deletions(-)
+ 32 files changed, 361 insertions(+), 99 deletions(-)
 
 diff --git a/Lib/ctypes/macholib/dyld.py b/Lib/ctypes/macholib/dyld.py
 index 9d86b05..931a9e7 100644
@@ -225,6 +227,69 @@ index 3387a1b..81a1b36 100644
          PyBytes_FromFormat.restype = py_object
  
          # basic tests
+diff --git a/Lib/test/test_capi.py b/Lib/test/test_capi.py
+index 3ed2263..86c9e8c 100644
+--- a/Lib/test/test_capi.py
++++ b/Lib/test/test_capi.py
+@@ -28,6 +28,13 @@ _testcapi = support.import_module('_testcapi')
+ Py_DEBUG = hasattr(sys, 'gettotalrefcount')
+ 
+ 
++try:
++    import platform
++    is_darwin_arm64 = sys.platform == "darwin" and "arm64" in platform.machine()
++except:
++    is_darwin_arm64 = False
++
++
+ def testfunction(self):
+     """some doc"""
+     return self
+@@ -522,28 +529,30 @@ class PyMemDebugTests(unittest.TestCase):
+         code = 'import _testcapi; _testcapi.pyobject_malloc_without_gil()'
+         self.check_malloc_without_gil(code)
+ 
+-    def check_pyobject_is_freed(self, func):
+-        code = textwrap.dedent('''
++    def check_pyobject_is_freed(self, func_name):
++        code = textwrap.dedent(f'''
+             import gc, os, sys, _testcapi
+             # Disable the GC to avoid crash on GC collection
+             gc.disable()
+-            obj = _testcapi.{func}()
+-            error = (_testcapi.pyobject_is_freed(obj) == False)
+-            # Exit immediately to avoid a crash while deallocating
+-            # the invalid object
+-            os._exit(int(error))
++            try:
++                _testcapi.{func_name}()
++                # Exit immediately to avoid a crash while deallocating
++                # the invalid object
++                os._exit(0)
++            except _testcapi.error:
++                os._exit(1)
+         ''')
+-        code = code.format(func=func)
+         assert_python_ok('-c', code, PYTHONMALLOC=self.PYTHONMALLOC)
+ 
+-    def test_pyobject_is_freed_uninitialized(self):
+-        self.check_pyobject_is_freed('pyobject_uninitialized')
++    def test_pyobject_uninitialized_is_freed(self):
++        self.check_pyobject_is_freed('check_pyobject_uninitialized_is_freed')
+ 
+-    def test_pyobject_is_freed_forbidden_bytes(self):
+-        self.check_pyobject_is_freed('pyobject_forbidden_bytes')
++    def test_pyobject_forbidden_bytes_is_freed(self):
++        self.check_pyobject_is_freed('check_pyobject_forbidden_bytes_is_freed')
+ 
+-    def test_pyobject_is_freed_free(self):
+-        self.check_pyobject_is_freed('pyobject_freed')
++    @unittest.skipIf(is_darwin_arm64, "Daniel Fritsi: Doesn't work on macOS arm64")
++    def test_pyobject_freed_is_freed(self):
++        self.check_pyobject_is_freed('check_pyobject_freed_is_freed')
+ 
+ 
+ class PyMemMallocDebugTests(PyMemDebugTests):
 diff --git a/Lib/test/test_gdb.py b/Lib/test/test_gdb.py
 index fe603be..4f04ebc 100644
 --- a/Lib/test/test_gdb.py
@@ -760,6 +825,87 @@ index a67dd9b..3e9c818 100644
    #else
      #error "unknown architecture for universal build."
    #endif
+diff --git a/Modules/_testcapimodule.c b/Modules/_testcapimodule.c
+index 6996d22..22bd48e 100644
+--- a/Modules/_testcapimodule.c
++++ b/Modules/_testcapimodule.c
+@@ -4248,15 +4248,17 @@ test_pymem_getallocatorsname(PyObject *self, PyObject *args)
+ 
+ 
+ static PyObject*
+-pyobject_is_freed(PyObject *self, PyObject *op)
++test_pyobject_is_freed(const char *test_name, PyObject *op)
+ {
+-    int res = _PyObject_IsFreed(op);
+-    return PyBool_FromLong(res);
++    if (!_PyObject_IsFreed(op)) {
++        return raiseTestError(test_name, "object is not seen as freed");
++    }
++    Py_RETURN_NONE;
+ }
+ 
+ 
+ static PyObject*
+-pyobject_uninitialized(PyObject *self, PyObject *args)
++check_pyobject_uninitialized_is_freed(PyObject *self, PyObject *Py_UNUSED(args))
+ {
+     PyObject *op = (PyObject *)PyObject_Malloc(sizeof(PyObject));
+     if (op == NULL) {
+@@ -4265,12 +4267,12 @@ pyobject_uninitialized(PyObject *self, PyObject *args)
+     /* Initialize reference count to avoid early crash in ceval or GC */
+     Py_REFCNT(op) = 1;
+     /* object fields like ob_type are uninitialized! */
+-    return op;
++    return test_pyobject_is_freed("check_pyobject_uninitialized_is_freed", op);
+ }
+ 
+ 
+ static PyObject*
+-pyobject_forbidden_bytes(PyObject *self, PyObject *args)
++check_pyobject_forbidden_bytes_is_freed(PyObject *self, PyObject *Py_UNUSED(args))
+ {
+     /* Allocate an incomplete PyObject structure: truncate 'ob_type' field */
+     PyObject *op = (PyObject *)PyObject_Malloc(offsetof(PyObject, ob_type));
+@@ -4280,13 +4282,13 @@ pyobject_forbidden_bytes(PyObject *self, PyObject *args)
+     /* Initialize reference count to avoid early crash in ceval or GC */
+     Py_REFCNT(op) = 1;
+     /* ob_type field is after the memory block: part of "forbidden bytes"
+-       when using debug hooks on memory allocatrs! */
+-    return op;
++       when using debug hooks on memory allocators! */
++    return test_pyobject_is_freed("check_pyobject_forbidden_bytes_is_freed", op);
+ }
+ 
+ 
+ static PyObject*
+-pyobject_freed(PyObject *self, PyObject *args)
++check_pyobject_freed_is_freed(PyObject *self, PyObject *Py_UNUSED(args))
+ {
+     PyObject *op = _PyObject_CallNoArg((PyObject *)&PyBaseObject_Type);
+     if (op == NULL) {
+@@ -4296,7 +4298,7 @@ pyobject_freed(PyObject *self, PyObject *args)
+     /* Reset reference count to avoid early crash in ceval or GC */
+     Py_REFCNT(op) = 1;
+     /* object memory is freed! */
+-    return op;
++    return test_pyobject_is_freed("check_pyobject_freed_is_freed", op);
+ }
+ 
+ 
+@@ -4876,10 +4878,9 @@ static PyMethodDef TestMethods[] = {
+     {"pymem_api_misuse", pymem_api_misuse, METH_NOARGS},
+     {"pymem_malloc_without_gil", pymem_malloc_without_gil, METH_NOARGS},
+     {"pymem_getallocatorsname", test_pymem_getallocatorsname, METH_NOARGS},
+-    {"pyobject_is_freed", (PyCFunction)(void(*)(void))pyobject_is_freed, METH_O},
+-    {"pyobject_uninitialized", pyobject_uninitialized, METH_NOARGS},
+-    {"pyobject_forbidden_bytes", pyobject_forbidden_bytes, METH_NOARGS},
+-    {"pyobject_freed", pyobject_freed, METH_NOARGS},
++    {"check_pyobject_uninitialized_is_freed", check_pyobject_uninitialized_is_freed, METH_NOARGS},
++    {"check_pyobject_forbidden_bytes_is_freed", check_pyobject_forbidden_bytes_is_freed, METH_NOARGS},
++    {"check_pyobject_freed_is_freed", check_pyobject_freed_is_freed, METH_NOARGS},
+     {"pyobject_malloc_without_gil", pyobject_malloc_without_gil, METH_NOARGS},
+     {"tracemalloc_track", tracemalloc_track, METH_VARARGS},
+     {"tracemalloc_untrack", tracemalloc_untrack, METH_VARARGS},
 diff --git a/Modules/getaddrinfo.c b/Modules/getaddrinfo.c
 index 5aaa6e7..d863ec9 100644
 --- a/Modules/getaddrinfo.c
