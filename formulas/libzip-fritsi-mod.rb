@@ -2,8 +2,8 @@ class LibzipFritsiMod < Formula
   desc "C library for reading, creating, and modifying zip archives"
   homepage "https://libzip.org/"
 
-  url "https://libzip.org/download/libzip-1.9.2.tar.xz"
-  sha256 "c93e9852b7b2dc931197831438fee5295976ee0ba24f8524a8907be5c2ba5937"
+  url "https://libzip.org/download/libzip-1.10.0.tar.xz"
+  sha256 "cd2a7ac9f1fb5bfa6218272d9929955dc7237515bba6e14b5ad0e1d1e2212b43"
 
   license "BSD-3-Clause"
 

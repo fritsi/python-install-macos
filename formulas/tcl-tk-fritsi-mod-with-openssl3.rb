@@ -10,6 +10,11 @@ class TclTkFritsiModWithOpenssl3 < Formula
 
   keg_only "This is a custom fork, so we do not want to symlink it into brew --prefix"
 
+  patch :p1 do
+    url "https://raw.githubusercontent.com/fritsi/python-install-macos/master/patches/tcl-tk/tcl.patch"
+    sha256 "67e4edf5625cef4209e30267edda323f50cee90f85716df50d40cea506c197c4"
+  end
+
   depends_on "freetype" => :build
   depends_on "pkg-config" => :build
 
@@ -40,6 +45,11 @@ class TclTkFritsiModWithOpenssl3 < Formula
     url "https://downloads.sourceforge.net/project/tcl/Tcl/8.6.13/tk8.6.13-src.tar.gz"
     mirror "https://fossies.org/linux/misc/tk8.6.13-src.tar.gz"
     sha256 "2e65fa069a23365440a3c56c556b8673b5e32a283800d8d9b257e3f584ce0675"
+
+    patch :p1 do
+      url "https://raw.githubusercontent.com/fritsi/python-install-macos/master/patches/tcl-tk/tk.patch"
+      sha256 "b7ff3245d1dc7093d85351edf38f321021e47b1889d1fc550464bad35051cf45"
+    end
   end
 
   resource "itk4" do
