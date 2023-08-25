@@ -483,11 +483,6 @@ if [[ "$PY_VERSION_NUM" -ge 307 ]]; then
     CONFIGURE_PARAMS+=("--with-openssl=$L_OPENSSL_BASE")
 fi
 
-# --with-dtrace is only available from Python 3.9
-if [[ "$PY_VERSION_NUM" -ge 309 ]]; then
-    CONFIGURE_PARAMS+=("--with-dtrace")
-fi
-
 # --enable-loadable-sqlite-extensions is only available from Python 3
 if [[ "$PY_VERSION_NUM" -ge 300 ]]; then
     CONFIGURE_PARAMS+=("--enable-loadable-sqlite-extensions")

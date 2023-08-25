@@ -50,6 +50,11 @@ class TclTkFritsiModWithOpenssl3 < Formula
       url "https://raw.githubusercontent.com/fritsi/python-install-macos/master/patches/tcl-tk/tk.patch"
       sha256 "b7ff3245d1dc7093d85351edf38f321021e47b1889d1fc550464bad35051cf45"
     end
+
+    patch :p1 do
+      url "https://raw.githubusercontent.com/fritsi/python-install-macos/master/patches/tcl-tk/tk-leak-fix.patch"
+      sha256 "16d98dccba7168071462da1bc436aec5d7cc854196dc06fd33bc03a8f3302220"
+    end
   end
 
   resource "itk4" do
@@ -84,7 +89,6 @@ class TclTkFritsiModWithOpenssl3 < Formula
     cd "unix" do
       args = [
         "--enable-64bit",
-        "--enable-dtrace",
         "--enable-rpath",
         "--enable-shared",
         "--enable-threads",

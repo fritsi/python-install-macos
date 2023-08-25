@@ -2,7 +2,7 @@
 
 This documentation provides scripts that assist in compiling Python from source for both Apple Intel and Apple Silicon platforms.
 
-**Tested on Apple Intel macOS Big Sur and Apple M1 macOS Montgomery.**
+**Tested on Apple Intel macOS Big Sur and Apple M1 macOS Ventura.**
 
 ## Usage
 
@@ -21,9 +21,13 @@ For example, for Python 3.8, it will be `{installBaseDir}/python-3.8`.
 The script will prompt you to choose whether you want to run the Python tests or not.
 This allows you to verify the integrity of the compiled Python installation.
 
-**If you followed the instructions, there should be no failures.**
+**If you followed the instructions, there should be no failures.** _(*1)_
 
-If any test failures occur, the script will pause and ask if you want to proceed.
+In case of encountering any test failures, the script will halt and prompt you for further action.
+
+_(*1) Regrettably, this doesn't hold fully accurate for macOS on ARM systems. Should you come across failures in any of the
+following tests: test_idle, test_tk, test_tkinter, test_ttk, test_ttk_guionly; it's advised to disregard them. These tests
+involve the Tcl-Tk UI and are affected by numerous unresolved bug reports specifically concerning macOS on ARM._
 
 **NOTE:** In non-interactive mode, the script will always run the tests.
 
