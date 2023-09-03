@@ -12,8 +12,8 @@ Running this script will download the specified version of the Python source cod
 
 **NOTE:** Currently, only macOS is supported!
 
-**Supported Python versions:** `2.7.18`**,** `3.6.15`**,** `3.7.17`**,** `3.8.17`**,** `3.9.17`**,** `3.10.12`
-**,** `3.11.4`.
+**Supported Python versions:** `2.7.18`**,** `3.6.15`**,** `3.7.17`**,** `3.8.18`**,** `3.9.18`**,** `3.10.13`
+**,** `3.11.5`.
 
 The provided `installBaseDir` is not the final installation directory, but a subdirectory within it.
 For example, for Python 3.8, it will be `{installBaseDir}/python-3.8`.

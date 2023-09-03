@@ -1,7 +1,7 @@
-From f12f7c5f1ed1efeeb36452b863024f781ac9e92f Mon Sep 17 00:00:00 2001
+From 5330e842057c89e986deff2204c34d0d22959e16 Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
-Date: Mon, 16 Jan 2023 15:28:14 +0100
-Subject: [PATCH] Python 3.9.17 patching
+Date: Fri, 1 Sep 2023 14:30:12 +0200
+Subject: [PATCH] Python 3.9.18 patching
 
 ---
  Lib/distutils/tests/test_build_ext.py     |  6 ++++++
@@ -9,7 +9,6 @@ Subject: [PATCH] Python 3.9.17 patching
  Lib/idlelib/idle_test/test_outwin.py      |  3 +++
  Lib/test/support/__init__.py              | 18 +++++++++---------
  Lib/test/test_gdb.py                      |  2 +-
- Lib/test/test_httpservers.py              |  4 ++--
  Lib/test/test_posix.py                    |  8 ++++----
  Lib/tkinter/test/test_ttk/test_widgets.py |  9 ++++-----
  Modules/Setup                             | 16 +++++++---------
@@ -19,7 +18,7 @@ Subject: [PATCH] Python 3.9.17 patching
  Modules/socketmodule.c                    |  3 +++
  Modules/socketmodule.h                    |  3 +++
  setup.py                                  |  2 +-
- 15 files changed, 54 insertions(+), 33 deletions(-)
+ 14 files changed, 52 insertions(+), 31 deletions(-)
 
 diff --git a/Lib/distutils/tests/test_build_ext.py b/Lib/distutils/tests/test_build_ext.py
 index 808c0dc..7e4632f 100644
@@ -127,23 +126,6 @@ index b3aa855..f063564 100644
  class DebuggerTests(unittest.TestCase):
  
      """Test that the debugger can debug Python."""
-diff --git a/Lib/test/test_httpservers.py b/Lib/test/test_httpservers.py
-index 153206d..b70a109 100644
---- a/Lib/test/test_httpservers.py
-+++ b/Lib/test/test_httpservers.py
-@@ -418,10 +418,10 @@ class SimpleHTTPServerTestCase(BaseTestCase):
-     def test_undecodable_parameter(self):
-         # sanity check using a valid parameter
-         response = self.request(self.base_url + '/?x=123').read()
--        self.assertRegex(response, f'listing for {self.base_url}/\?x=123'.encode('latin1'))
-+        self.assertRegex(response, f'listing for {self.base_url}/\\?x=123'.encode('latin1'))
-         # now the bogus encoding
-         response = self.request(self.base_url + '/?x=%bb').read()
--        self.assertRegex(response, f'listing for {self.base_url}/\?x=\xef\xbf\xbd'.encode('latin1'))
-+        self.assertRegex(response, f'listing for {self.base_url}/\\?x=\xef\xbf\xbd'.encode('latin1'))
- 
-     def test_get_dir_redirect_location_domain_injection_bug(self):
-         """Ensure //evil.co/..%2f../../X does not put //evil.co/ in Location.
 diff --git a/Lib/test/test_posix.py b/Lib/test/test_posix.py
 index 3c0ddeb..71dce95 100644
 --- a/Lib/test/test_posix.py
@@ -370,4 +352,4 @@ index 0bec170..9b75e53 100644
              depends = ['_decimal/docstrings.h']
          else:
 -- 
-2.41.0
+2.42.0

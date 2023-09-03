@@ -1,33 +1,30 @@
-From f2d8bb4e09d7152f620efc61298140c7ed557b4c Mon Sep 17 00:00:00 2001
+From 925e20918379d6a74ec828eb6f53b0a54e53395d Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
-Date: Sun, 11 Jun 2023 13:31:48 +0200
-Subject: [PATCH] Python 3.11.4 patching
+Date: Sun, 26 Feb 2023 20:34:05 +0100
+Subject: [PATCH] Python 3.10.13 patching
 
 ---
- Lib/distutils/tests/test_build_ext.py     |  6 ++
- Lib/idlelib/idle_test/test_colorizer.py   |  4 ++
- Lib/idlelib/idle_test/test_editor.py      |  3 +
- Lib/idlelib/idle_test/test_outwin.py      |  3 +
- Lib/idlelib/idle_test/test_sidebar.py     | 38 +++++------
- Lib/test/support/__init__.py              | 18 +++---
+ Lib/distutils/tests/test_build_ext.py     |  6 ++++
+ Lib/idlelib/idle_test/test_colorizer.py   |  4 +++
+ Lib/idlelib/idle_test/test_outwin.py      |  3 ++
+ Lib/idlelib/idle_test/test_sidebar.py     | 38 ++++++++++-------------
+ Lib/test/support/__init__.py              | 18 +++++------
  Lib/test/test_gdb.py                      |  2 +-
- Lib/test/test_httpservers.py              |  4 +-
- Lib/test/test_posix.py                    |  8 +--
- Lib/test/test_tools/test_freeze.py        |  1 +
- Lib/tkinter/test/test_ttk/test_widgets.py |  9 ++-
- Modules/Setup                             | 17 ++---
- Modules/getaddrinfo.c                     |  3 +
- Modules/getnameinfo.c                     |  3 +
- Modules/socketmodule.c                    |  3 +
- Modules/socketmodule.h                    |  3 +
- setup.py                                  | 79 ++++++++++++++++++++++-
- 17 files changed, 150 insertions(+), 54 deletions(-)
+ Lib/test/test_httpservers.py              |  4 +--
+ Lib/test/test_posix.py                    |  8 ++---
+ Lib/tkinter/test/test_ttk/test_widgets.py |  9 +++---
+ Modules/Setup                             | 20 +++++-------
+ Modules/getaddrinfo.c                     |  3 ++
+ Modules/getnameinfo.c                     |  3 ++
+ Modules/socketmodule.c                    |  3 ++
+ Modules/socketmodule.h                    |  3 ++
+ 14 files changed, 69 insertions(+), 55 deletions(-)
 
 diff --git a/Lib/distutils/tests/test_build_ext.py b/Lib/distutils/tests/test_build_ext.py
-index 4ebeafe..fa303e3 100644
+index 8e7364d..4916642 100644
 --- a/Lib/distutils/tests/test_build_ext.py
 +++ b/Lib/distutils/tests/test_build_ext.py
-@@ -459,6 +459,9 @@ class BuildExtTestCase(TempdirManager,
+@@ -457,6 +457,9 @@ class BuildExtTestCase(TempdirManager,
          # deployment target higher than that of the interpreter: the ext
          # module may depend on some newer OS feature.
          deptarget = sysconfig.get_config_var('MACOSX_DEPLOYMENT_TARGET')
@@ -37,7 +34,7 @@ index 4ebeafe..fa303e3 100644
          if deptarget:
              # increment the minor version number (i.e. 10.6 -> 10.7)
              deptarget = [int(x) for x in deptarget.split('.')]
-@@ -494,6 +497,9 @@ class BuildExtTestCase(TempdirManager,
+@@ -492,6 +495,9 @@ class BuildExtTestCase(TempdirManager,
  
          # get the deployment target that the interpreter was built with
          target = sysconfig.get_config_var('MACOSX_DEPLOYMENT_TARGET')
@@ -67,28 +64,8 @@ index 308bc38..714f1a6 100644
          cls.percolator = Percolator(text)
          # Delegator stack = [Delegator(text)]
  
-diff --git a/Lib/idlelib/idle_test/test_editor.py b/Lib/idlelib/idle_test/test_editor.py
-index 9296a6d..e676c3a 100644
---- a/Lib/idlelib/idle_test/test_editor.py
-+++ b/Lib/idlelib/idle_test/test_editor.py
-@@ -1,5 +1,6 @@
- "Test editor, coverage 53%."
- 
-+import sys
- from idlelib import editor
- import unittest
- from collections import namedtuple
-@@ -189,6 +190,8 @@ class IndentSearcherTest(unittest.TestCase):
-         cls.root = Tk()
-         cls.root.withdraw()
-         cls.text = Text(cls.root)
-+        if sys.platform == "darwin":
-+            cls.text.update = cls.text.update_idletasks
- 
-     @classmethod
-     def tearDownClass(cls):
 diff --git a/Lib/idlelib/idle_test/test_outwin.py b/Lib/idlelib/idle_test/test_outwin.py
-index d6e85ad..9e49d09 100644
+index e347bfc..f87c016 100644
 --- a/Lib/idlelib/idle_test/test_outwin.py
 +++ b/Lib/idlelib/idle_test/test_outwin.py
 @@ -1,5 +1,6 @@
@@ -108,7 +85,7 @@ index d6e85ad..9e49d09 100644
      @classmethod
      def tearDownClass(cls):
 diff --git a/Lib/idlelib/idle_test/test_sidebar.py b/Lib/idlelib/idle_test/test_sidebar.py
-index fb52b3a..cd62af4 100644
+index 049531e..9f1d745 100644
 --- a/Lib/idlelib/idle_test/test_sidebar.py
 +++ b/Lib/idlelib/idle_test/test_sidebar.py
 @@ -40,28 +40,22 @@ class LineNumbersTest(unittest.TestCase):
@@ -141,7 +118,7 @@ index fb52b3a..cd62af4 100644
 -    @classmethod
 -    def tearDownClass(cls):
 -        cls.editwin.per.close()
--        cls.root.update_idletasks()
+-        cls.root.update()
 -        cls.root.destroy()
 -        del cls.text, cls.text_frame, cls.editwin, cls.root
 +        self.editwin = Dummy_editwin(self.text)
@@ -168,18 +145,18 @@ index fb52b3a..cd62af4 100644
          self.assertIsNotNone(text.dlineinfo(text.index(f'{last_lineno}.0')))
  
 -        # Scroll up using the <MouseWheel> event.
--        # The meaning of delta is platform-dependent.
+-        # The meaning delta is platform-dependant.
 -        delta = -1 if sys.platform == 'darwin' else 120
 -        sidebar.canvas.event_generate('<MouseWheel>', x=0, y=0, delta=delta)
 +        sidebar.canvas.event_generate('<MouseWheel>', x=0, y=0, delta=120)
          yield
-         if sys.platform != 'darwin':  # .update_idletasks() does not work.
-             self.assertIsNone(text.dlineinfo(text.index(f'{last_lineno}.0')))
+         self.assertIsNone(text.dlineinfo(text.index(f'{last_lineno}.0')))
+ 
 diff --git a/Lib/test/support/__init__.py b/Lib/test/support/__init__.py
-index 98be9cd..d5257fc 100644
+index b7cf1e2..b9f66b2 100644
 --- a/Lib/test/support/__init__.py
 +++ b/Lib/test/support/__init__.py
-@@ -260,15 +260,15 @@ def _is_gui_available():
+@@ -246,15 +246,15 @@ def _is_gui_available():
  
          if app_services.CGMainDisplayID() == 0:
              reason = "gui tests cannot run without OS X window manager"
@@ -205,10 +182,10 @@ index 98be9cd..d5257fc 100644
      # check on every platform whether tkinter can actually do anything
      if not reason:
 diff --git a/Lib/test/test_gdb.py b/Lib/test/test_gdb.py
-index 0f39b8f..166ff9f 100644
+index 5f55489..557644e 100644
 --- a/Lib/test/test_gdb.py
 +++ b/Lib/test/test_gdb.py
-@@ -140,7 +140,7 @@ HAS_PYUP_PYDOWN = gdb_has_frame_select()
+@@ -137,7 +137,7 @@ HAS_PYUP_PYDOWN = gdb_has_frame_select()
  
  BREAKPOINT_FN='builtin_id'
  
@@ -218,10 +195,10 @@ index 0f39b8f..166ff9f 100644
  
      """Test that the debugger can debug Python."""
 diff --git a/Lib/test/test_httpservers.py b/Lib/test/test_httpservers.py
-index cdd1bea..95c4cd1 100644
+index 66ab064..6b93c91 100644
 --- a/Lib/test/test_httpservers.py
 +++ b/Lib/test/test_httpservers.py
-@@ -442,10 +442,10 @@ class SimpleHTTPServerTestCase(BaseTestCase):
+@@ -420,10 +420,10 @@ class SimpleHTTPServerTestCase(BaseTestCase):
      def test_undecodable_parameter(self):
          # sanity check using a valid parameter
          response = self.request(self.base_url + '/?x=123').read()
@@ -235,19 +212,19 @@ index cdd1bea..95c4cd1 100644
      def test_get_dir_redirect_location_domain_injection_bug(self):
          """Ensure //evil.co/..%2f../../X does not put //evil.co/ in Location.
 diff --git a/Lib/test/test_posix.py b/Lib/test/test_posix.py
-index e643d8e..b201941 100644
+index 19bc885..43d4ec0 100644
 --- a/Lib/test/test_posix.py
 +++ b/Lib/test/test_posix.py
-@@ -1072,7 +1072,7 @@ class PosixTester(unittest.TestCase):
+@@ -1057,7 +1057,7 @@ class PosixTester(unittest.TestCase):
+     @unittest.skipUnless(hasattr(os, 'getegid'), "test needs os.getegid()")
      @unittest.skipUnless(hasattr(os, 'popen'), "test needs os.popen()")
-     @support.requires_subprocess()
      def test_getgroups(self):
 -        with os.popen('id -G 2>/dev/null') as idg:
 +        with os.popen('/usr/bin/id -G 2>/dev/null') as idg:
              groups = idg.read().strip()
              ret = idg.close()
  
-@@ -1080,8 +1080,8 @@ class PosixTester(unittest.TestCase):
+@@ -1065,8 +1065,8 @@ class PosixTester(unittest.TestCase):
              idg_groups = set(int(g) for g in groups.split())
          except ValueError:
              idg_groups = set()
@@ -258,7 +235,7 @@ index e643d8e..b201941 100644
  
          # Issues 16698: OS X ABIs prior to 10.6 have limits on getgroups()
          if sys.platform == 'darwin':
-@@ -1090,7 +1090,7 @@ class PosixTester(unittest.TestCase):
+@@ -1075,7 +1075,7 @@ class PosixTester(unittest.TestCase):
              if tuple(int(n) for n in dt.split('.')[0:2]) < (10, 6):
                  raise unittest.SkipTest("getgroups(2) is broken prior to 10.6")
  
@@ -267,20 +244,8 @@ index e643d8e..b201941 100644
          # groups, ignoring order, duplicates, and the effective gid.
          # #10822/#26944 - It is implementation defined whether
          # posix.getgroups() includes the effective gid.
-diff --git a/Lib/test/test_tools/test_freeze.py b/Lib/test/test_tools/test_freeze.py
-index 2ba36ca..caf7579 100644
---- a/Lib/test/test_tools/test_freeze.py
-+++ b/Lib/test/test_tools/test_freeze.py
-@@ -17,6 +17,7 @@ with imports_under_tool('freeze', 'test'):
- @support.skip_if_buildbot('not all buildbots have enough space')
- class TestFreeze(unittest.TestCase):
- 
-+    @unittest.skipIf(True, "Daniel Fritsi: This does not seem to work")
-     def test_freeze_simple_script(self):
-         script = textwrap.dedent("""
-             import sys
 diff --git a/Lib/tkinter/test/test_ttk/test_widgets.py b/Lib/tkinter/test/test_ttk/test_widgets.py
-index 96d2afc..dde4b3a 100644
+index c314296..065d80a 100644
 --- a/Lib/tkinter/test/test_ttk/test_widgets.py
 +++ b/Lib/tkinter/test/test_ttk/test_widgets.py
 @@ -300,7 +300,7 @@ class EntryTest(AbstractWidgetTest, unittest.TestCase):
@@ -311,7 +276,7 @@ index 96d2afc..dde4b3a 100644
  
      def setUp(self):
          super().setUp()
-@@ -1122,7 +1121,7 @@ class SpinboxTest(EntryTest, unittest.TestCase):
+@@ -1123,7 +1122,7 @@ class SpinboxTest(EntryTest, unittest.TestCase):
          'takefocus', 'textvariable', 'to', 'validate', 'validatecommand',
          'values', 'width', 'wrap', 'xscrollcommand',
      )
@@ -321,61 +286,71 @@ index 96d2afc..dde4b3a 100644
      def setUp(self):
          super().setUp()
 diff --git a/Modules/Setup b/Modules/Setup
-index d3647ec..c0c732f 100644
+index 87c6a15..9da7cbb 100644
 --- a/Modules/Setup
 +++ b/Modules/Setup
-@@ -144,7 +144,7 @@ PYTHONPATH=$(COREPYTHONPATH)
- #_pickle _pickle.c
- #_queue _queuemodule.c
- #_random _randommodule.c
--#_socket socketmodule.c
-+_socket socketmodule.c $(EXT_COMPILER_FLAGS)
- #_statistics _statisticsmodule.c
- #_struct _struct.c
- #_typing _typingmodule.c
-@@ -205,15 +205,16 @@ PYTHONPATH=$(COREPYTHONPATH)
- #_gdbm _gdbmmodule.c -lgdbm
- #_lzma _lzmamodule.c -llzma
- #_uuid _uuidmodule.c -luuid
--#zlib  zlibmodule.c -lz
-+
-+zlib zlibmodule.c $(EXT_COMPILER_FLAGS) -lz
+@@ -161,7 +161,7 @@ _symtable symtablemodule.c
+ # it, depending on your system -- see the GNU readline instructions.
+ # It's okay for this to be a shared library, too.
  
- # The readline module also supports libeditline (-leditline).
- # Some systems may require -ltermcap or -ltermlib.
 -#readline readline.c -lreadline -ltermcap
 +readline readline.c $(EXT_COMPILER_FLAGS) -lreadline -ltermcap
  
- # OpenSSL bindings
--#_ssl _ssl.c $(OPENSSL_INCLUDES) $(OPENSSL_LDFLAGS) $(OPENSSL_LIBS)
--#_hashlib _hashopenssl.c $(OPENSSL_INCLUDES) $(OPENSSL_LDFLAGS) -lcrypto
+ 
+ # Modules that should always be present (non UNIX dependent):
+@@ -204,17 +204,13 @@ _symtable symtablemodule.c
+ #_csv _csv.c
+ 
+ # Socket module helper for socket(2)
+-#_socket socketmodule.c
++_socket socketmodule.c $(EXT_COMPILER_FLAGS)
+ 
+ # Socket module helper for SSL support; you must comment out the other
+ # socket line above, and edit the OPENSSL variable:
+ # OPENSSL=/path/to/openssl/directory
+-# _ssl _ssl.c \
+-#     -I$(OPENSSL)/include -L$(OPENSSL)/lib \
+-#     -lssl -lcrypto
+-#_hashlib _hashopenssl.c \
+-#     -I$(OPENSSL)/include -L$(OPENSSL)/lib \
+-#     -lcrypto
 +_ssl _ssl.c -DUSE_SSL $(EXT_COMPILER_FLAGS) -lssl -lcrypto
 +_hashlib _hashopenssl.c $(EXT_COMPILER_FLAGS) -lcrypto
  
  # To statically link OpenSSL:
- # _ssl _ssl.c $(OPENSSL_INCLUDES) $(OPENSSL_LDFLAGS) \
-@@ -234,7 +235,7 @@ PYTHONPATH=$(COREPYTHONPATH)
+ # _ssl _ssl.c \
+@@ -279,7 +275,7 @@ _symtable symtablemodule.c
  # every system.
  
  # *** Always uncomment this (leave the leading underscore in!):
--#_tkinter _tkinter.c tkappinit.c -DWITH_APPINIT $(TCLTK_INCLUDES) $(TCLTK_LIBS) \
+-# _tkinter _tkinter.c tkappinit.c -DWITH_APPINIT \
 +_tkinter _tkinter.c tkappinit.c -DWITH_APPINIT $(EXT_COMPILER_FLAGS) -ltk8.6 -ltcl8.6
  # *** Uncomment and edit to reflect where your Tcl/Tk libraries are:
  #	-L/usr/local/lib \
  # *** Uncomment and edit to reflect where your Tcl/Tk headers are:
-@@ -264,8 +265,8 @@ PYTHONPATH=$(COREPYTHONPATH)
- #	-lX11
+@@ -318,9 +314,9 @@ _symtable symtablemodule.c
+ # provided by the ncurses library.  e.g. on Linux, link with -lncurses
+ # instead of -lcurses).
  
- # Some system have -lcurses 
--#_curses -lncurses -lncursesw -ltermcap _cursesmodule.c
--#_curses_panel -lpanel -lncurses _curses_panel.c
+-#_curses _cursesmodule.c -lcurses -ltermcap -DPy_BUILD_CORE_MODULE
 +_curses _cursesmodule.c $(EXT_COMPILER_FLAGS) -lncursesw -ltermcap
+ # Wrapper for the panel library that's part of ncurses and SYSV curses.
+-#_curses_panel _curses_panel.c -lpanel -lncurses
 +_curses_panel _curses_panel.c $(EXT_COMPILER_FLAGS) -lpanelw -lncursesw
  
- # macOS specific module, needs SystemConfiguration and CoreFoundation framework
- # _scproxy _scproxy.c
+ 
+ # Modules that provide persistent dictionary-like semantics.  You will
+@@ -343,7 +339,7 @@ _symtable symtablemodule.c
+ # Andrew Kuchling's zlib module.
+ # This require zlib 1.1.3 (or later).
+ # See http://www.gzip.org/zlib/
+-#zlib zlibmodule.c -I$(prefix)/include -L$(exec_prefix)/lib -lz
++zlib zlibmodule.c $(EXT_COMPILER_FLAGS) -lz
+ 
+ # Interface to the Expat XML parser
+ # More information on Expat can be found at www.libexpat.org.
 diff --git a/Modules/getaddrinfo.c b/Modules/getaddrinfo.c
-index 0b4620e..3fd52ef 100644
+index 5aaa6e7..d863ec9 100644
 --- a/Modules/getaddrinfo.c
 +++ b/Modules/getaddrinfo.c
 @@ -43,6 +43,9 @@
@@ -389,7 +364,7 @@ index 0b4620e..3fd52ef 100644
  #include <arpa/inet.h>
  #include <arpa/nameser.h>
 diff --git a/Modules/getnameinfo.c b/Modules/getnameinfo.c
-index 335021f..c26d9aa 100644
+index db3e8ee..6904561 100644
 --- a/Modules/getnameinfo.c
 +++ b/Modules/getnameinfo.c
 @@ -37,6 +37,9 @@
@@ -403,10 +378,10 @@ index 335021f..c26d9aa 100644
  #include <arpa/inet.h>
  #include <arpa/nameser.h>
 diff --git a/Modules/socketmodule.c b/Modules/socketmodule.c
-index 65d0e10..162e2bf 100644
+index 0762a8d..4d6e623 100644
 --- a/Modules/socketmodule.c
 +++ b/Modules/socketmodule.c
-@@ -219,6 +219,9 @@ shutdown(how) -- shut down traffic in one or both directions\n\
+@@ -212,6 +212,9 @@ shutdown(how) -- shut down traffic in one or both directions\n\
  #undef _XOPEN_SOURCE
  #include <sys/socket.h>
  #include <sys/types.h>
@@ -417,7 +392,7 @@ index 65d0e10..162e2bf 100644
  #ifdef _SS_ALIGNSIZE
  #define HAVE_GETADDRINFO 1
 diff --git a/Modules/socketmodule.h b/Modules/socketmodule.h
-index 1b35b11..7a9d5d1 100644
+index e4f375d..16bdb2e 100644
 --- a/Modules/socketmodule.h
 +++ b/Modules/socketmodule.h
 @@ -7,6 +7,9 @@
@@ -428,100 +403,7 @@ index 1b35b11..7a9d5d1 100644
 +#define __APPLE_USE_RFC_3542 1
 +#endif
  # include <netinet/in.h>
- # include <netinet/tcp.h>
- 
-diff --git a/setup.py b/setup.py
-index 4f122b6..0cb2ad3 100644
---- a/setup.py
-+++ b/setup.py
-@@ -1471,12 +1471,85 @@ class PyBuildExt(build_ext):
- 
-     def detect_decimal(self):
-         # Stefan Krah's _decimal module
-+
-+        # Taken from Python 3.10 setup.py
-+        if '--with-system-libmpdec' in sysconfig.get_config_var("CONFIG_ARGS"):
-+            include_dirs = []
-+            libraries = ['mpdec']
-+            sources = ['_decimal/_decimal.c']
-+            depends = ['_decimal/docstrings.h']
-+        else:
-+            include_dirs = [os.path.abspath(os.path.join(self.srcdir, 'Modules', '_decimal', 'libmpdec'))]
-+            libraries = ['m']
-+            sources = [
-+              '_decimal/_decimal.c',
-+              '_decimal/libmpdec/basearith.c',
-+              '_decimal/libmpdec/constants.c',
-+              '_decimal/libmpdec/context.c',
-+              '_decimal/libmpdec/convolute.c',
-+              '_decimal/libmpdec/crt.c',
-+              '_decimal/libmpdec/difradix2.c',
-+              '_decimal/libmpdec/fnt.c',
-+              '_decimal/libmpdec/fourstep.c',
-+              '_decimal/libmpdec/io.c',
-+              '_decimal/libmpdec/mpalloc.c',
-+              '_decimal/libmpdec/mpdecimal.c',
-+              '_decimal/libmpdec/numbertheory.c',
-+              '_decimal/libmpdec/sixstep.c',
-+              '_decimal/libmpdec/transpose.c',
-+            ]
-+            depends = [
-+              '_decimal/docstrings.h',
-+              '_decimal/libmpdec/basearith.h',
-+              '_decimal/libmpdec/bits.h',
-+              '_decimal/libmpdec/constants.h',
-+              '_decimal/libmpdec/convolute.h',
-+              '_decimal/libmpdec/crt.h',
-+              '_decimal/libmpdec/difradix2.h',
-+              '_decimal/libmpdec/fnt.h',
-+              '_decimal/libmpdec/fourstep.h',
-+              '_decimal/libmpdec/io.h',
-+              '_decimal/libmpdec/mpalloc.h',
-+              '_decimal/libmpdec/mpdecimal.h',
-+              '_decimal/libmpdec/numbertheory.h',
-+              '_decimal/libmpdec/sixstep.h',
-+              '_decimal/libmpdec/transpose.h',
-+              '_decimal/libmpdec/typearith.h',
-+              '_decimal/libmpdec/umodarith.h',
-+            ]
-+
-+        # Taken from Python 3.10 setup.py
-+        config = {
-+          'x64':     [('CONFIG_64','1'), ('ASM','1')],
-+          'uint128': [('CONFIG_64','1'), ('ANSI','1'), ('HAVE_UINT128_T','1')],
-+          'ansi64':  [('CONFIG_64','1'), ('ANSI','1')],
-+          'ppro':    [('CONFIG_32','1'), ('PPRO','1'), ('ASM','1')],
-+          'ansi32':  [('CONFIG_32','1'), ('ANSI','1')],
-+          'ansi-legacy': [('CONFIG_32','1'), ('ANSI','1'), ('LEGACY_COMPILER','1')],
-+          'universal':   [('UNIVERSAL','1')]
-+        }
-+
-+        # Taken from Python 3.10 setup.py, but only the 'if' and 'elif' part
-+        machine = os.environ.get('PYTHON_DECIMAL_WITH_MACHINE')
-+        if machine:
-+            # Override automatic configuration to facilitate testing.
-+            define_macros = config[machine]
-+        elif MACOS:
-+            # Universal here means: build with the same options Python was built with.
-+            define_macros = config['universal']
-+        else:
-+            raise DistutilsError("_decimal: unsupported architecture -- only macOs is supported")
-+
-         self.addext(
-             Extension(
-                 '_decimal',
--                ['_decimal/_decimal.c'],
--                # Uncomment for extra functionality:
--                # define_macros=[('EXTRA_FUNCTIONALITY', 1)]
-+                include_dirs=include_dirs,
-+                libraries=libraries,
-+                define_macros=define_macros,
-+                undef_macros=[],
-+                extra_compile_args=[],
-+                sources=sources,
-+                depends=depends
-             )
-         )
- 
+ # if !defined(__CYGWIN__)
+ #  include <netinet/tcp.h>
 -- 
-2.41.0
+2.42.0
