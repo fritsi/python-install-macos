@@ -137,7 +137,7 @@ if $IS_APPLE_SILICON; then
 
     sysout ""
 
-    ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Press [ENTER] to continue" && sysout ""
+    ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Press [ENTER] to continue"
 
     mv Configure.patched Configure
 fi
@@ -155,7 +155,7 @@ echoAndExec ./Configure "darwin64-$(uname -m)-cc" "enable-ec_nistp_64_gcc_128" \
 
 sysout ""
 
-ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Press [ENTER] to continue" && sysout ""
+ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Press [ENTER] to continue"
 
 sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Compiling OpenSSL"
 sysout ""
@@ -164,7 +164,7 @@ sysout ""
 echoAndExec make depend && sysout ""
 echoAndExec make -j "$(proc_count="$(nproc)" && echo "$((proc_count / 2))")" && sysout ""
 
-ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Press [ENTER] to continue" && sysout ""
+ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Press [ENTER] to continue"
 
 sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Installing OpenSSL"
 sysout ""

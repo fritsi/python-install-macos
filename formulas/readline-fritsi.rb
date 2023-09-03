@@ -1,4 +1,4 @@
-class ReadlineFritsiMod < Formula
+class ReadlineFritsi < Formula
   desc "Library for command-line editing"
   homepage "https://tiswww.case.edu/php/chet/readline/rltop.html"
   version "8.2.1"
@@ -8,6 +8,8 @@ class ReadlineFritsiMod < Formula
   sha256 "3feb7171f16a84ee82ca18a36d7b9be109a52c04f492a053331d7d1095007c35"
 
   license "GPL-3.0-or-later"
+
+  revision 2
 
   %w[
     001 bbf97f1ec40a929edab5aa81998c1e2ef435436c597754916e6a5868f273aff7
@@ -23,10 +25,10 @@ class ReadlineFritsiMod < Formula
 
   depends_on "pkg-config" => :build
 
-  depends_on "ncurses-fritsi-mod"
+  depends_on "ncurses-fritsi"
 
   def install
-    add_lib_to_compiler_flags(Formula["ncurses-fritsi-mod"].opt_prefix)
+    add_lib_to_compiler_flags(Formula["ncurses-fritsi"].opt_prefix)
 
     configure_args = [
       "--prefix=#{prefix}",
@@ -39,7 +41,7 @@ class ReadlineFritsiMod < Formula
 
     install_args = [
       "LIBS=-lncursesw",
-      "SHLIB_LIBS=-L#{Formula["ncurses-fritsi-mod"].opt_lib} -Wl,-rpath,#{Formula["ncurses-fritsi-mod"].opt_lib} -lncursesw"
+      "SHLIB_LIBS=-L#{Formula["ncurses-fritsi"].opt_lib} -Wl,-rpath,#{Formula["ncurses-fritsi"].opt_lib} -lncursesw"
     ]
 
     system "make", *install_args, "install"

@@ -1,5 +1,5 @@
 #############################################################################
-### This script will look-up GNU libraries installed via brew             ###
+### This script will look-up GNU libraries installed via Homebrew         ###
 ### Then it will all them to 'PATH'                                       ###
 ### These are useful, because the corresponding default binaries in macOS ###
 ### are too old in some cases, and they don't support many features       ###

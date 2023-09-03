@@ -1,4 +1,4 @@
-class TclTkFritsiModWithOpenssl3 < Formula
+class TclTkFritsiWithX11 < Formula
   desc "Tool Command Language"
   homepage "https://www.tcl-lang.org"
 
@@ -7,6 +7,8 @@ class TclTkFritsiModWithOpenssl3 < Formula
   sha256 "43a1fae7412f61ff11de2cfd05d28cfc3a73762f354a417c62370a54e2caf066"
 
   license "TCL"
+
+  revision 2
 
   keg_only "This is a custom fork, so we do not want to symlink it into brew --prefix"
 
@@ -23,7 +25,8 @@ class TclTkFritsiModWithOpenssl3 < Formula
   depends_on "libxcb"
   depends_on "libxdmcp"
   depends_on "libxext"
-  depends_on "openssl@3.0"
+  depends_on "openssl@1.1"
+  depends_on "xorgproto"
   depends_on "zlib"
 
   resource "critcl" do
@@ -63,7 +66,7 @@ class TclTkFritsiModWithOpenssl3 < Formula
   end
 
   def install
-    %w[libx11 libxau libxcb libxdmcp libxext openssl@3.0 zlib].each do |name|
+    %w[libx11 libxau libxcb libxdmcp libxext openssl@1.1 xorgproto zlib].each do |name|
       add_lib_to_compiler_flags(Formula[name].opt_prefix)
     end
 
@@ -117,8 +120,7 @@ class TclTkFritsiModWithOpenssl3 < Formula
           "--enable-rpath",
           "--enable-shared",
           "--enable-threads",
-          "--enable-aqua=yes",
-          "--without-x",
+          "--with-x",
           "--with-tcl=#{tcl_tk_lib_dir}"
         ]
 
@@ -153,8 +155,8 @@ class TclTkFritsiModWithOpenssl3 < Formula
         "--disable-tlsv1.0",
         "--disable-tlsv1.1",
         "--with-ssl=openssl",
-        "--with-openssl-dir=#{Formula["openssl@3.0"].opt_prefix}",
-        "--with-openssl-pkgconfig=#{Formula["openssl@3.0"].opt_lib}/pkgconfig",
+        "--with-openssl-dir=#{Formula["openssl@1.1"].opt_prefix}",
+        "--with-openssl-pkgconfig=#{Formula["openssl@1.1"].opt_lib}/pkgconfig",
         "--with-tcl=#{tcl_tk_lib_dir}"
       ]
 
