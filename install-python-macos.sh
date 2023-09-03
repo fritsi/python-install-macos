@@ -35,42 +35,61 @@ SUPPORTED_VERSIONS=("2.7.18" "3.6.15" "3.7.17" "3.8.18" "3.9.18" "3.10.13" "3.11
 SUPPORTED_VERSIONS_TEXT="$(versions="${SUPPORTED_VERSIONS[*]}" && echo "${versions// /, }")"
 
 function printUsage() {
-    sysout "${FNT_BLD}${FNT_ULN}Usage:${FNT_RST} ./$G_PROG_NAME.sh {pythonVersion} {installBaseDir}"
+    sysout "${FNT_BLD}${FNT_ULN}Usage:${FNT_RST}"
     sysout ""
-    sysout "This script will assist you in compiling Python from source for both Apple Intel and Apple Silicon platforms"
+    sysout "./$G_PROG_NAME.sh --help"
     sysout ""
-    sysout "${FNT_BLD}${FNT_ULN}NOTE:${FNT_RST} Currently only macOS is supported!"
+    sysout "./$G_PROG_NAME.sh {pythonVersion} {installBaseDir}"
+    sysout "                          [--dry-run]"
+    sysout "                          [--non-interactive]"
+    sysout "                          [--extra-links]"
+    sysout "                          [--use-x11]"
+    sysout "                          [--keep-working-dir]"
+    sysout "                          [--keep-test-logs]"
+    sysout ""
+    sysout "This script will assist you in compiling Python from source ${FNT_ITC}(including some of the required${FNT_RST}"
+    sysout "${FNT_ITC}dependent packages)${FNT_RST} for both Apple Intel and Apple Silicon platforms."
     sysout ""
     sysout "${FNT_BLD}${FNT_ULN}Supported Python versions:${FNT_RST} $SUPPORTED_VERSIONS_TEXT"
     sysout ""
-    sysout "The provided ${FNT_ITC}'installBaseDir'${FNT_RST} is not the final installation directory, but a subdirectory within it."
-    sysout "For example, for Python 3.8, it will be ${FNT_BLD}${FNT_ITC}${FNT_ULN}{installBaseDir}/python-3.8${FNT_RST}"
+    sysout "${FNT_BLD}${FNT_ULN}NOTE:${FNT_RST} Currently only macOS is supported!"
     sysout ""
-    sysout "The script will prompt you to choose whether you want to run the Python tests or not."
-    sysout "This allows you to verify the integrity of the compiled Python installation."
-    sysout ""
-    sysout "${FNT_BLD}If you followed the instructions, there should be no failures.${FNT_RST}"
-    sysout ""
-    sysout "If any test failures occur, the script will pause and ask if you want to proceed."
-    sysout ""
-    sysout "${FNT_BLD}${FNT_ULN}NOTE:${FNT_RST} In non-interactive mode, the script will always run the tests."
-    sysout ""
-    sysout "${FNT_BLD}${FNT_ULN}NOTE 2:${FNT_RST} During the test execution, you may see a pop-up window requesting permission for Python to connect to the network."
-    sysout "This is related to socket/ssl tests and is safe to allow."
+    sysout "The provided ${FNT_ITC}'installBaseDir'${FNT_RST} is not the final installation directory, but a sub-directory within"
+    sysout "it. For example, for Python 3.8, the final install directory will be ${FNT_BLD}${FNT_ITC}${FNT_ULN}{installBaseDir}/python-3.8${FNT_RST}"
     sysout ""
     sysout "${FNT_BLD}${FNT_ULN}Optional arguments:${FNT_RST}"
     sysout ""
-    sysout "    ${FNT_BLD}--non-interactive${FNT_RST} - If provided, no confirmation prompts will be displayed."
+    sysout "  ${FNT_BLD}--dry-run${FNT_RST}"
+    sysout "      Only the commands that would be executed will be printed. ${FNT_BLD}NOTE:${FNT_RST} Collection of GNU binaries"
+    sysout "      will still be performed."
     sysout ""
-    sysout "    ${FNT_BLD}--extra-links${FNT_RST} - For Python 3, this option creates additional symbolic links for pip3.x, python3.x,"
-    sysout "                     and virtualenv3.x, in addition to pip3, python3, and virtualenv3."
+    sysout "  ${FNT_BLD}--non-interactive${FNT_RST}"
+    sysout "      If provided, ${FNT_BLD}no${FNT_RST} confirmation prompts will be displayed."
     sysout ""
-    sysout "    ${FNT_BLD}--keep-working-dir${FNT_RST} - The working directory will be retained after script completion or exit."
+    sysout "  ${FNT_BLD}--extra-links${FNT_RST}"
+    sysout "      For Python 3, this option creates additional symbolic links for pip3, python3, and"
+    sysout "      virtualenv3, in addition to pip3.x, python3.x, and virtualenv3.x."
     sysout ""
-    sysout "    ${FNT_BLD}--keep-test-logs${FNT_RST} - The test log file will be preserved even if all tests pass."
+    sysout "  ${FNT_BLD}--use-x11${FNT_RST}"
+    sysout "      This will instruct the compiler to use X11 instead of the macOS Aqua windowing system."
+    sysout "      I ${FNT_BLD}${FNT_ULN}highly advise${FNT_RST} to use this option. ${FNT_ITC}See more information in the README file.${FNT_RST}"
     sysout ""
-    sysout "    ${FNT_BLD}--dry-run${FNT_RST} - Only the commands that would be executed will be printed."
-    sysout "                ${FNT_BLD}NOTE:${FNT_RST} Collection of GNU binaries will still be performed."
+    sysout "  ${FNT_BLD}--keep-working-dir${FNT_RST}"
+    sysout "      The temporary working directory will be retained after script completion or exit."
+    sysout ""
+    sysout "  ${FNT_BLD}--keep-test-logs${FNT_RST}"
+    sysout "      The test log file will be preserved even if all tests pass."
+    sysout ""
+    sysout "The script will prompt you to choose whether you want to run the Python tests or not. This allows"
+    sysout "you to verify the integrity of the compiled Python installation."
+    sysout ""
+    sysout "${FNT_BLD}If you followed the instructions, there should be no failures.${FNT_RST} In case of any test failures, the"
+    sysout "script will halt and prompt you for further action."
+    sysout ""
+    sysout "${FNT_BLD}${FNT_ULN}NOTE:${FNT_RST} In non-interactive mode, the script will always run the tests."
+    sysout ""
+    sysout "${FNT_BLD}${FNT_ULN}NOTE 2:${FNT_RST} During the test execution, you may see a pop-up window requesting permission for Python"
+    sysout "to connect to the network. This is related to socket/ssl tests and is safe to allow."
     sysout ""
 
     # Also printing out the preparation steps
@@ -85,35 +104,20 @@ function printPreparationSteps() {
     sysout "             libx11 libxcrypt lzo mpdecimal openssl@1.1 openssl@3.0 p7zip \\"
     sysout "             pkg-config unzip wget xz zlib"
     sysout ""
-    sysout "${FNT_BLD}${FNT_ULN}NOTE:${FNT_RST} The above command ${FNT_BLD}not${FNT_RST} only installs libraries but also some ${FNT_BLD}GNU${FNT_RST} executables."
-    sysout "      These executables are not used by default, but ${FNT_ITC}search-libraries.sh${FNT_RST} will temporarily add them to the PATH."
-    sysout "      These dependencies are helpful because the default macOS counterparts may be outdated in certain cases."
+    sysout "${FNT_BLD}${FNT_ULN}NOTE:${FNT_RST} The above command ${FNT_BLD}not${FNT_RST} only installs libraries but also some ${FNT_BLD}GNU${FNT_RST} executables. These"
+    sysout "executables are not used by default, but ${FNT_ITC}search-libraries.sh${FNT_RST} will temporarily add them to"
+    sysout "the ${FNT_BLD}PATH${FNT_RST}. These dependencies are helpful because the default macOS counterparts may be"
+    sysout "outdated in certain cases, and may not work as expected."
     sysout ""
-    sysout "${FNT_BLD}${FNT_ULN}NOTE:${FNT_RST} Once you have completed the above steps, you also need to install additional formulas:"
-    sysout "      >> ${FNT_ITC}brew install --formula --build-from-source \"formulas/ncurses-fritsi-mod.rb\"${FNT_RST}"
-    sysout "      >> ${FNT_ITC}brew install --formula --build-from-source \"formulas/readline-fritsi-mod.rb\"${FNT_RST}"
-    sysout "      >> ${FNT_ITC}brew install --formula --build-from-source \"formulas/gettext-fritsi-mod.rb\"${FNT_RST}"
-    sysout "      >> ${FNT_ITC}brew install --formula --build-from-source \"formulas/zstd-fritsi-mod.rb\"${FNT_RST}"
+    sysout "${FNT_BLD}${FNT_ULN}NOTE 2:${FNT_RST} Some additional dependencies will be automatically installed by the installer script"
+    sysout "itself. ${FNT_ITC}See more information in the README file.${FNT_RST}"
     sysout ""
-    sysout "${FNT_BLD}${FNT_ULN}IMPORTANT:${FNT_RST} Please ensure that you install them in the specified order mentioned above."
-    sysout ""
-    sysout "${FNT_BLD}${FNT_ULN}NOTE:${FNT_RST} Finally, depending on the Python version you are compiling, you'll need:"
-    sysout ""
-    sysout "${FNT_BLD}a)${FNT_RST} for Python ${FNT_BLD}${FNT_ULN}3.8${FNT_RST}${FNT_BLD} or above:${FNT_RST}"
-    sysout "      >> ${FNT_ITC}brew install --formula --build-from-source \"formulas/libzip-fritsi-mod-with-openssl3.rb\"${FNT_RST}"
-    sysout "      >> ${FNT_ITC}brew install --formula --build-from-source \"formulas/tcl-tk-fritsi-mod-with-openssl3.rb\"${FNT_RST}"
-    sysout "      >> ${FNT_ITC}brew install --formula --build-from-source \"formulas/sqlite-fritsi-mod-with-openssl3.rb\"${FNT_RST}"
-    sysout ""
-    sysout "${FNT_BLD}b)${FNT_RST} for Python ${FNT_BLD}${FNT_ULN}3.7${FNT_RST}${FNT_BLD} or below:${FNT_RST}"
-    sysout "      >> ${FNT_ITC}brew install --formula --build-from-source \"formulas/libzip-fritsi-mod.rb\"${FNT_RST}"
-    sysout "      >> ${FNT_ITC}brew install --formula --build-from-source \"formulas/tcl-tk-fritsi-mod.rb\"${FNT_RST}"
-    sysout "      >> ${FNT_ITC}brew install --formula --build-from-source \"formulas/sqlite-fritsi-mod.rb\"${FNT_RST}"
-    sysout "      >> ${FNT_ITC}brew install --formula --build-from-source \"formulas/libffi33.rb\"${FNT_RST}"
+    sysout "I also ${FNT_BLD}recommend${FNT_RST} executing ${FNT_ITC}${FNT_ULN}brew update${FNT_RST} and ${FNT_ITC}${FNT_ULN}brew upgrade${FNT_RST} as well."
     sysout ""
 }
 
 if [[ "$#" -eq 1 ]] && [[ "$1" == "--help" ]]; then
-    printUsage
+    printUsage | less -iR
     exit 0
 fi
 
@@ -136,15 +140,9 @@ printPreparationSteps
 ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Did you perform the above? ([y]/N)" response
 
 # shellcheck disable=SC2154
-case "$response" in
-    "" | [yY][eE][sS] | [yY])
-        sysout ""
-        ;;
-    *)
-        sysout ""
-        exit 0
-        ;;
-esac
+if [[ "$response" != "" ]] && [[ ! "$response" =~ ^(([yY][eE][sS])|([yY]))$ ]]; then
+    exit 0
+fi
 
 if [[ "$#" -lt 2 ]]; then
     printUsage
@@ -203,6 +201,7 @@ export P_EXTRA_LINKS=false
 export P_KEEP_WORKING_DIR=false
 export P_KEEP_TEST_LOGS=false
 export P_DRY_RUN_MODE=false
+export P_USE_X11=false
 
 # Checking the rest of the arguments
 while [[ "$#" -gt 0 ]]; do
@@ -225,9 +224,25 @@ while [[ "$#" -gt 0 ]]; do
             ;;
         --dry-run)
             export P_DRY_RUN_MODE=true
+
             # Setting the name of the temporary file where we'll store the commands we'd execute
             G_PY_COMPILE_COMMANDS_FILE="$(cd "$TMPDIR" && pwd)/python-$PYTHON_VERSION-install-commands.$G_PY_COMPILE_CURRENT_MILLIS.sh"
             export G_PY_COMPILE_COMMANDS_FILE
+            ;;
+        --use-x11)
+            # Validating that XQuartz is installed via checking some of its programs
+            for x11ProgName in xauth xclipboard xset xsetroot; do
+                if [[ "$(command -v "$x11ProgName" 2> /dev/null || true)" == "" ]]; then
+                    sysout >&2 "${FNT_BLD}[ERROR]${FNT_RST} You have set --use-x11, but XQuartz does not seem to be installed"
+                    sysout >&2 "${FNT_BLD}[ERROR]${FNT_RST} Could not find $x11ProgName; did you install it with Homebrew?"
+                    sysout >&2 ""
+                    exit 1
+                fi
+            done
+            unset x11ProgName
+
+            # Setting that we want to use X11
+            export P_USE_X11=true
             ;;
         *)
             sysout >&2 "${FNT_BLD}[ERROR]${FNT_RST} Unrecognized argument: '$argument'"
@@ -238,7 +253,7 @@ while [[ "$#" -gt 0 ]]; do
 done
 
 if $P_DRY_RUN_MODE; then
-    sysout "${FNT_BLD}!!! WE ARE IN DRY RUN MODE${FNT_RST}"
+    sysout "${FNT_BLD}!!! YOU ARE IN DRY RUN MODE${FNT_RST}"
     sysout ""
 
     # Deleting the temporary command file on exit
@@ -310,15 +325,9 @@ fi
 if ! $P_NON_INTERACTIVE; then
     ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Do you want to continue? ([y]/N)" response
 
-    case "$response" in
-        "" | [yY][eE][sS] | [yY])
-            sysout ""
-            ;;
-        *)
-            sysout ""
-            exit 0
-            ;;
-    esac
+    if [[ "$response" != "" ]] && [[ ! "$response" =~ ^(([yY][eE][sS])|([yY]))$ ]]; then
+        exit 0
+    fi
 fi
 
 # Working directory already exists, deleting it
@@ -350,6 +359,100 @@ fi
 # We are compiling Python here (needed for libraries/search-libraries.sh)
 # shellcheck disable=SC2034
 G_PYTHON_COMPILE=true
+
+# We need to check (and install in non dry run mode) the custom dependencies
+{
+    sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Checking whether the custom Homebrew formulas are installed or not"
+
+    # In non dry run mode, we ask for confirmation if we are in interactive mode
+    if ! $P_DRY_RUN_MODE && ! $P_NON_INTERACTIVE; then
+        sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} This will install missing custom ${FNT_ITC}(*-fritsi)${FNT_RST} Homebrew formulas"
+        ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Do you want to continue? ([y]/N)" response
+
+        if [[ "$response" != "" ]] && [[ ! "$response" =~ ^(([yY][eE][sS])|([yY]))$ ]]; then
+            exit 0
+        fi
+    else
+        sysout ""
+    fi
+
+    # Getting the already installed Homebrew packages
+    T_ALREADY_INSTALLED="$({ brew list -1 2> /dev/null || true; } | xargs)"
+    if [[ "$T_ALREADY_INSTALLED" == "" ]]; then
+        sysout >&2 "${FNT_BLD}[ERROR]${FNT_RST} Failed to get the already installed Homebrew packages"
+        sysout >&2 ""
+        exit 1
+    fi
+    # Prepending and appending a space for simpler searchability
+    T_ALREADY_INSTALLED=" $T_ALREADY_INSTALLED "
+
+    # Assembling the internal dependencies we need to install
+    # We need to install them in the exact same order as we put them into the array
+    T_DEPENDENCIES=("ncurses-fritsi" "readline-fritsi" "gettext-fritsi" "zstd-fritsi")
+    if [[ "$PY_VERSION_NUM" -ge 308 ]]; then
+        T_DEPENDENCIES+=("libzip-fritsi-with-openssl3")
+        if ! $P_USE_X11; then
+            T_DEPENDENCIES+=("tcl-tk-fritsi-with-openssl3" "sqlite-fritsi-with-openssl3")
+        else
+            T_DEPENDENCIES+=("tcl-tk-fritsi-with-x11-with-openssl3" "sqlite-fritsi-with-x11-with-openssl3")
+        fi
+    else
+        T_DEPENDENCIES+=("libzip-fritsi")
+        if ! $P_USE_X11; then
+            T_DEPENDENCIES+=("tcl-tk-fritsi" "sqlite-fritsi")
+        else
+            T_DEPENDENCIES+=("tcl-tk-fritsi-with-x11" "sqlite-fritsi-with-x11")
+        fi
+        T_DEPENDENCIES+=("libffi33")
+    fi
+
+    # We'll collect the missing package here in case of dry run mode
+    T_MISSING_PACKAGES=()
+
+    # Checking each dependency and if one is not installed, then we install it
+    for searchPackage in "${T_DEPENDENCIES[@]}"; do
+        # The package is already installed, we can continue ...
+        if [[ "$T_ALREADY_INSTALLED" == *" $searchPackage "* ]]; then
+            sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Package ${FNT_BLD}$searchPackage${FNT_RST} ... ${FNT_ITC}INSTALLED${FNT_RST}"
+            sysout ""
+
+            continue
+        fi
+
+        # In dry run mode we simply ignore this for now
+        if $P_DRY_RUN_MODE; then
+            sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Package ${FNT_BLD}$searchPackage${FNT_RST} ... ${FNT_BLD}NOT INSTALLED${FNT_RST}"
+            sysout ""
+
+            # Adding the missing package
+            T_MISSING_PACKAGES+=("$searchPackage")
+
+            continue
+        fi
+
+        sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Package ${FNT_BLD}$searchPackage${FNT_RST} ... ${FNT_BLD}NOT INSTALLED${FNT_RST}; installing it now ..."
+        sysout ""
+
+        # Otherwise, we install it
+        brew install --formula --build-from-source "$SCRIPTS_DIR/formulas/$searchPackage.rb" && sysout ""
+    done
+
+    # If we are in dry run mode, then we cannot continue until these are installed
+    if $P_DRY_RUN_MODE && [[ "${#T_MISSING_PACKAGES[@]}" -gt 0 ]]; then
+        sysout >&2 "${FNT_BLD}[ERROR]${FNT_RST} There is at least one missing pacakge you need to install"
+        sysout >&2 ""
+        sysout >&2 "${FNT_BLD}[ERROR]${FNT_RST} Please install them with the following command(s) ${FNT_BLD}${FNT_ULN}${FNT_ITC}in this order${FNT_RST}:"
+        sysout >&2 ""
+        for searchPackage in "${T_MISSING_PACKAGES[@]}"; do
+            sysout >&2 "  • ${FNT_ITC}brew install --formula --build-from-source \"$SCRIPTS_DIR/formulas/$searchPackage.rb\"${FNT_RST}"
+        done
+        sysout >&2 ""
+        exit 1
+    fi
+
+    # We no longer need these
+    unset T_ALREADY_INSTALLED T_DEPENDENCIES T_MISSING_PACKAGES searchPackage
+}
 
 # Searching for the necessary libraries to compile Python
 source "$SCRIPTS_DIR/libraries/search-libraries.sh"
@@ -407,14 +510,14 @@ fi
 
 # But after all files have been patched, we do ask for one if we need to
 if ! $P_NON_INTERACTIVE; then
-    ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Press [ENTER] to continue" && sysout ""
+    ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Press [ENTER] to continue"
 fi
 
 if ! $P_DRY_RUN_MODE; then
     sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Configuring the Compiler"
     sysout ""
 
-    # These are needed, so the gcc coming from brew does not get picked-up
+    # These are needed, so the gcc coming from Homebrew does not get picked-up
     export CC="/usr/bin/gcc"
     export CXX="/usr/bin/g++"
     export LD="/usr/bin/g++"
@@ -491,7 +594,13 @@ fi
 # --with-tcltk-includes and --with-tcltk-libs is NOT available since Python 3.11
 if [[ "$PY_VERSION_NUM" -lt 311 ]]; then
     CONFIGURE_PARAMS+=("--with-tcltk-includes=-I$L_TCL_TK_BASE/include")
-    CONFIGURE_PARAMS+=("--with-tcltk-libs=-L$L_TCL_TK_BASE/lib -ltk8.6 -ltcl8.6 -DWITH_APPINIT")
+
+    # --with-tcltk-libs will be different when using X11
+    if ! $P_USE_X11; then
+        CONFIGURE_PARAMS+=("--with-tcltk-libs=-L$L_TCL_TK_BASE/lib -ltk8.6 -ltcl8.6 -DWITH_APPINIT")
+    else
+        CONFIGURE_PARAMS+=("--with-tcltk-libs=-L$L_TCL_TK_BASE/lib -ltk8.6 -ltcl8.6 -lX11 -DWITH_APPINIT")
+    fi
 fi
 
 function macOsVersion() {
@@ -527,13 +636,26 @@ CONFIGURE_PARAMS+=("MACOSX_DEPLOYMENT_TARGET=$(macOsVersion)")
 
 # Setting the extra compiler flags we use in the setup files
 if ! $P_DRY_RUN_MODE; then
-    sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} export EXT_COMPILER_FLAGS=\"\$CPPFLAGS \$LDFLAGS\""
+    if ! $P_USE_X11; then
+        sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} export EXT_COMPILER_FLAGS=\"\$CPPFLAGS \$LDFLAGS\""
+    else
+        sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} export EXT_COMPILER_FLAGS=\"\$CPPFLAGS \$LDFLAGS -lX11\""
+    fi
     sysout ""
 
     export EXT_COMPILER_FLAGS="$CPPFLAGS $LDFLAGS"
+
+    # Adding -lX11
+    if $P_USE_X11; then
+        export EXT_COMPILER_FLAGS="$EXT_COMPILER_FLAGS -lX11"
+    fi
 else
     {
-        echo "export EXT_COMPILER_FLAGS=\"\$CPPFLAGS \$LDFLAGS\""
+        if ! $P_USE_X11; then
+            echo "export EXT_COMPILER_FLAGS=\"\$CPPFLAGS \$LDFLAGS\""
+        else
+            echo "export EXT_COMPILER_FLAGS=\"\$CPPFLAGS \$LDFLAGS -lX11\""
+        fi
         echo ""
     } >> "$G_PY_COMPILE_COMMANDS_FILE"
 fi
@@ -548,7 +670,7 @@ else
 fi
 
 if ! $P_NON_INTERACTIVE; then
-    ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Press [ENTER] to continue" && sysout ""
+    ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Press [ENTER] to continue"
 fi
 
 # Saving the number of processors
@@ -577,7 +699,7 @@ else
 fi
 
 if ! $P_NON_INTERACTIVE; then
-    ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Press [ENTER] to continue" && sysout ""
+    ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Press [ENTER] to continue"
 fi
 
 function runTests() {
@@ -606,8 +728,11 @@ function runTests() {
             export LC_ALL="en_US.UTF-8"
             export LANG="en_US.UTF-8"
 
-            # unsetting these as they would mess with the tests
-            unset PYTHONHTTPSVERIFY DISPLAY
+            # Unsetting these as they would mess with the tests
+            unset PYTHONHTTPSVERIFY
+            if ! $P_USE_X11; then
+                unset DISPLAY
+            fi
 
             # Getting rid of some warnings in the tests
             export TK_SILENCE_DEPRECATION=1
@@ -619,7 +744,11 @@ function runTests() {
                 echo "    export LC_ALL=\"en_US.UTF-8\""
                 echo "    export LANG=\"en_US.UTF-8\""
                 echo ""
-                echo "    unset PYTHONHTTPSVERIFY DISPLAY"
+                if ! $P_USE_X11; then
+                    echo "    unset PYTHONHTTPSVERIFY DISPLAY"
+                else
+                    echo "    unset PYTHONHTTPSVERIFY"
+                fi
                 echo ""
                 echo "    export TK_SILENCE_DEPRECATION=1"
                 echo ""
@@ -647,7 +776,7 @@ function runTests() {
     # Saving the exit code of the above block in a variable
     testsExitCode="$?"
 
-    # Nothing more to do when we are in dry-run mode
+    # Nothing more to do when we are in dry run mode
     if $P_DRY_RUN_MODE; then
         return 0
     fi
@@ -690,7 +819,7 @@ if $P_NON_INTERACTIVE; then
     runTests && sysout ""
 else
     # In interactive mode we ask the user whether they want to run the tests or not
-    ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Do you want to run the tests? ([y]/N)" response && sysout ""
+    ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Do you want to run the tests? ([y]/N)" response
 
     if [[ "$response" == "" ]] || [[ "$response" =~ ^(([yY][eE][sS])|([yY]))$ ]]; then
         runTests && sysout ""
@@ -721,7 +850,7 @@ else
 fi
 
 if ! $P_NON_INTERACTIVE; then
-    ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Press [ENTER] to continue" && sysout ""
+    ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Press [ENTER] to continue"
 fi
 
 if ! $P_DRY_RUN_MODE; then

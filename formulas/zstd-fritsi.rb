@@ -1,4 +1,4 @@
-class ZstdFritsiMod < Formula
+class ZstdFritsi < Formula
   desc "Zstandard is a real-time compression algorithm"
   homepage "https://facebook.github.io/zstd/"
 
@@ -8,6 +8,8 @@ class ZstdFritsiMod < Formula
   sha256 "98e9c3d949d1b924e28e01eccb7deed865eefebf25c2f21c702e5cd5b63b85e1"
 
   license "BSD-3-Clause"
+
+  revision 2
 
   keg_only "This is a custom fork, so we do not want to symlink it into brew --prefix"
 

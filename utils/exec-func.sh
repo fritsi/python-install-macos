@@ -30,7 +30,7 @@ function echoAndExec() {
         sysout ""
 
         if ! ${P_NON_INTERACTIVE:-false}; then
-            ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Press [ENTER] to execute the above command" && sysout ""
+            ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Press [ENTER] to execute the above command"
         fi
 
         "$@"

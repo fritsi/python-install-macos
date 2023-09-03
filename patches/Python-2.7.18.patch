@@ -1,4 +1,4 @@
-From 085dd74d99a23ddbceb961f1f2f349f9f42f363d Mon Sep 17 00:00:00 2001
+From 888d35ba1917b81b043506f84db3f2f05eabf272 Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
 Date: Mon, 16 Jan 2023 15:26:35 +0100
 Subject: [PATCH] Python 2.7.18 patching
@@ -8,7 +8,7 @@ Subject: [PATCH] Python 2.7.18 patching
  Lib/ctypes/test/test_macholib.py             |  14 +-
  Lib/distutils/tests/test_build_ext.py        |   8 +-
  Lib/lib-tk/test/test_tkinter/test_widgets.py |   3 +-
- Lib/lib-tk/test/test_ttk/test_widgets.py     |  25 ++-
+ Lib/lib-tk/test/test_ttk/test_widgets.py     |  44 ++--
  Lib/sysconfig.py                             |  18 +-
  Lib/test/support/__init__.py                 |  18 +-
  Lib/test/test_gdb.py                         |   1 +
@@ -36,7 +36,7 @@ Subject: [PATCH] Python 2.7.18 patching
  configure.ac                                 |   9 +
  pyconfig.h.in                                |   3 +
  setup.py                                     | 216 ++++++++++++++-----
- 32 files changed, 476 insertions(+), 127 deletions(-)
+ 32 files changed, 494 insertions(+), 128 deletions(-)
 
 diff --git a/Lib/ctypes/macholib/dyld.py b/Lib/ctypes/macholib/dyld.py
 index 1fdf8d6..8553106 100644
@@ -143,10 +143,28 @@ index 4b196ac..9b52ed7 100644
      def test_label(self):
          widget = self.create()
 diff --git a/Lib/lib-tk/test/test_ttk/test_widgets.py b/Lib/lib-tk/test/test_ttk/test_widgets.py
-index 47cd7af..dca2db7 100644
+index 47cd7af..0e8910d 100644
 --- a/Lib/lib-tk/test/test_ttk/test_widgets.py
 +++ b/Lib/lib-tk/test/test_ttk/test_widgets.py
-@@ -172,10 +172,13 @@ class AbstractLabelTest(AbstractWidgetTest):
+@@ -16,6 +16,17 @@ from widget_tests import (add_standard_options, noconv, noconv_meth,
+ requires('gui')
+ 
+ 
++def is_macos_aqua(root):
++    # Not macOS
++    if sys.platform != 'darwin':
++        return False
++    # Getting the Windowing System from the Tk root
++    windowing_system = (getattr(root, '_windowingsystem', '') or '').strip()
++    if not windowing_system:
++        raise Exception('Could not get the Windowing System')
++    return windowing_system.lower() == 'aqua'
++
++
+ class StandardTtkOptionsTests(StandardOptionsTests):
+ 
+     def test_class(self):
+@@ -172,10 +183,13 @@ class AbstractLabelTest(AbstractWidgetTest):
                  errmsg='image "spam" doesn\'t exist')
  
      def test_compound(self):
@@ -163,15 +181,18 @@ index 47cd7af..dca2db7 100644
  
      def test_state(self):
          widget = self.create()
-@@ -287,6 +290,7 @@ class EntryTest(AbstractWidgetTest, unittest.TestCase):
-         'show', 'state', 'style', 'takefocus', 'textvariable',
+@@ -288,6 +302,10 @@ class EntryTest(AbstractWidgetTest, unittest.TestCase):
          'validate', 'validatecommand', 'width', 'xscrollcommand',
      )
-+    IDENTIFY_AS = ('Entry.field',) if sys.platform == 'darwin' else ('textarea',)
  
++    @classmethod
++    def identify_as(cls):
++        return ('Entry.field',) if is_macos_aqua(cls.root) else ('textarea',)
++
      def setUp(self):
          super(EntryTest, self).setUp()
-@@ -331,12 +335,7 @@ class EntryTest(AbstractWidgetTest, unittest.TestCase):
+         self.entry = self.create()
+@@ -331,12 +349,7 @@ class EntryTest(AbstractWidgetTest, unittest.TestCase):
          self.entry.wait_visibility()
          self.entry.update_idletasks()
  
@@ -181,19 +202,31 @@ index 47cd7af..dca2db7 100644
 -                ("textarea", "Combobox.button") )
 -        else:
 -            self.assertEqual(self.entry.identify(5, 5), "textarea")
-+        self.assertIn(self.entry.identify(5, 5), self.IDENTIFY_AS)
++        self.assertIn(self.entry.identify(5, 5), self.identify_as())
          self.assertEqual(self.entry.identify(-1, -1), "")
  
          self.assertRaises(tkinter.TclError, self.entry.identify, None, 5)
-@@ -425,6 +424,7 @@ class ComboboxTest(EntryTest, unittest.TestCase):
-         'validate', 'validatecommand', 'values',
+@@ -426,6 +439,10 @@ class ComboboxTest(EntryTest, unittest.TestCase):
          'width', 'xscrollcommand',
      )
-+    IDENTIFY_AS = ('Combobox.button', 'textarea') if sys.platform == 'darwin' else ('textarea',)
  
++    @classmethod
++    def identify_as(cls):
++        return ('Combobox.button', 'textarea') if is_macos_aqua(cls.root) else ('textarea',)
++
      def setUp(self):
          super(ComboboxTest, self).setUp()
-@@ -1105,10 +1105,9 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
+         self.combo = self.create()
+@@ -936,7 +953,7 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
+ 
+         self.nb.pack()
+         self.nb.wait_visibility()
+-        if sys.platform == 'darwin':
++        if is_macos_aqua(self.root):
+             tb_idx = "@20,5"
+         else:
+             tb_idx = "@5,5"
+@@ -1105,10 +1122,9 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
          self.nb.enable_traversal()
          self.nb.focus_force()
          simulate_mouse_click(self.nb, 5, 5)
@@ -203,7 +236,7 @@ index 47cd7af..dca2db7 100644
 -            self.nb.event_generate('<Alt-a>')
 +        # on macOS Emacs-style keyboard shortcuts are region-dependent;
 +        # let's use the regular arrow keys instead
-+        self.nb.event_generate('<Left>' if sys.platform == 'darwin' else '<Alt-a>')
++        self.nb.event_generate('<Left>' if is_macos_aqua(self.root) else '<Alt-a>')
          self.assertEqual(self.nb.select(), str(self.child1))
  
  
@@ -1323,4 +1356,4 @@ index f764223..ff2298a 100644
              self.use_system_libffi = True
  
 -- 
-2.41.0
+2.42.0

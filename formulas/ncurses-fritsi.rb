@@ -1,4 +1,4 @@
-class NcursesFritsiMod < Formula
+class NcursesFritsi < Formula
   desc "Text-based UI library"
   homepage "https://invisible-island.net/ncurses/announce.html"
 
@@ -9,6 +9,8 @@ class NcursesFritsiMod < Formula
   sha256 "6931283d9ac87c5073f30b6290c4c75f21632bb4fc3603ac8100812bed248159"
 
   license "MIT"
+
+  revision 2
 
   keg_only "This is a custom fork, so we do not want to symlink it into brew --prefix"
 

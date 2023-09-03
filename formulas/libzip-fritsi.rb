@@ -1,11 +1,13 @@
-class LibzipFritsiMod < Formula
+class LibzipFritsi < Formula
   desc "C library for reading, creating, and modifying zip archives"
   homepage "https://libzip.org/"
 
-  url "https://libzip.org/download/libzip-1.10.0.tar.xz"
-  sha256 "cd2a7ac9f1fb5bfa6218272d9929955dc7237515bba6e14b5ad0e1d1e2212b43"
+  url "https://libzip.org/download/libzip-1.10.1.tar.xz"
+  sha256 "dc3c8d5b4c8bbd09626864f6bcf93de701540f761d76b85d7c7d710f4bd90318"
 
   license "BSD-3-Clause"
+
+  revision 2
 
   keg_only "This is a custom fork, so we do not want to symlink it into brew --prefix"
 
@@ -17,10 +19,10 @@ class LibzipFritsiMod < Formula
   depends_on "openssl@1.1"
   depends_on "xz"
   depends_on "zlib"
-  depends_on "zstd-fritsi-mod"
+  depends_on "zstd-fritsi"
 
   def install
-    %w[bzip2 lz4 openssl@1.1 xz zlib zstd-fritsi-mod].each do |name|
+    %w[bzip2 lz4 openssl@1.1 xz zlib zstd-fritsi].each do |name|
       add_lib_to_compiler_flags(Formula[name].opt_prefix)
     end
 

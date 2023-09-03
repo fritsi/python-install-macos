@@ -1,4 +1,4 @@
-class GettextFritsiMod < Formula
+class GettextFritsi < Formula
   desc "GNU internationalization (i18n) and localization (l10n) library"
   homepage "https://www.gnu.org/software/gettext/"
 
@@ -9,15 +9,17 @@ class GettextFritsiMod < Formula
 
   license "GPL-3.0-or-later"
 
+  revision 2
+
   keg_only "This is a custom fork, so we do not want to symlink it into brew --prefix"
 
   depends_on "pkg-config" => :build
 
   depends_on "libxml2"
-  depends_on "ncurses-fritsi-mod"
+  depends_on "ncurses-fritsi"
 
   def install
-    %w[libxml2 ncurses-fritsi-mod].each do |name|
+    %w[libxml2 ncurses-fritsi].each do |name|
       add_lib_to_compiler_flags(Formula[name].opt_prefix)
     end
 
@@ -35,8 +37,8 @@ class GettextFritsiMod < Formula
       "--with-included-libcroco",
       "--with-included-libunistring",
       "--with-included-libxml",
-      "--with-libncurses-prefix=#{Formula["ncurses-fritsi-mod"].opt_prefix}",
-      "--with-libtermcap-prefix=#{Formula["ncurses-fritsi-mod"].opt_prefix}",
+      "--with-libncurses-prefix=#{Formula["ncurses-fritsi"].opt_prefix}",
+      "--with-libtermcap-prefix=#{Formula["ncurses-fritsi"].opt_prefix}",
       "--with-libxml2-prefix=#{Formula["libxml2"].opt_prefix}",
       "--without-cvs",
       "--without-git",

@@ -1,4 +1,4 @@
-class TclTkFritsiMod < Formula
+class TclTkFritsi < Formula
   desc "Tool Command Language"
   homepage "https://www.tcl-lang.org"
 
@@ -7,6 +7,8 @@ class TclTkFritsiMod < Formula
   sha256 "43a1fae7412f61ff11de2cfd05d28cfc3a73762f354a417c62370a54e2caf066"
 
   license "TCL"
+
+  revision 2
 
   keg_only "This is a custom fork, so we do not want to symlink it into brew --prefix"
 

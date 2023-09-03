@@ -1,4 +1,4 @@
-From 0b5f4789a820a336b5b0ba4229d46bd1ab6854ea Mon Sep 17 00:00:00 2001
+From 37bd1b85683e8425edc59ec6cfe3dc80ac3dd3aa Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
 Date: Mon, 16 Jan 2023 15:27:12 +0100
 Subject: [PATCH] Python 3.7.17 patching
@@ -7,8 +7,8 @@ Subject: [PATCH] Python 3.7.17 patching
  Lib/ctypes/macholib/dyld.py                |  10 ++
  Lib/ctypes/test/test_macholib.py           |   1 -
  Lib/distutils/tests/test_build_ext.py      |   6 ++
- Lib/idlelib/idle_test/test_colorizer.py    |   3 +
- Lib/idlelib/idle_test/test_outwin.py       |   3 +
+ Lib/idlelib/idle_test/test_colorizer.py    |  14 +++
+ Lib/idlelib/idle_test/test_outwin.py       |  14 +++
  Lib/sysconfig.py                           |  12 +++
  Lib/test/support/__init__.py               |  18 ++--
  Lib/test/test_bytes.py                     |   1 +
@@ -19,7 +19,7 @@ Subject: [PATCH] Python 3.7.17 patching
  Lib/test/test_posix.py                     |   8 +-
  Lib/test/test_unicode.py                   |   3 +
  Lib/tkinter/test/test_tkinter/test_misc.py |   1 +
- Lib/tkinter/test/test_ttk/test_widgets.py  |  26 ++---
+ Lib/tkinter/test/test_ttk/test_widgets.py  |  48 ++++++---
  Makefile.pre.in                            |   6 +-
  Modules/Setup.dist                         |  16 ++-
  Modules/_ctypes/_ctypes.c                  |  31 ++++++
@@ -36,7 +36,7 @@ Subject: [PATCH] Python 3.7.17 patching
  configure.ac                               |   6 ++
  pyconfig.h.in                              |   3 +
  setup.py                                   |  67 +++++++++---
- 32 files changed, 361 insertions(+), 99 deletions(-)
+ 32 files changed, 404 insertions(+), 100 deletions(-)
 
 diff --git a/Lib/ctypes/macholib/dyld.py b/Lib/ctypes/macholib/dyld.py
 index 9d86b05..931a9e7 100644
@@ -103,7 +103,7 @@ index d042859..ac7942d 100644
          # format the target value as defined in the Apple
          # Availability Macros.  We can't use the macro names since
 diff --git a/Lib/idlelib/idle_test/test_colorizer.py b/Lib/idlelib/idle_test/test_colorizer.py
-index c31c492..c00ca09 100644
+index c31c492..170f18d 100644
 --- a/Lib/idlelib/idle_test/test_colorizer.py
 +++ b/Lib/idlelib/idle_test/test_colorizer.py
 @@ -1,5 +1,6 @@
@@ -113,17 +113,35 @@ index c31c492..c00ca09 100644
  from idlelib import colorizer
  from test.support import requires
  import unittest
-@@ -147,6 +148,8 @@ class ColorDelegatorTest(unittest.TestCase):
+@@ -30,6 +31,17 @@ source = (
+     )
+ 
+ 
++def is_macos_aqua(root):
++    # Not macOS
++    if sys.platform != 'darwin':
++        return False
++    # Getting the Windowing System from the Tk root
++    windowing_system = (getattr(root, '_windowingsystem', '') or '').strip()
++    if not windowing_system:
++        raise Exception('Could not get the Windowing System')
++    return windowing_system.lower() == 'aqua'
++
++
+ def setUpModule():
+     colorizer.idleConf.userCfg = testcfg
+ 
+@@ -147,6 +159,8 @@ class ColorDelegatorTest(unittest.TestCase):
          root = cls.root = Tk()
          root.withdraw()
          text = cls.text = Text(root)
-+        if sys.platform == "darwin":
++        if is_macos_aqua(root):
 +            cls.text.update = cls.text.update_idletasks
          cls.percolator = Percolator(text)
          # Delegator stack = [Delegator(text)]
  
 diff --git a/Lib/idlelib/idle_test/test_outwin.py b/Lib/idlelib/idle_test/test_outwin.py
-index cd099ec..b921fdb 100644
+index cd099ec..0ae5c8d 100644
 --- a/Lib/idlelib/idle_test/test_outwin.py
 +++ b/Lib/idlelib/idle_test/test_outwin.py
 @@ -1,5 +1,6 @@
@@ -133,11 +151,29 @@ index cd099ec..b921fdb 100644
  from idlelib import outwin
  import unittest
  from test.support import requires
-@@ -18,6 +19,8 @@ class OutputWindowTest(unittest.TestCase):
+@@ -9,6 +10,17 @@ from idlelib.idle_test.mock_idle import Func
+ from unittest import mock
+ 
+ 
++def is_macos_aqua(root):
++    # Not macOS
++    if sys.platform != 'darwin':
++        return False
++    # Getting the Windowing System from the Tk root
++    windowing_system = (getattr(root, '_windowingsystem', '') or '').strip()
++    if not windowing_system:
++        raise Exception('Could not get the Windowing System')
++    return windowing_system.lower() == 'aqua'
++
++
+ class OutputWindowTest(unittest.TestCase):
+ 
+     @classmethod
+@@ -18,6 +30,8 @@ class OutputWindowTest(unittest.TestCase):
          root.withdraw()
          w = cls.window = outwin.OutputWindow(None, None, None, root)
          cls.text = w.text = Text(root)
-+        if sys.platform == "darwin":
++        if is_macos_aqua(root):
 +            cls.text.update = cls.text.update_idletasks
  
      @classmethod
@@ -398,10 +434,28 @@ index 236cae0..90bba07 100644
          root = self.root
          root.clipboard_clear()
 diff --git a/Lib/tkinter/test/test_ttk/test_widgets.py b/Lib/tkinter/test/test_ttk/test_widgets.py
-index 9667e05..971f115 100644
+index 9667e05..4dd2545 100644
 --- a/Lib/tkinter/test/test_ttk/test_widgets.py
 +++ b/Lib/tkinter/test/test_ttk/test_widgets.py
-@@ -170,10 +170,13 @@ class AbstractLabelTest(AbstractWidgetTest):
+@@ -14,6 +14,17 @@ from tkinter.test.widget_tests import (add_standard_options, noconv,
+ requires('gui')
+ 
+ 
++def is_macos_aqua(root):
++    # Not macOS
++    if sys.platform != 'darwin':
++        return False
++    # Getting the Windowing System from the Tk root
++    windowing_system = (getattr(root, '_windowingsystem', '') or '').strip()
++    if not windowing_system:
++        raise Exception('Could not get the Windowing System')
++    return windowing_system.lower() == 'aqua'
++
++
+ class StandardTtkOptionsTests(StandardOptionsTests):
+ 
+     def test_class(self):
+@@ -170,10 +181,13 @@ class AbstractLabelTest(AbstractWidgetTest):
                  errmsg='image "spam" doesn\'t exist')
  
      def test_compound(self):
@@ -418,15 +472,18 @@ index 9667e05..971f115 100644
  
      def test_state(self):
          widget = self.create()
-@@ -285,6 +288,7 @@ class EntryTest(AbstractWidgetTest, unittest.TestCase):
-         'show', 'state', 'style', 'takefocus', 'textvariable',
+@@ -286,6 +300,10 @@ class EntryTest(AbstractWidgetTest, unittest.TestCase):
          'validate', 'validatecommand', 'width', 'xscrollcommand',
      )
-+    IDENTIFY_AS = ('Entry.field',) if sys.platform == 'darwin' else ('textarea',)
  
++    @classmethod
++    def identify_as(cls):
++        return ('Entry.field',) if is_macos_aqua(cls.root) else ('textarea',)
++
      def setUp(self):
          super().setUp()
-@@ -329,12 +333,7 @@ class EntryTest(AbstractWidgetTest, unittest.TestCase):
+         self.entry = self.create()
+@@ -329,12 +347,7 @@ class EntryTest(AbstractWidgetTest, unittest.TestCase):
          self.entry.wait_visibility()
          self.entry.update_idletasks()
  
@@ -436,19 +493,31 @@ index 9667e05..971f115 100644
 -                ("textarea", "Combobox.button") )
 -        else:
 -            self.assertEqual(self.entry.identify(5, 5), "textarea")
-+        self.assertIn(self.entry.identify(5, 5), self.IDENTIFY_AS)
++        self.assertIn(self.entry.identify(5, 5), self.identify_as())
          self.assertEqual(self.entry.identify(-1, -1), "")
  
          self.assertRaises(tkinter.TclError, self.entry.identify, None, 5)
-@@ -423,6 +422,7 @@ class ComboboxTest(EntryTest, unittest.TestCase):
-         'validate', 'validatecommand', 'values',
+@@ -424,6 +437,10 @@ class ComboboxTest(EntryTest, unittest.TestCase):
          'width', 'xscrollcommand',
      )
-+    IDENTIFY_AS = ('Combobox.button', 'textarea') if sys.platform == 'darwin' else ('textarea',)
  
++    @classmethod
++    def identify_as(cls):
++        return ('Combobox.button', 'textarea') if is_macos_aqua(cls.root) else ('textarea',)
++
      def setUp(self):
          super().setUp()
-@@ -1103,10 +1103,9 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
+         self.combo = self.create()
+@@ -934,7 +951,7 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
+ 
+         self.nb.pack()
+         self.nb.wait_visibility()
+-        if sys.platform == 'darwin':
++        if is_macos_aqua(self.root):
+             tb_idx = "@20,5"
+         else:
+             tb_idx = "@5,5"
+@@ -1103,10 +1120,9 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
          self.nb.enable_traversal()
          self.nb.focus_force()
          simulate_mouse_click(self.nb, 5, 5)
@@ -458,18 +527,21 @@ index 9667e05..971f115 100644
 -            self.nb.event_generate('<Alt-a>')
 +        # on macOS Emacs-style keyboard shortcuts are region-dependent;
 +        # let's use the regular arrow keys instead
-+        self.nb.event_generate('<Left>' if sys.platform == 'darwin' else '<Alt-a>')
++        self.nb.event_generate('<Left>' if is_macos_aqua(self.root) else '<Alt-a>')
          self.assertEqual(self.nb.select(), str(self.child1))
  
  @add_standard_options(IntegerSizeTests, StandardTtkOptionsTests)
-@@ -1118,6 +1117,7 @@ class SpinboxTest(EntryTest, unittest.TestCase):
-         'takefocus', 'textvariable', 'to', 'validate', 'validatecommand',
+@@ -1119,6 +1135,10 @@ class SpinboxTest(EntryTest, unittest.TestCase):
          'values', 'width', 'wrap', 'xscrollcommand',
      )
-+    IDENTIFY_AS = ('Spinbox.field',) if sys.platform == 'darwin' else ('textarea',)
  
++    @classmethod
++    def identify_as(cls):
++        return ('Spinbox.field',) if is_macos_aqua(cls.root) else ('textarea',)
++
      def setUp(self):
          super().setUp()
+         self.spin = self.create()
 diff --git a/Makefile.pre.in b/Makefile.pre.in
 index ef2bfb1..f38c5a8 100644
 --- a/Makefile.pre.in
@@ -1146,4 +1218,4 @@ index bf90600..b530d36 100644
              depends = ['_decimal/docstrings.h']
          else:
 -- 
-2.41.0
+2.42.0

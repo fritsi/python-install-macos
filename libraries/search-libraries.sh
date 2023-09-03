@@ -12,21 +12,30 @@ export PKG_CONFIG_PATH=""
 
 # The list of libraries we need to look-up, and set include / lib directories based on them for the compiler
 # Some of them are definitely mandatory, others are optional for the Python build
-export T_LIBRARIES_TO_LOOKUP="zlib xz tcl-tk-fritsi-mod sqlite-fritsi-mod readline-fritsi-mod openssl@3.0 ncurses-fritsi-mod mpdecimal libzip-fritsi-mod libxcrypt libffi gdbm expat bzip2 gettext-fritsi-mod"
+export T_LIBRARIES_TO_LOOKUP="zlib xz tcl-tk-fritsi sqlite-fritsi readline-fritsi openssl@3.0 ncurses-fritsi mpdecimal libzip-fritsi libxcrypt libffi gdbm expat bzip2 gettext-fritsi"
 
 # Adding OpenSSL to the libraries to look-up when we are compiling Python
 if $G_PYTHON_COMPILE; then
     if [[ "$PY_VERSION_NUM" -ge 308 ]]; then
         # We replace some of the libraries compiled with OpenSSL with their OpenSSL 3 compilation counterparts
-        export T_LIBRARIES_TO_LOOKUP="${T_LIBRARIES_TO_LOOKUP//libzip-fritsi-mod/libzip-fritsi-mod-with-openssl3}"
-        export T_LIBRARIES_TO_LOOKUP="${T_LIBRARIES_TO_LOOKUP//sqlite-fritsi-mod/sqlite-fritsi-mod-with-openssl3}"
-        export T_LIBRARIES_TO_LOOKUP="${T_LIBRARIES_TO_LOOKUP//tcl-tk-fritsi-mod/tcl-tk-fritsi-mod-with-openssl3}"
+        export T_LIBRARIES_TO_LOOKUP="${T_LIBRARIES_TO_LOOKUP//libzip-fritsi/libzip-fritsi-with-openssl3}"
+        export T_LIBRARIES_TO_LOOKUP="${T_LIBRARIES_TO_LOOKUP//sqlite-fritsi/sqlite-fritsi-with-openssl3}"
+        export T_LIBRARIES_TO_LOOKUP="${T_LIBRARIES_TO_LOOKUP//tcl-tk-fritsi/tcl-tk-fritsi-with-openssl3}"
     else
         # For older Python versions we still need OpenSSL 1.1 :(
         export T_LIBRARIES_TO_LOOKUP="${T_LIBRARIES_TO_LOOKUP//openssl@3.0/openssl@1.1}"
 
         # Also, for Python versions smaller than 3.8, we need to use an older libffi library :(
         export T_LIBRARIES_TO_LOOKUP="${T_LIBRARIES_TO_LOOKUP//libffi/libffi33}"
+    fi
+
+    # User wants to use X11, let's use that version of SQLite and Tcl-Tk
+    if $P_USE_X11; then
+        export T_LIBRARIES_TO_LOOKUP="${T_LIBRARIES_TO_LOOKUP//sqlite-fritsi/sqlite-fritsi-with-x11}"
+        export T_LIBRARIES_TO_LOOKUP="${T_LIBRARIES_TO_LOOKUP//tcl-tk-fritsi/tcl-tk-fritsi-with-x11}"
+
+        # Let's also add libx11 and xorgproto as dependent libraries
+        export T_LIBRARIES_TO_LOOKUP="$T_LIBRARIES_TO_LOOKUP libx11 xorgproto"
     fi
 fi
 
@@ -54,8 +63,8 @@ for libraryName in $T_LIBRARIES_TO_LOOKUP; do
     libraryDir="$(brew --prefix "$libraryName" 2> /dev/null || true)"
 
     # Validating the library
-    if [[ "$libraryDir" == "" ]] || [[ ! -d "$libraryDir" ]] || [[ ! -d "$libraryDir/lib" ]] || [[ ! -d "$libraryDir/include" ]]; then
-        if [[ "$libraryName" == *"fritsi-mod"* ]]; then
+    if [[ "$libraryDir" == "" ]] || [[ ! -d "$libraryDir" ]] || { [[ "$libraryName" != "xorgproto" ]] && [[ ! -d "$libraryDir/lib" ]]; } || [[ ! -d "$libraryDir/include" ]]; then
+        if [[ "$libraryName" == *fritsi* ]]; then
             sysout >&2 "${FNT_BLD}[ERROR]${FNT_RST} Could not find $libraryName, did you install it with ${FNT_ITC}brew install --formula --build-from-source \"$SCRIPTS_DIR/formulas/$libraryName.rb\"${FNT_RST} ?"
         else
             sysout >&2 "${FNT_BLD}[ERROR]${FNT_RST} Could not find $libraryName, did you install it with ${FNT_ITC}brew install $libraryName${FNT_RST} ?"
@@ -71,10 +80,12 @@ for libraryName in $T_LIBRARIES_TO_LOOKUP; do
     fi
 
     # Adding the library to the compiler flags
-    prependVar LDFLAGS ' ' "-Wl,-rpath,$libraryDir/lib" "-L$libraryDir/lib"
-    prependVar LIBRARY_PATH ':' "$libraryDir/lib"
+    if [[ -d "$libraryDir/lib" ]]; then
+        prependVar LDFLAGS ' ' "-Wl,-rpath,$libraryDir/lib" "-L$libraryDir/lib"
+        prependVar LIBRARY_PATH ':' "$libraryDir/lib"
+    fi
 
-    # OpenSSL also has an include/openssl subdirectory, handling that
+    # OpenSSL also has an include/openssl sub-directory, handling that
     # NOTE: This needs to be before the regular include directories
     if [[ "$libraryName" =~ ^openssl.*$ ]]; then
         prependIncludeDir "$libraryName" "$libraryDir/include/openssl"
@@ -83,9 +94,9 @@ for libraryName in $T_LIBRARIES_TO_LOOKUP; do
     # Adding the include directory itself to the compiler flags
     prependIncludeDir "$libraryName" "$libraryDir/include"
 
-    # ncurses also has an include/ncursesw subdirectory, handling that
+    # ncurses also has an include/ncursesw sub-directory, handling that
     # NOTE: This needs to be after the regular include directories
-    if [[ "$libraryName" == "ncurses-fritsi-mod" ]]; then
+    if [[ "$libraryName" == "ncurses-fritsi" ]]; then
         prependIncludeDir "$libraryName" "$libraryDir/include/ncursesw"
     fi
 
@@ -155,5 +166,5 @@ prependVar PATH ':' "$T_EXTRA_PATH"
 unset T_EXTRA_PATH
 
 if ! ${P_NON_INTERACTIVE:-false}; then
-    ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Press [ENTER] to continue" && sysout ""
+    ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Press [ENTER] to continue"
 fi

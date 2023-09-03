@@ -7,8 +7,8 @@
 ###########################################################################################
 
 # If the echo command does not seem to be a GNU echo, then we check whether we have
-# coreutils installed with brew or not, and if we do have, then we prepend the 'PATH'
-# with it
+# coreutils installed with Homebrew or not, and if we do have, then we prepend the
+# 'PATH' with it
 if [[ "$(enable -n echo && echo --help)" == "--help" ]]; then
     __coreUtilsPrefix=$(brew --prefix coreutils 2> /dev/null || true)
     if [[ "$__coreUtilsPrefix" != "" ]] && [[ -d "$__coreUtilsPrefix/libexec/gnubin" ]]; then
@@ -49,6 +49,8 @@ function ask() {
         # We don't need to store the response in a variable
         read -r -p " "
     fi
+
+    sysout ""
 }
 
 export -f ask
