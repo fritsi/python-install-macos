@@ -1,4 +1,4 @@
-From 37bd1b85683e8425edc59ec6cfe3dc80ac3dd3aa Mon Sep 17 00:00:00 2001
+From 31091198002a8432efbdbb17a9952b529ca4cba3 Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
 Date: Mon, 16 Jan 2023 15:27:12 +0100
 Subject: [PATCH] Python 3.7.17 patching
@@ -12,7 +12,7 @@ Subject: [PATCH] Python 3.7.17 patching
  Lib/sysconfig.py                           |  12 +++
  Lib/test/support/__init__.py               |  18 ++--
  Lib/test/test_bytes.py                     |   1 +
- Lib/test/test_capi.py                      |  37 ++++---
+ Lib/test/test_capi.py                      |  30 +++---
  Lib/test/test_gdb.py                       |   2 +-
  Lib/test/test_httpservers.py               |   4 +-
  Lib/test/test_platform.py                  |   2 +-
@@ -36,7 +36,7 @@ Subject: [PATCH] Python 3.7.17 patching
  configure.ac                               |   6 ++
  pyconfig.h.in                              |   3 +
  setup.py                                   |  67 +++++++++---
- 32 files changed, 404 insertions(+), 100 deletions(-)
+ 32 files changed, 397 insertions(+), 100 deletions(-)
 
 diff --git a/Lib/ctypes/macholib/dyld.py b/Lib/ctypes/macholib/dyld.py
 index 9d86b05..931a9e7 100644
@@ -264,24 +264,10 @@ index 3387a1b..81a1b36 100644
  
          # basic tests
 diff --git a/Lib/test/test_capi.py b/Lib/test/test_capi.py
-index 3ed2263..86c9e8c 100644
+index 3ed2263..5bfdd6f 100644
 --- a/Lib/test/test_capi.py
 +++ b/Lib/test/test_capi.py
-@@ -28,6 +28,13 @@ _testcapi = support.import_module('_testcapi')
- Py_DEBUG = hasattr(sys, 'gettotalrefcount')
- 
- 
-+try:
-+    import platform
-+    is_darwin_arm64 = sys.platform == "darwin" and "arm64" in platform.machine()
-+except:
-+    is_darwin_arm64 = False
-+
-+
- def testfunction(self):
-     """some doc"""
-     return self
-@@ -522,28 +529,30 @@ class PyMemDebugTests(unittest.TestCase):
+@@ -522,28 +522,30 @@ class PyMemDebugTests(unittest.TestCase):
          code = 'import _testcapi; _testcapi.pyobject_malloc_without_gil()'
          self.check_malloc_without_gil(code)
  
@@ -320,7 +306,7 @@ index 3ed2263..86c9e8c 100644
  
 -    def test_pyobject_is_freed_free(self):
 -        self.check_pyobject_is_freed('pyobject_freed')
-+    @unittest.skipIf(is_darwin_arm64, "Daniel Fritsi: Doesn't work on macOS arm64")
++    @unittest.skipIf(sys.platform == "darwin", "Daniel Fritsi: Doesn't work on macOS")
 +    def test_pyobject_freed_is_freed(self):
 +        self.check_pyobject_is_freed('check_pyobject_freed_is_freed')
  
@@ -1218,4 +1204,4 @@ index bf90600..b530d36 100644
              depends = ['_decimal/docstrings.h']
          else:
 -- 
-2.42.0
+2.43.0
