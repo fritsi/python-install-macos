@@ -30,7 +30,7 @@ source "$SCRIPTS_DIR/utils/print-func.sh"
 source "$SCRIPTS_DIR/utils/exec-func.sh"
 source "$SCRIPTS_DIR/utils/utils.sh"
 
-SUPPORTED_VERSIONS=("2.7.18" "3.6.15" "3.7.17" "3.8.18" "3.9.18" "3.10.13" "3.11.5")
+SUPPORTED_VERSIONS=("2.7.18" "3.6.15" "3.7.17" "3.8.18" "3.9.18" "3.10.13" "3.11.7" "3.12.1")
 
 SUPPORTED_VERSIONS_TEXT="$(versions="${SUPPORTED_VERSIONS[*]}" && echo "${versions// /, }")"
 
@@ -560,15 +560,31 @@ if [[ "$PY_VERSION_NUM" -ge 300 ]]; then
     fi
 fi
 
+# From Python 3.12 we need to set the LIBFFI_LIBS and LIBFFI_CFLAGS variables
+if [[ "$PY_VERSION_NUM" -ge 312 ]]; then
+    if ! $P_DRY_RUN_MODE; then
+        export LIBFFI_LIBS="-L$L_LIBFFI_BASE/lib -Wl,-rpath,$L_LIBFFI_BASE/lib -lffi"
+        export LIBFFI_CFLAGS="-I$L_LIBFFI_BASE/include"
+
+        sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} export LIBFFI_LIBS=\"$LIBFFI_LIBS\""
+        sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} export LIBFFI_CFLAGS=\"$LIBFFI_CFLAGS\""
+        sysout ""
+    else
+        {
+            echo "export LIBFFI_LIBS=\"-L$L_LIBFFI_BASE/lib -Wl,-rpath,$L_LIBFFI_BASE/lib -lffi\""
+            echo "export LIBFFI_CFLAGS=\"-I$L_LIBFFI_BASE/include\""
+            echo ""
+        } >> "$G_PY_COMPILE_COMMANDS_FILE"
+    fi
+fi
+
 # Parameters used for ./configure
 CONFIGURE_PARAMS=(
     "--prefix=$PYTHON_INSTALL_DIR"
     "--with-ensurepip=install"
     "--enable-optimizations"
     "--enable-ipv6"
-    "--with-dbmliborder=gdbm:ndbm"
     "--with-system-expat"
-    "--with-system-ffi"
 )
 
 # --enable-unicode=ucs4 is only available for Python 2
@@ -579,6 +595,25 @@ fi
 # --with-system-libmpdec is only available from Python 3
 if [[ "$PY_VERSION_NUM" -ge 300 ]]; then
     CONFIGURE_PARAMS+=("--with-system-libmpdec")
+fi
+
+# --with-system-ffi is not available since Python 3.12
+if [[ "$PY_VERSION_NUM" -lt 312 ]]; then
+    CONFIGURE_PARAMS+=("--with-system-ffi")
+fi
+
+# From Python 3.10 we set the --with-readline parameter, but it's different from Python 3.12
+if [[ "$PY_VERSION_NUM" -ge 312 ]]; then
+    CONFIGURE_PARAMS+=("--with-readline=readline")
+elif [[ "$PY_VERSION_NUM" -ge 310 ]]; then
+    CONFIGURE_PARAMS+=("--with-readline")
+fi
+
+# Using a different --with-dbmliborder value since Python 3.11
+if [[ "$PY_VERSION_NUM" -ge 311 ]]; then
+    CONFIGURE_PARAMS+=("--with-dbmliborder=ndbm")
+else
+    CONFIGURE_PARAMS+=("--with-dbmliborder=gdbm:ndbm")
 fi
 
 # --with-openssl is only available from Python 3.7
@@ -618,6 +653,7 @@ function macOsVersion() {
     # Big Sur:  "11"
     # Monterey: "12"
     # Ventura:  "13"
+    # Sonoma:   "14"
     if [[ "${macOsVersionParts[0]}" -ge 11 ]]; then
         echo -n "${macOsVersionParts[0]}"
     # Below that we need that major and minor versions, because for these the versions means:
@@ -670,6 +706,9 @@ else
 fi
 
 if ! $P_NON_INTERACTIVE; then
+    sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Successfully configured Python $PYTHON_VERSION"
+    sysout ""
+
     ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Press [ENTER] to continue"
 fi
 
@@ -699,6 +738,9 @@ else
 fi
 
 if ! $P_NON_INTERACTIVE; then
+    sysout "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Successfully compiled Python $PYTHON_VERSION"
+    sysout ""
+
     ask "${FNT_BLD}[$G_PROG_NAME]${FNT_RST} Press [ENTER] to continue"
 fi
 
@@ -726,7 +768,9 @@ function runTests() {
         if ! $P_DRY_RUN_MODE; then
             # Needed for some of the tests
             export LC_ALL="en_US.UTF-8"
+            export LC_CTYPE="UTF-8"
             export LANG="en_US.UTF-8"
+            export LANGUAGE="en_US:en"
 
             # Unsetting these as they would mess with the tests
             unset PYTHONHTTPSVERIFY
@@ -742,7 +786,9 @@ function runTests() {
                 echo ""
                 echo "("
                 echo "    export LC_ALL=\"en_US.UTF-8\""
+                echo "    export LC_CTYPE=\"UTF-8\""
                 echo "    export LANG=\"en_US.UTF-8\""
+                echo "    export LANGUAGE=\"en_US:en\""
                 echo ""
                 if ! $P_USE_X11; then
                     echo "    unset PYTHONHTTPSVERIFY DISPLAY"

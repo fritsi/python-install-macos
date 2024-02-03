@@ -1,7 +1,7 @@
-From e48c1b4ba8a356060fd54ccce2186f3f1b24d411 Mon Sep 17 00:00:00 2001
+From b90b3befd3119fffb8d81d216564cc821fcfd17d Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
-Date: Sun, 11 Jun 2023 13:31:48 +0200
-Subject: [PATCH] Python 3.11.5 patching
+Date: Tue, 9 Jan 2024 11:09:24 +0100
+Subject: [PATCH] Python 3.11.7 patching
 
 ---
  Lib/distutils/tests/test_build_ext.py     |  6 ++
@@ -10,8 +10,6 @@ Subject: [PATCH] Python 3.11.5 patching
  Lib/idlelib/idle_test/test_outwin.py      | 14 ++++
  Lib/idlelib/idle_test/test_sidebar.py     | 38 +++++------
  Lib/test/support/__init__.py              | 18 +++---
- Lib/test/test_gdb.py                      |  2 +-
- Lib/test/test_httpservers.py              |  4 +-
  Lib/test/test_posix.py                    |  8 +--
  Lib/test/test_tools/test_freeze.py        |  1 +
  Lib/tkinter/test/test_ttk/test_widgets.py | 37 ++++++++---
@@ -21,10 +19,10 @@ Subject: [PATCH] Python 3.11.5 patching
  Modules/socketmodule.c                    |  3 +
  Modules/socketmodule.h                    |  3 +
  setup.py                                  | 79 ++++++++++++++++++++++-
- 17 files changed, 207 insertions(+), 58 deletions(-)
+ 15 files changed, 204 insertions(+), 55 deletions(-)
 
 diff --git a/Lib/distutils/tests/test_build_ext.py b/Lib/distutils/tests/test_build_ext.py
-index 4ebeafe..fa303e3 100644
+index e89dc50..e026599 100644
 --- a/Lib/distutils/tests/test_build_ext.py
 +++ b/Lib/distutils/tests/test_build_ext.py
 @@ -459,6 +459,9 @@ class BuildExtTestCase(TempdirManager,
@@ -230,10 +228,10 @@ index fb52b3a..cd62af4 100644
          if sys.platform != 'darwin':  # .update_idletasks() does not work.
              self.assertIsNone(text.dlineinfo(text.index(f'{last_lineno}.0')))
 diff --git a/Lib/test/support/__init__.py b/Lib/test/support/__init__.py
-index 98be9cd..d5257fc 100644
+index dc7a6e6..d719ec0 100644
 --- a/Lib/test/support/__init__.py
 +++ b/Lib/test/support/__init__.py
-@@ -260,15 +260,15 @@ def _is_gui_available():
+@@ -254,15 +254,15 @@ def _is_gui_available():
  
          if app_services.CGMainDisplayID() == 0:
              reason = "gui tests cannot run without OS X window manager"
@@ -258,41 +256,11 @@ index 98be9cd..d5257fc 100644
  
      # check on every platform whether tkinter can actually do anything
      if not reason:
-diff --git a/Lib/test/test_gdb.py b/Lib/test/test_gdb.py
-index 0f39b8f..166ff9f 100644
---- a/Lib/test/test_gdb.py
-+++ b/Lib/test/test_gdb.py
-@@ -140,7 +140,7 @@ HAS_PYUP_PYDOWN = gdb_has_frame_select()
- 
- BREAKPOINT_FN='builtin_id'
- 
--@unittest.skipIf(support.PGO, "not useful for PGO")
-+@unittest.skipIf(sys.platform == "darwin", "Daniel Fritsi: gdb requires code signing on MacOS")
- class DebuggerTests(unittest.TestCase):
- 
-     """Test that the debugger can debug Python."""
-diff --git a/Lib/test/test_httpservers.py b/Lib/test/test_httpservers.py
-index cdd1bea..95c4cd1 100644
---- a/Lib/test/test_httpservers.py
-+++ b/Lib/test/test_httpservers.py
-@@ -442,10 +442,10 @@ class SimpleHTTPServerTestCase(BaseTestCase):
-     def test_undecodable_parameter(self):
-         # sanity check using a valid parameter
-         response = self.request(self.base_url + '/?x=123').read()
--        self.assertRegex(response, f'listing for {self.base_url}/\?x=123'.encode('latin1'))
-+        self.assertRegex(response, f'listing for {self.base_url}/\\?x=123'.encode('latin1'))
-         # now the bogus encoding
-         response = self.request(self.base_url + '/?x=%bb').read()
--        self.assertRegex(response, f'listing for {self.base_url}/\?x=\xef\xbf\xbd'.encode('latin1'))
-+        self.assertRegex(response, f'listing for {self.base_url}/\\?x=\xef\xbf\xbd'.encode('latin1'))
- 
-     def test_get_dir_redirect_location_domain_injection_bug(self):
-         """Ensure //evil.co/..%2f../../X does not put //evil.co/ in Location.
 diff --git a/Lib/test/test_posix.py b/Lib/test/test_posix.py
-index e643d8e..b201941 100644
+index 0b1068b..ea0023d 100644
 --- a/Lib/test/test_posix.py
 +++ b/Lib/test/test_posix.py
-@@ -1072,7 +1072,7 @@ class PosixTester(unittest.TestCase):
+@@ -1075,7 +1075,7 @@ class PosixTester(unittest.TestCase):
      @unittest.skipUnless(hasattr(os, 'popen'), "test needs os.popen()")
      @support.requires_subprocess()
      def test_getgroups(self):
@@ -301,7 +269,7 @@ index e643d8e..b201941 100644
              groups = idg.read().strip()
              ret = idg.close()
  
-@@ -1080,8 +1080,8 @@ class PosixTester(unittest.TestCase):
+@@ -1083,8 +1083,8 @@ class PosixTester(unittest.TestCase):
              idg_groups = set(int(g) for g in groups.split())
          except ValueError:
              idg_groups = set()
@@ -312,7 +280,7 @@ index e643d8e..b201941 100644
  
          # Issues 16698: OS X ABIs prior to 10.6 have limits on getgroups()
          if sys.platform == 'darwin':
-@@ -1090,7 +1090,7 @@ class PosixTester(unittest.TestCase):
+@@ -1093,7 +1093,7 @@ class PosixTester(unittest.TestCase):
              if tuple(int(n) for n in dt.split('.')[0:2]) < (10, 6):
                  raise unittest.SkipTest("getgroups(2) is broken prior to 10.6")
  
@@ -322,13 +290,13 @@ index e643d8e..b201941 100644
          # #10822/#26944 - It is implementation defined whether
          # posix.getgroups() includes the effective gid.
 diff --git a/Lib/test/test_tools/test_freeze.py b/Lib/test/test_tools/test_freeze.py
-index 2ba36ca..caf7579 100644
+index 671ec29..acb4f57 100644
 --- a/Lib/test/test_tools/test_freeze.py
 +++ b/Lib/test/test_tools/test_freeze.py
-@@ -17,6 +17,7 @@ with imports_under_tool('freeze', 'test'):
- @support.skip_if_buildbot('not all buildbots have enough space')
+@@ -22,6 +22,7 @@ with imports_under_tool('freeze', 'test'):
  class TestFreeze(unittest.TestCase):
  
+     @support.requires_resource('cpu') # Building Python is slow
 +    @unittest.skipIf(True, "Daniel Fritsi: This does not seem to work")
      def test_freeze_simple_script(self):
          script = textwrap.dedent("""
@@ -520,7 +488,7 @@ index 335021f..c26d9aa 100644
  #include <arpa/inet.h>
  #include <arpa/nameser.h>
 diff --git a/Modules/socketmodule.c b/Modules/socketmodule.c
-index e6d983a..ca64432 100644
+index 997df43..d53d8d0 100644
 --- a/Modules/socketmodule.c
 +++ b/Modules/socketmodule.c
 @@ -219,6 +219,9 @@ shutdown(how) -- shut down traffic in one or both directions\n\
@@ -641,4 +609,4 @@ index 4f122b6..0cb2ad3 100644
          )
  
 -- 
-2.42.0
+2.43.0

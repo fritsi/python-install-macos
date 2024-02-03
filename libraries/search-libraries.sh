@@ -107,6 +107,9 @@ for libraryName in $T_LIBRARIES_TO_LOOKUP; do
 
     # Some of the library locations are also needed by install-python-macos.sh directly, so saving those
     case "$libraryName" in
+        libffi*)
+            export L_LIBFFI_BASE="$libraryDir"
+            ;;
         openssl*)
             export L_OPENSSL_BASE="$libraryDir"
             ;;

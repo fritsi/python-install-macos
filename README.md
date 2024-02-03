@@ -4,12 +4,12 @@ This repository provides scripts that assist in compiling Python from source for
 platforms.
 
 **Supported Python versions:** `2.7.18`**,** `3.6.15`**,** `3.7.17`**,** `3.8.18`**,** `3.9.18`**,** `3.10.13`
-**,** `3.11.5`.
+**,** `3.11.7`**,** `3.12.1`.
 
 For older Python versions, specific changes have been incorporated from newer Python releases to ensure compatibility
 with recent macOS versions and Apple Silicon hardware. _See [patches](patches)._
 
-**Tested on Apple Intel macOS Big Sur and Apple M1 macOS Ventura.**
+**Tested on Apple Intel macOS Big Sur, and Sonoma and Apple M1 macOS Ventura.**
 
 ## Usage
 
