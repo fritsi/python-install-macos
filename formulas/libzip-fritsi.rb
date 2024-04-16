@@ -1,13 +1,12 @@
 class LibzipFritsi < Formula
   desc "C library for reading, creating, and modifying zip archives"
   homepage "https://libzip.org/"
+  version "1.10.1"
 
   url "https://libzip.org/download/libzip-1.10.1.tar.xz"
   sha256 "dc3c8d5b4c8bbd09626864f6bcf93de701540f761d76b85d7c7d710f4bd90318"
 
   license "BSD-3-Clause"
-
-  revision 2
 
   keg_only "This is a custom fork, so we do not want to symlink it into brew --prefix"
 

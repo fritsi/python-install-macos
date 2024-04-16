@@ -1,6 +1,7 @@
 class GettextFritsi < Formula
   desc "GNU internationalization (i18n) and localization (l10n) library"
   homepage "https://www.gnu.org/software/gettext/"
+  version "0.21.1"
 
   url "https://ftp.gnu.org/gnu/gettext/gettext-0.21.1.tar.gz"
   mirror "https://ftpmirror.gnu.org/gettext/gettext-0.21.1.tar.gz"
@@ -8,8 +9,6 @@ class GettextFritsi < Formula
   sha256 "e8c3650e1d8cee875c4f355642382c1df83058bd5a11ee8555c0cf276d646d45"
 
   license "GPL-3.0-or-later"
-
-  revision 2
 
   keg_only "This is a custom fork, so we do not want to symlink it into brew --prefix"
 

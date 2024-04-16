@@ -1,21 +1,15 @@
 class TclTkFritsiWithX11WithOpenssl3 < Formula
   desc "Tool Command Language"
   homepage "https://www.tcl-lang.org"
+  version "8.6.14"
 
-  url "https://downloads.sourceforge.net/project/tcl/Tcl/8.6.13/tcl8.6.13-src.tar.gz"
-  mirror "https://fossies.org/linux/misc/tcl8.6.13-src.tar.gz"
-  sha256 "43a1fae7412f61ff11de2cfd05d28cfc3a73762f354a417c62370a54e2caf066"
+  url "https://downloads.sourceforge.net/project/tcl/Tcl/8.6.14/tcl8.6.14-src.tar.gz"
+  mirror "https://fossies.org/linux/misc/tcl8.6.14-src.tar.gz"
+  sha256 "5880225babf7954c58d4fb0f5cf6279104ce1cd6aa9b71e9a6322540e1c4de66"
 
   license "TCL"
 
-  revision 2
-
   keg_only "This is a custom fork, so we do not want to symlink it into brew --prefix"
-
-  patch :p1 do
-    url "https://raw.githubusercontent.com/fritsi/python-install-macos/master/patches/tcl-tk/tcl.patch"
-    sha256 "67e4edf5625cef4209e30267edda323f50cee90f85716df50d40cea506c197c4"
-  end
 
   depends_on "freetype" => :build
   depends_on "pkg-config" => :build
@@ -45,19 +39,9 @@ class TclTkFritsiWithX11WithOpenssl3 < Formula
   end
 
   resource "tk" do
-    url "https://downloads.sourceforge.net/project/tcl/Tcl/8.6.13/tk8.6.13-src.tar.gz"
-    mirror "https://fossies.org/linux/misc/tk8.6.13-src.tar.gz"
-    sha256 "2e65fa069a23365440a3c56c556b8673b5e32a283800d8d9b257e3f584ce0675"
-
-    patch :p1 do
-      url "https://raw.githubusercontent.com/fritsi/python-install-macos/master/patches/tcl-tk/tk.patch"
-      sha256 "b7ff3245d1dc7093d85351edf38f321021e47b1889d1fc550464bad35051cf45"
-    end
-
-    patch :p1 do
-      url "https://raw.githubusercontent.com/fritsi/python-install-macos/master/patches/tcl-tk/tk-leak-fix.patch"
-      sha256 "16d98dccba7168071462da1bc436aec5d7cc854196dc06fd33bc03a8f3302220"
-    end
+    url "https://downloads.sourceforge.net/project/tcl/Tcl/8.6.14/tk8.6.14-src.tar.gz"
+    mirror "https://fossies.org/linux/misc/tk8.6.14-src.tar.gz"
+    sha256 "8ffdb720f47a6ca6107eac2dd877e30b0ef7fac14f3a84ebbd0b3612cee41a94"
   end
 
   resource "itk4" do

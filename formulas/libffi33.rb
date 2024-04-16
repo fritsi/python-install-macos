@@ -1,6 +1,7 @@
 class Libffi33 < Formula
   desc "Portable Foreign Function Interface library"
   homepage "https://sourceware.org/libffi/"
+  version "3.3"
 
   url "https://github.com/libffi/libffi/releases/download/v3.3/libffi-3.3.tar.gz"
   mirror "https://sourceware.org/pub/libffi/libffi-3.3.tar.gz"
@@ -9,8 +10,6 @@ class Libffi33 < Formula
   sha256 "72fba7922703ddfa7a028d513ac15a85c8d54c8d67f55fa5a4802885dc652056"
 
   license "MIT"
-
-  revision 4
 
   keg_only "This is a custom fork, so we do not want to symlink it into brew --prefix"
 

@@ -1,15 +1,14 @@
 class ZstdFritsi < Formula
   desc "Zstandard is a real-time compression algorithm"
   homepage "https://facebook.github.io/zstd/"
+  version "1.5.6"
 
-  url "https://github.com/facebook/zstd/archive/v1.5.5.tar.gz"
-  mirror "http://fresh-center.net/linux/misc/zstd-1.5.5.tar.gz"
-  mirror "http://fresh-center.net/linux/misc/legacy/zstd-1.5.5.tar.gz"
-  sha256 "98e9c3d949d1b924e28e01eccb7deed865eefebf25c2f21c702e5cd5b63b85e1"
+  url "https://github.com/facebook/zstd/archive/refs/tags/v1.5.6.tar.gz"
+  mirror "http://fresh-center.net/linux/misc/zstd-1.5.6.tar.gz"
+  mirror "http://fresh-center.net/linux/misc/legacy/zstd-1.5.6.tar.gz"
+  sha256 "30f35f71c1203369dc979ecde0400ffea93c27391bfd2ac5a9715d2173d92ff7"
 
   license "BSD-3-Clause"
-
-  revision 2
 
   keg_only "This is a custom fork, so we do not want to symlink it into brew --prefix"
 

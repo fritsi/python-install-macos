@@ -1,14 +1,12 @@
 class SqliteFritsiWithOpenssl3 < Formula
   desc "Command-line interface for SQLite"
   homepage "https://sqlite.org/index.html"
-  version "3.44.2"
+  version "3.45.2"
 
-  url "https://www.sqlite.org/2023/sqlite-autoconf-3440200.tar.gz"
-  sha256 "1c6719a148bc41cf0f2bbbe3926d7ce3f5ca09d878f1246fcc20767b175bb407"
+  url "https://www.sqlite.org/2024/sqlite-autoconf-3450200.tar.gz"
+  sha256 "bc9067442eedf3dd39989b5c5cfbfff37ae66cc9c99274e0c3052dc4d4a8f6ae"
 
   license "blessing"
-
-  revision 2
 
   keg_only "This is a custom fork, so we do not want to symlink it into brew --prefix"
 
