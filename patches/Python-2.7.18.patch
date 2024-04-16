@@ -1,4 +1,4 @@
-From 888d35ba1917b81b043506f84db3f2f05eabf272 Mon Sep 17 00:00:00 2001
+From 26b6cd8d77c6fefab67bff253b52b96805cc3c93 Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
 Date: Mon, 16 Jan 2023 15:26:35 +0100
 Subject: [PATCH] Python 2.7.18 patching
@@ -13,6 +13,7 @@ Subject: [PATCH] Python 2.7.18 patching
  Lib/test/support/__init__.py                 |  18 +-
  Lib/test/test_gdb.py                         |   1 +
  Lib/test/test_minidom.py                     |  10 +-
+ Lib/test/test_mmap.py                        |  19 +-
  Lib/test/test_platform.py                    |   2 +-
  Lib/test/test_posix.py                       |  10 +-
  Lib/test/test_str.py                         |   2 +
@@ -36,7 +37,7 @@ Subject: [PATCH] Python 2.7.18 patching
  configure.ac                                 |   9 +
  pyconfig.h.in                                |   3 +
  setup.py                                     | 216 ++++++++++++++-----
- 32 files changed, 494 insertions(+), 128 deletions(-)
+ 33 files changed, 509 insertions(+), 132 deletions(-)
 
 diff --git a/Lib/ctypes/macholib/dyld.py b/Lib/ctypes/macholib/dyld.py
 index 1fdf8d6..8553106 100644
@@ -365,6 +366,43 @@ index 2eb6423..ca8959f 100644
                  '<fran\xe7ais>Comment \xe7a va ? Tr\xe8s bien ?</fran\xe7ais>')
  
          doc.unlink()
+diff --git a/Lib/test/test_mmap.py b/Lib/test/test_mmap.py
+index fc6d6e1..2e7189b 100644
+--- a/Lib/test/test_mmap.py
++++ b/Lib/test/test_mmap.py
+@@ -1,6 +1,7 @@
+ from test.test_support import (TESTFN, run_unittest, import_module, unlink,
+                                requires, _2G, _4G, gc_collect, cpython_only)
+ import unittest
++import platform
+ import os, re, itertools, socket, sys
+ 
+ mmap = import_module('mmap')
+@@ -243,10 +244,20 @@ class MmapTests(unittest.TestCase):
+             # Try writing with PROT_EXEC and without PROT_WRITE
+             prot = mmap.PROT_READ | getattr(mmap, 'PROT_EXEC', 0)
+             with open(TESTFN, "r+b") as f:
+-                m = mmap.mmap(f.fileno(), mapsize, prot=prot)
+-                self.assertRaises(TypeError, m.write, b"abcdef")
+-                self.assertRaises(TypeError, m.write_byte, 0)
+-                m.close()
++                try:
++                    m = mmap.mmap(f.fileno(), mapsize, prot=prot)
++                except mmap.error as mmap_err:
++                    # on macOS 14, PROT_READ | PROT_EXEC is not allowed
++                    if "Operation not permitted" not in str(mmap_err):
++                        raise
++                    if sys.platform == 'darwin' and int(platform.mac_ver()[0].split('.')[0]) >= 14:
++                        pass
++                    else:
++                        raise
++                else:
++                    self.assertRaises(TypeError, m.write, b"abcdef")
++                    self.assertRaises(TypeError, m.write_byte, 0)
++                    m.close()
+ 
+     def test_bad_file_desc(self):
+         # Try opening a bad file descriptor...
 diff --git a/Lib/test/test_platform.py b/Lib/test/test_platform.py
 index 542763d..74eda70 100644
 --- a/Lib/test/test_platform.py
@@ -1356,4 +1394,4 @@ index f764223..ff2298a 100644
              self.use_system_libffi = True
  
 -- 
-2.42.0
+2.44.0

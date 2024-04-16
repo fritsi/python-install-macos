@@ -1,4 +1,4 @@
-From 5dc9c359a6d2dfeba86a8bb9428a6d4d87156119 Mon Sep 17 00:00:00 2001
+From dfc24ae246003291dd4812a644e7c1020fabbc18 Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
 Date: Tue, 16 Apr 2024 14:32:56 +0200
 Subject: [PATCH] Python 3.9.19 patching
@@ -9,6 +9,7 @@ Subject: [PATCH] Python 3.9.19 patching
  Lib/idlelib/idle_test/test_outwin.py      | 14 +++++++++
  Lib/test/support/__init__.py              | 18 +++++------
  Lib/test/test_gdb.py                      |  2 +-
+ Lib/test/test_mmap.py                     |  8 +++--
  Lib/test/test_posix.py                    |  8 ++---
  Lib/tkinter/test/test_ttk/test_widgets.py | 37 +++++++++++++++++------
  Modules/Setup                             | 16 +++++-----
@@ -18,7 +19,7 @@ Subject: [PATCH] Python 3.9.19 patching
  Modules/socketmodule.c                    |  3 ++
  Modules/socketmodule.h                    |  3 ++
  setup.py                                  |  2 +-
- 14 files changed, 98 insertions(+), 35 deletions(-)
+ 15 files changed, 104 insertions(+), 37 deletions(-)
 
 diff --git a/Lib/distutils/tests/test_build_ext.py b/Lib/distutils/tests/test_build_ext.py
 index 808c0dc..7e4632f 100644
@@ -162,6 +163,32 @@ index b3aa855..f063564 100644
  class DebuggerTests(unittest.TestCase):
  
      """Test that the debugger can debug Python."""
+diff --git a/Lib/test/test_mmap.py b/Lib/test/test_mmap.py
+index 89ada50..0fd541b 100644
+--- a/Lib/test/test_mmap.py
++++ b/Lib/test/test_mmap.py
+@@ -4,6 +4,7 @@ import unittest
+ import os
+ import re
+ import itertools
++import platform
+ import socket
+ import sys
+ import weakref
+@@ -243,8 +244,11 @@ class MmapTests(unittest.TestCase):
+                 try:
+                     m = mmap.mmap(f.fileno(), mapsize, prot=prot)
+                 except PermissionError:
+-                    # on macOS 14, PROT_READ | PROT_WRITE is not allowed
+-                    pass
++                    # on macOS 14, PROT_READ | PROT_EXEC is not allowed
++                    if sys.platform == 'darwin' and int(platform.mac_ver()[0].split('.')[0]) >= 14:
++                        pass
++                    else:
++                        raise
+                 else:
+                     self.assertRaises(TypeError, m.write, b"abcdef")
+                     self.assertRaises(TypeError, m.write_byte, 0)
 diff --git a/Lib/test/test_posix.py b/Lib/test/test_posix.py
 index 3c0ddeb..71dce95 100644
 --- a/Lib/test/test_posix.py

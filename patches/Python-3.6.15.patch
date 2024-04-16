@@ -1,4 +1,4 @@
-From aaaf07e5bc8773d90cbf6f7c307bf80e79361285 Mon Sep 17 00:00:00 2001
+From 03599a32139cebe1de212183f348ff646cc50a85 Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
 Date: Mon, 16 Jan 2023 15:26:52 +0100
 Subject: [PATCH] Python 3.6.15 patching
@@ -13,6 +13,7 @@ Subject: [PATCH] Python 3.6.15 patching
  Lib/test/test_bytes.py                        |   1 +
  Lib/test/test_gdb.py                          |   2 +-
  Lib/test/test_minidom.py                      |  17 +-
+ Lib/test/test_mmap.py                         |  17 +-
  Lib/test/test_platform.py                     |   2 +-
  Lib/test/test_posix.py                        |   8 +-
  Lib/test/test_regrtest.py                     |  12 +
@@ -37,7 +38,7 @@ Subject: [PATCH] Python 3.6.15 patching
  configure.ac                                  |  19 +-
  pyconfig.h.in                                 |   3 +
  setup.py                                      | 262 +++++++++++++-----
- 33 files changed, 610 insertions(+), 155 deletions(-)
+ 34 files changed, 623 insertions(+), 159 deletions(-)
 
 diff --git a/Lib/ctypes/macholib/dyld.py b/Lib/ctypes/macholib/dyld.py
 index c158e67..e1c58fc 100644
@@ -321,6 +322,41 @@ index d55e25e..03fee27 100644
              parseString('<element xmlns:abc="http:abc.com/de f g/hi/j k"><abc:foo /></element>')
  
      def testDocRemoveChild(self):
+diff --git a/Lib/test/test_mmap.py b/Lib/test/test_mmap.py
+index c188a9d..7e5a6c8 100644
+--- a/Lib/test/test_mmap.py
++++ b/Lib/test/test_mmap.py
+@@ -4,6 +4,7 @@ import unittest
+ import os
+ import re
+ import itertools
++import platform
+ import socket
+ import sys
+ import weakref
+@@ -239,10 +240,18 @@ class MmapTests(unittest.TestCase):
+             # Try writing with PROT_EXEC and without PROT_WRITE
+             prot = mmap.PROT_READ | getattr(mmap, 'PROT_EXEC', 0)
+             with open(TESTFN, "r+b") as f:
+-                m = mmap.mmap(f.fileno(), mapsize, prot=prot)
+-                self.assertRaises(TypeError, m.write, b"abcdef")
+-                self.assertRaises(TypeError, m.write_byte, 0)
+-                m.close()
++                try:
++                    m = mmap.mmap(f.fileno(), mapsize, prot=prot)
++                except PermissionError:
++                    # on macOS 14, PROT_READ | PROT_EXEC is not allowed
++                    if sys.platform == 'darwin' and int(platform.mac_ver()[0].split('.')[0]) >= 14:
++                        pass
++                    else:
++                        raise
++                else:
++                    self.assertRaises(TypeError, m.write, b"abcdef")
++                    self.assertRaises(TypeError, m.write_byte, 0)
++                    m.close()
+ 
+     def test_bad_file_desc(self):
+         # Try opening a bad file descriptor...
 diff --git a/Lib/test/test_platform.py b/Lib/test/test_platform.py
 index 371cf0a..119dbda 100644
 --- a/Lib/test/test_platform.py
@@ -1603,4 +1639,4 @@ index e2c1898..6f7496b 100644
              depends = ['_decimal/docstrings.h']
          else:
 -- 
-2.42.0
+2.44.0

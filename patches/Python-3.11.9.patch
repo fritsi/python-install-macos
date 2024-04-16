@@ -1,4 +1,4 @@
-From cca1ed68b55ee68c3fa5408bbe0ac02b4b05a34c Mon Sep 17 00:00:00 2001
+From 8510ea0b3f5e01d8a378d3c6479efcc052ef2bfa Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
 Date: Tue, 9 Jan 2024 11:09:24 +0100
 Subject: [PATCH] Python 3.11.9 patching
@@ -10,6 +10,7 @@ Subject: [PATCH] Python 3.11.9 patching
  Lib/idlelib/idle_test/test_outwin.py      | 14 ++++
  Lib/idlelib/idle_test/test_sidebar.py     | 42 +++++-------
  Lib/test/support/__init__.py              | 18 +++---
+ Lib/test/test_mmap.py                     |  6 +-
  Lib/test/test_posix.py                    |  8 +--
  Lib/test/test_tools/test_freeze.py        |  1 +
  Lib/tkinter/test/test_ttk/test_widgets.py | 37 ++++++++---
@@ -19,7 +20,7 @@ Subject: [PATCH] Python 3.11.9 patching
  Modules/socketmodule.c                    |  3 +
  Modules/socketmodule.h                    |  3 +
  setup.py                                  | 79 ++++++++++++++++++++++-
- 15 files changed, 204 insertions(+), 59 deletions(-)
+ 16 files changed, 209 insertions(+), 60 deletions(-)
 
 diff --git a/Lib/distutils/tests/test_build_ext.py b/Lib/distutils/tests/test_build_ext.py
 index e89dc50..e026599 100644
@@ -260,6 +261,30 @@ index 059542c..2b4d0d8 100644
  
      # check on every platform whether tkinter can actually do anything
      if not reason:
+diff --git a/Lib/test/test_mmap.py b/Lib/test/test_mmap.py
+index 1867e8c..bac895f 100644
+--- a/Lib/test/test_mmap.py
++++ b/Lib/test/test_mmap.py
+@@ -7,6 +7,7 @@ import unittest
+ import os
+ import re
+ import itertools
++import platform
+ import random
+ import socket
+ import string
+@@ -259,7 +260,10 @@ class MmapTests(unittest.TestCase):
+                     m = mmap.mmap(f.fileno(), mapsize, prot=prot)
+                 except PermissionError:
+                     # on macOS 14, PROT_READ | PROT_EXEC is not allowed
+-                    pass
++                    if sys.platform == 'darwin' and int(platform.mac_ver()[0].split('.')[0]) >= 14:
++                        pass
++                    else:
++                        raise
+                 else:
+                     self.assertRaises(TypeError, m.write, b"abcdef")
+                     self.assertRaises(TypeError, m.write_byte, 0)
 diff --git a/Lib/test/test_posix.py b/Lib/test/test_posix.py
 index 221d25a..7ca9bfa 100644
 --- a/Lib/test/test_posix.py
