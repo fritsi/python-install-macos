@@ -112,4 +112,5 @@ unsatisfactory, you have the option to select from various Tk themes to enhance 
 To use X11 on macOS, you need install [XQuartz](https://formulae.brew.sh/cask/xquartz) via Homebrew. This facilitates
 seamless X11 integration with macOS. When running the Python installer script, remember to use the `--use-x11` command
 line argument _(as previously mentioned)_ to activate X11 support. This configuration has proven to eliminate
-segmentation faults when executing Python Tcl-Tk related Python test cases.
+segmentation faults when executing Python Tcl-Tk related Python test cases. **If you install XQuartz, make sure to
+reboot your macOS after.** 
