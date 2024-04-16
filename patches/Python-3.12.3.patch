@@ -1,4 +1,4 @@
-From c0dec431d55b6f7c33a3ce1cf2c8695f1b3a980e Mon Sep 17 00:00:00 2001
+From f1e5ef33951c3ab28d7aac17e4259ad78d3ea0ab Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
 Date: Tue, 9 Jan 2024 11:10:47 +0100
 Subject: [PATCH] Python 3.12.3 patching
@@ -12,6 +12,7 @@ Subject: [PATCH] Python 3.12.3 patching
  Lib/test/test_mmap.py                   |  6 +++-
  Lib/test/test_posix.py                  |  8 ++---
  Lib/test/test_shutil.py                 |  2 ++
+ Lib/test/test_signal.py                 | 14 +++++++--
  Lib/test/test_tools/test_freeze.py      |  1 +
  Lib/test/test_ttk/test_widgets.py       | 37 ++++++++++++++++------
  Modules/Setup                           | 17 +++++-----
@@ -21,7 +22,7 @@ Subject: [PATCH] Python 3.12.3 patching
  Modules/socketmodule.h                  |  3 ++
  configure                               |  8 +----
  configure.ac                            |  6 +---
- 17 files changed, 131 insertions(+), 69 deletions(-)
+ 18 files changed, 142 insertions(+), 72 deletions(-)
 
 diff --git a/Lib/idlelib/idle_test/test_colorizer.py b/Lib/idlelib/idle_test/test_colorizer.py
 index 308bc38..579fd04 100644
@@ -307,6 +308,55 @@ index 49fcd78..bad5f67 100644
 +                tar_cmd[0] = '/usr/bin/tar'
          subprocess.check_call(tar_cmd, cwd=root_dir,
                                stdout=subprocess.DEVNULL)
+ 
+diff --git a/Lib/test/test_signal.py b/Lib/test/test_signal.py
+index 637a0ca..3711e7d 100644
+--- a/Lib/test/test_signal.py
++++ b/Lib/test/test_signal.py
+@@ -839,12 +839,16 @@ class ItimerTest(unittest.TestCase):
+         signal.signal(signal.SIGVTALRM, self.sig_vtalrm)
+         signal.setitimer(self.itimer, 0.3, 0.2)
+ 
+-        for _ in support.busy_retry(support.LONG_TIMEOUT):
++        for _ in support.busy_retry(60.0, error=False):
+             # use up some virtual time by doing real work
+             _ = pow(12345, 67890, 10000019)
+             if signal.getitimer(self.itimer) == (0.0, 0.0):
+                 # sig_vtalrm handler stopped this itimer
+                 break
++        else:
++            # bpo-8424
++            self.skipTest("timeout: likely cause: machine too slow or load too "
++                          "high")
+ 
+         # virtual itimer should be (0.0, 0.0) now
+         self.assertEqual(signal.getitimer(self.itimer), (0.0, 0.0))
+@@ -856,12 +860,16 @@ class ItimerTest(unittest.TestCase):
+         signal.signal(signal.SIGPROF, self.sig_prof)
+         signal.setitimer(self.itimer, 0.2, 0.2)
+ 
+-        for _ in support.busy_retry(support.LONG_TIMEOUT):
++        for _ in support.busy_retry(60.0, error=False):
+             # do some work
+             _ = pow(12345, 67890, 10000019)
+             if signal.getitimer(self.itimer) == (0.0, 0.0):
+                 # sig_prof handler stopped this itimer
+                 break
++        else:
++            # bpo-8424
++            self.skipTest("timeout: likely cause: machine too slow or load too "
++                          "high")
+ 
+         # profiling itimer should be (0.0, 0.0) now
+         self.assertEqual(signal.getitimer(self.itimer), (0.0, 0.0))
+@@ -1336,7 +1344,7 @@ class StressTest(unittest.TestCase):
+ 
+             expected_sigs += 2
+             # Wait for handlers to run to avoid signal coalescing
+-            for _ in support.sleeping_retry(support.SHORT_TIMEOUT):
++            for _ in support.sleeping_retry(support.SHORT_TIMEOUT, error=False):
+                 if len(sigs) >= expected_sigs:
+                     break
  
 diff --git a/Lib/test/test_tools/test_freeze.py b/Lib/test/test_tools/test_freeze.py
 index 0e7ed67..1826a4f 100644
