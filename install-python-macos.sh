@@ -586,6 +586,7 @@ CONFIGURE_PARAMS=(
     "--enable-optimizations"
     "--enable-ipv6"
     "--with-system-expat"
+    "--with-dbmliborder=gdbm:ndbm"
 )
 
 # --enable-unicode=ucs4 is only available for Python 2
@@ -608,13 +609,6 @@ if [[ "$PY_VERSION_NUM" -ge 312 ]]; then
     CONFIGURE_PARAMS+=("--with-readline=readline")
 elif [[ "$PY_VERSION_NUM" -ge 310 ]]; then
     CONFIGURE_PARAMS+=("--with-readline")
-fi
-
-# Using a different --with-dbmliborder value since Python 3.11
-if [[ "$PY_VERSION_NUM" -ge 311 ]]; then
-    CONFIGURE_PARAMS+=("--with-dbmliborder=ndbm")
-else
-    CONFIGURE_PARAMS+=("--with-dbmliborder=gdbm:ndbm")
 fi
 
 # --with-openssl is only available from Python 3.7
