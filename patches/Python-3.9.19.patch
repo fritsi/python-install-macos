@@ -1,7 +1,7 @@
-From 5e7966af1a549d027a29d3c915d30cd5c4bc55a7 Mon Sep 17 00:00:00 2001
+From 5dc9c359a6d2dfeba86a8bb9428a6d4d87156119 Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
-Date: Fri, 1 Sep 2023 14:30:12 +0200
-Subject: [PATCH] Python 3.9.18 patching
+Date: Tue, 16 Apr 2024 14:32:56 +0200
+Subject: [PATCH] Python 3.9.19 patching
 
 ---
  Lib/distutils/tests/test_build_ext.py     |  6 ++++
@@ -410,7 +410,7 @@ index f014c11..a1554a5 100644
  #include <arpa/inet.h>
  #include <arpa/nameser.h>
 diff --git a/Modules/socketmodule.c b/Modules/socketmodule.c
-index 133470f..49c1eea 100644
+index 9e0223b..82af898 100644
 --- a/Modules/socketmodule.c
 +++ b/Modules/socketmodule.c
 @@ -249,6 +249,9 @@ http://cvsweb.netbsd.org/bsdweb.cgi/src/lib/libc/net/getaddrinfo.c.diff?r1=1.82&
@@ -451,4 +451,4 @@ index 0bec170..9b75e53 100644
              depends = ['_decimal/docstrings.h']
          else:
 -- 
-2.42.0
+2.44.0

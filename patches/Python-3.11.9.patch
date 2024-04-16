@@ -1,26 +1,50 @@
-From bf4de328dc9589281654f6a02077ee6e22a0c2cd Mon Sep 17 00:00:00 2001
+From cca1ed68b55ee68c3fa5408bbe0ac02b4b05a34c Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
-Date: Tue, 9 Jan 2024 11:10:47 +0100
-Subject: [PATCH] Python 3.12.1 patching
+Date: Tue, 9 Jan 2024 11:09:24 +0100
+Subject: [PATCH] Python 3.11.9 patching
 
 ---
- Lib/idlelib/idle_test/test_colorizer.py | 15 ++++++++++
- Lib/idlelib/idle_test/test_editor.py    | 14 +++++++++
- Lib/idlelib/idle_test/test_outwin.py    | 14 +++++++++
- Lib/idlelib/idle_test/test_sidebar.py   | 38 +++++++++++--------------
- Lib/test/support/__init__.py            | 18 ++++++------
- Lib/test/test_posix.py                  |  8 +++---
- Lib/test/test_tools/test_freeze.py      |  1 +
- Lib/test/test_ttk/test_widgets.py       | 37 ++++++++++++++++++------
- Modules/Setup                           | 17 +++++------
- Modules/getaddrinfo.c                   |  3 ++
- Modules/getnameinfo.c                   |  3 ++
- Modules/socketmodule.c                  |  3 ++
- Modules/socketmodule.h                  |  3 ++
- configure                               |  8 +-----
- configure.ac                            |  6 +---
- 15 files changed, 124 insertions(+), 64 deletions(-)
+ Lib/distutils/tests/test_build_ext.py     |  6 ++
+ Lib/idlelib/idle_test/test_colorizer.py   | 15 +++++
+ Lib/idlelib/idle_test/test_editor.py      | 14 ++++
+ Lib/idlelib/idle_test/test_outwin.py      | 14 ++++
+ Lib/idlelib/idle_test/test_sidebar.py     | 42 +++++-------
+ Lib/test/support/__init__.py              | 18 +++---
+ Lib/test/test_posix.py                    |  8 +--
+ Lib/test/test_tools/test_freeze.py        |  1 +
+ Lib/tkinter/test/test_ttk/test_widgets.py | 37 ++++++++---
+ Modules/Setup                             | 17 ++---
+ Modules/getaddrinfo.c                     |  3 +
+ Modules/getnameinfo.c                     |  3 +
+ Modules/socketmodule.c                    |  3 +
+ Modules/socketmodule.h                    |  3 +
+ setup.py                                  | 79 ++++++++++++++++++++++-
+ 15 files changed, 204 insertions(+), 59 deletions(-)
 
+diff --git a/Lib/distutils/tests/test_build_ext.py b/Lib/distutils/tests/test_build_ext.py
+index e89dc50..e026599 100644
+--- a/Lib/distutils/tests/test_build_ext.py
++++ b/Lib/distutils/tests/test_build_ext.py
+@@ -459,6 +459,9 @@ class BuildExtTestCase(TempdirManager,
+         # deployment target higher than that of the interpreter: the ext
+         # module may depend on some newer OS feature.
+         deptarget = sysconfig.get_config_var('MACOSX_DEPLOYMENT_TARGET')
++        # Handling the case where MACOSX_DEPLOYMENT_TARGET >= 11 (Big Sur)
++        if deptarget.isdigit():
++            deptarget = f"{deptarget}.0"
+         if deptarget:
+             # increment the minor version number (i.e. 10.6 -> 10.7)
+             deptarget = [int(x) for x in deptarget.split('.')]
+@@ -494,6 +497,9 @@ class BuildExtTestCase(TempdirManager,
+ 
+         # get the deployment target that the interpreter was built with
+         target = sysconfig.get_config_var('MACOSX_DEPLOYMENT_TARGET')
++        # Handling the case where MACOSX_DEPLOYMENT_TARGET >= 11 (Big Sur)
++        if target.isdigit():
++            target = f"{target}.0"
+         target = tuple(map(int, target.split('.')[0:2]))
+         # format the target value as defined in the Apple
+         # Availability Macros.  We can't use the macro names since
 diff --git a/Lib/idlelib/idle_test/test_colorizer.py b/Lib/idlelib/idle_test/test_colorizer.py
 index 308bc38..579fd04 100644
 --- a/Lib/idlelib/idle_test/test_colorizer.py
@@ -60,7 +84,7 @@ index 308bc38..579fd04 100644
          # Delegator stack = [Delegator(text)]
  
 diff --git a/Lib/idlelib/idle_test/test_editor.py b/Lib/idlelib/idle_test/test_editor.py
-index 9296a6d..964e941 100644
+index 0dfe2f3..d16dd41 100644
 --- a/Lib/idlelib/idle_test/test_editor.py
 +++ b/Lib/idlelib/idle_test/test_editor.py
 @@ -1,5 +1,6 @@
@@ -136,7 +160,7 @@ index d6e85ad..e118921 100644
      @classmethod
      def tearDownClass(cls):
 diff --git a/Lib/idlelib/idle_test/test_sidebar.py b/Lib/idlelib/idle_test/test_sidebar.py
-index fb52b3a..cd62af4 100644
+index 605e7a8..90ca8ca 100644
 --- a/Lib/idlelib/idle_test/test_sidebar.py
 +++ b/Lib/idlelib/idle_test/test_sidebar.py
 @@ -40,28 +40,22 @@ class LineNumbersTest(unittest.TestCase):
@@ -191,23 +215,27 @@ index fb52b3a..cd62af4 100644
  
      def get_selection(self):
          return tuple(map(str, self.text.tag_ranges('sel')))
-@@ -690,10 +687,7 @@ class ShellSidebarTest(unittest.TestCase):
+@@ -690,14 +687,7 @@ class ShellSidebarTest(unittest.TestCase):
          last_lineno = get_end_linenumber(text)
          self.assertIsNotNone(text.dlineinfo(text.index(f'{last_lineno}.0')))
  
--        # Scroll up using the <MouseWheel> event.
--        # The meaning of delta is platform-dependent.
--        delta = -1 if sys.platform == 'darwin' else 120
--        sidebar.canvas.event_generate('<MouseWheel>', x=0, y=0, delta=delta)
+-        # Delta for <MouseWheel>, whose meaning is platform-dependent.
+-        delta = 1 if sidebar.canvas._windowingsystem == 'aqua' else 120
+-
+-        # Scroll up.
+-        if sidebar.canvas._windowingsystem == 'x11':
+-            sidebar.canvas.event_generate('<Button-4>', x=0, y=0)
+-        else:
+-            sidebar.canvas.event_generate('<MouseWheel>', x=0, y=0, delta=delta)
 +        sidebar.canvas.event_generate('<MouseWheel>', x=0, y=0, delta=120)
          yield
-         if sys.platform != 'darwin':  # .update_idletasks() does not work.
-             self.assertIsNone(text.dlineinfo(text.index(f'{last_lineno}.0')))
+         self.assertIsNone(text.dlineinfo(text.index(f'{last_lineno}.0')))
+ 
 diff --git a/Lib/test/support/__init__.py b/Lib/test/support/__init__.py
-index fd9265c..4634e9d 100644
+index 059542c..2b4d0d8 100644
 --- a/Lib/test/support/__init__.py
 +++ b/Lib/test/support/__init__.py
-@@ -256,15 +256,15 @@ def _is_gui_available():
+@@ -255,15 +255,15 @@ def _is_gui_available():
  
          if app_services.CGMainDisplayID() == 0:
              reason = "gui tests cannot run without OS X window manager"
@@ -233,10 +261,10 @@ index fd9265c..4634e9d 100644
      # check on every platform whether tkinter can actually do anything
      if not reason:
 diff --git a/Lib/test/test_posix.py b/Lib/test/test_posix.py
-index 1722c84..39efbb4 100644
+index 221d25a..7ca9bfa 100644
 --- a/Lib/test/test_posix.py
 +++ b/Lib/test/test_posix.py
-@@ -1075,7 +1075,7 @@ class PosixTester(unittest.TestCase):
+@@ -1193,7 +1193,7 @@ class PosixTester(unittest.TestCase):
      @unittest.skipUnless(hasattr(os, 'popen'), "test needs os.popen()")
      @support.requires_subprocess()
      def test_getgroups(self):
@@ -245,7 +273,7 @@ index 1722c84..39efbb4 100644
              groups = idg.read().strip()
              ret = idg.close()
  
-@@ -1083,8 +1083,8 @@ class PosixTester(unittest.TestCase):
+@@ -1201,8 +1201,8 @@ class PosixTester(unittest.TestCase):
              idg_groups = set(int(g) for g in groups.split())
          except ValueError:
              idg_groups = set()
@@ -256,7 +284,7 @@ index 1722c84..39efbb4 100644
  
          # Issues 16698: OS X ABIs prior to 10.6 have limits on getgroups()
          if sys.platform == 'darwin':
-@@ -1093,7 +1093,7 @@ class PosixTester(unittest.TestCase):
+@@ -1211,7 +1211,7 @@ class PosixTester(unittest.TestCase):
              if tuple(int(n) for n in dt.split('.')[0:2]) < (10, 6):
                  raise unittest.SkipTest("getgroups(2) is broken prior to 10.6")
  
@@ -266,10 +294,10 @@ index 1722c84..39efbb4 100644
          # #10822/#26944 - It is implementation defined whether
          # posix.getgroups() includes the effective gid.
 diff --git a/Lib/test/test_tools/test_freeze.py b/Lib/test/test_tools/test_freeze.py
-index 671ec29..acb4f57 100644
+index 0e7ed67..1826a4f 100644
 --- a/Lib/test/test_tools/test_freeze.py
 +++ b/Lib/test/test_tools/test_freeze.py
-@@ -22,6 +22,7 @@ with imports_under_tool('freeze', 'test'):
+@@ -24,6 +24,7 @@ with imports_under_tool('freeze', 'test'):
  class TestFreeze(unittest.TestCase):
  
      @support.requires_resource('cpu') # Building Python is slow
@@ -277,11 +305,11 @@ index 671ec29..acb4f57 100644
      def test_freeze_simple_script(self):
          script = textwrap.dedent("""
              import sys
-diff --git a/Lib/test/test_ttk/test_widgets.py b/Lib/test/test_ttk/test_widgets.py
-index fd1a748..0475a3c 100644
---- a/Lib/test/test_ttk/test_widgets.py
-+++ b/Lib/test/test_ttk/test_widgets.py
-@@ -13,6 +13,17 @@ from test.test_tkinter.widget_tests import (add_standard_options,
+diff --git a/Lib/tkinter/test/test_ttk/test_widgets.py b/Lib/tkinter/test/test_ttk/test_widgets.py
+index 2ba54cf..81772a3 100644
+--- a/Lib/tkinter/test/test_ttk/test_widgets.py
++++ b/Lib/tkinter/test/test_ttk/test_widgets.py
+@@ -14,6 +14,17 @@ from tkinter.test.widget_tests import (add_standard_options,
  requires('gui')
  
  
@@ -299,7 +327,7 @@ index fd1a748..0475a3c 100644
  class StandardTtkOptionsTests(StandardOptionsTests):
  
      def test_configure_class(self):
-@@ -298,7 +309,10 @@ class EntryTest(AbstractWidgetTest, unittest.TestCase):
+@@ -320,7 +331,10 @@ class EntryTest(AbstractWidgetTest, unittest.TestCase):
          'show', 'state', 'style', 'takefocus', 'textvariable',
          'validate', 'validatecommand', 'width', 'xscrollcommand',
      )
@@ -311,7 +339,7 @@ index fd1a748..0475a3c 100644
  
      def setUp(self):
          super().setUp()
-@@ -340,8 +354,7 @@ class EntryTest(AbstractWidgetTest, unittest.TestCase):
+@@ -362,8 +376,7 @@ class EntryTest(AbstractWidgetTest, unittest.TestCase):
          self.entry.pack()
          self.entry.update()
  
@@ -321,7 +349,7 @@ index fd1a748..0475a3c 100644
          self.assertEqual(self.entry.identify(-1, -1), "")
  
          self.assertRaises(tkinter.TclError, self.entry.identify, None, 5)
-@@ -427,7 +440,10 @@ class ComboboxTest(EntryTest, unittest.TestCase):
+@@ -449,7 +462,10 @@ class ComboboxTest(EntryTest, unittest.TestCase):
          'validate', 'validatecommand', 'values',
          'width', 'xscrollcommand',
      )
@@ -333,7 +361,7 @@ index fd1a748..0475a3c 100644
  
      def setUp(self):
          super().setUp()
-@@ -443,7 +459,7 @@ class ComboboxTest(EntryTest, unittest.TestCase):
+@@ -465,7 +481,7 @@ class ComboboxTest(EntryTest, unittest.TestCase):
      def _show_drop_down_listbox(self):
          width = self.combo.winfo_width()
          x, y = width - 5, 5
@@ -342,7 +370,7 @@ index fd1a748..0475a3c 100644
              self.assertRegex(self.combo.identify(x, y), r'.*downarrow\Z')
          self.combo.event_generate('<ButtonPress-1>', x=x, y=y)
          self.combo.event_generate('<ButtonRelease-1>', x=x, y=y)
-@@ -932,7 +948,7 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
+@@ -954,7 +970,7 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
  
          self.nb.pack()
          self.nb.update()
@@ -351,7 +379,7 @@ index fd1a748..0475a3c 100644
              tb_idx = "@20,5"
          else:
              tb_idx = "@5,5"
-@@ -1078,7 +1094,7 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
+@@ -1100,7 +1116,7 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
  
          self.nb.select(0)
  
@@ -360,7 +388,7 @@ index fd1a748..0475a3c 100644
          self.assertEqual(self.nb.identify(5, 5), focus_identify_as)
          simulate_mouse_click(self.nb, 5, 5)
          self.nb.focus_force()
-@@ -1099,7 +1115,7 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
+@@ -1121,7 +1137,7 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
          simulate_mouse_click(self.nb, 5, 5)
          # on macOS Emacs-style keyboard shortcuts are region-dependent;
          # let's use the regular arrow keys instead
@@ -369,7 +397,7 @@ index fd1a748..0475a3c 100644
              begin = '<Left>'
              end = '<Right>'
          else:
-@@ -1120,7 +1136,10 @@ class SpinboxTest(EntryTest, unittest.TestCase):
+@@ -1142,7 +1158,10 @@ class SpinboxTest(EntryTest, unittest.TestCase):
          'takefocus', 'textvariable', 'to', 'validate', 'validatecommand',
          'values', 'width', 'wrap', 'xscrollcommand',
      )
@@ -382,7 +410,7 @@ index fd1a748..0475a3c 100644
      def setUp(self):
          super().setUp()
 diff --git a/Modules/Setup b/Modules/Setup
-index a8faa1d..1656a68 100644
+index d3647ec..c0c732f 100644
 --- a/Modules/Setup
 +++ b/Modules/Setup
 @@ -144,7 +144,7 @@ PYTHONPATH=$(COREPYTHONPATH)
@@ -394,7 +422,7 @@ index a8faa1d..1656a68 100644
  #_statistics _statisticsmodule.c
  #_struct _struct.c
  #_typing _typingmodule.c
-@@ -204,15 +204,16 @@ PYTHONPATH=$(COREPYTHONPATH)
+@@ -205,15 +205,16 @@ PYTHONPATH=$(COREPYTHONPATH)
  #_gdbm _gdbmmodule.c -lgdbm
  #_lzma _lzmamodule.c -llzma
  #_uuid _uuidmodule.c -luuid
@@ -415,7 +443,7 @@ index a8faa1d..1656a68 100644
  
  # To statically link OpenSSL:
  # _ssl _ssl.c $(OPENSSL_INCLUDES) $(OPENSSL_LDFLAGS) \
-@@ -233,7 +234,7 @@ PYTHONPATH=$(COREPYTHONPATH)
+@@ -234,7 +235,7 @@ PYTHONPATH=$(COREPYTHONPATH)
  # every system.
  
  # *** Always uncomment this (leave the leading underscore in!):
@@ -424,7 +452,7 @@ index a8faa1d..1656a68 100644
  # *** Uncomment and edit to reflect where your Tcl/Tk libraries are:
  #	-L/usr/local/lib \
  # *** Uncomment and edit to reflect where your Tcl/Tk headers are:
-@@ -263,8 +264,8 @@ PYTHONPATH=$(COREPYTHONPATH)
+@@ -264,8 +265,8 @@ PYTHONPATH=$(COREPYTHONPATH)
  #	-lX11
  
  # Some system have -lcurses 
@@ -436,7 +464,7 @@ index a8faa1d..1656a68 100644
  # macOS specific module, needs SystemConfiguration and CoreFoundation framework
  # _scproxy _scproxy.c
 diff --git a/Modules/getaddrinfo.c b/Modules/getaddrinfo.c
-index f1c28d7..70f7523 100644
+index 0b4620e..3fd52ef 100644
 --- a/Modules/getaddrinfo.c
 +++ b/Modules/getaddrinfo.c
 @@ -43,6 +43,9 @@
@@ -464,10 +492,10 @@ index 335021f..c26d9aa 100644
  #include <arpa/inet.h>
  #include <arpa/nameser.h>
 diff --git a/Modules/socketmodule.c b/Modules/socketmodule.c
-index de7229d..6ba9133 100644
+index f0c9b46..92d4bcb 100644
 --- a/Modules/socketmodule.c
 +++ b/Modules/socketmodule.c
-@@ -220,6 +220,9 @@ shutdown(how) -- shut down traffic in one or both directions\n\
+@@ -219,6 +219,9 @@ shutdown(how) -- shut down traffic in one or both directions\n\
  #undef _XOPEN_SOURCE
  #include <sys/socket.h>
  #include <sys/types.h>
@@ -478,7 +506,7 @@ index de7229d..6ba9133 100644
  #ifdef _SS_ALIGNSIZE
  #define HAVE_GETADDRINFO 1
 diff --git a/Modules/socketmodule.h b/Modules/socketmodule.h
-index f5ca004..1c36d5d 100644
+index 1b35b11..7a9d5d1 100644
 --- a/Modules/socketmodule.h
 +++ b/Modules/socketmodule.h
 @@ -7,6 +7,9 @@
@@ -491,76 +519,98 @@ index f5ca004..1c36d5d 100644
  # include <netinet/in.h>
  # include <netinet/tcp.h>
  
-diff --git a/configure b/configure
-index 99dd1fe..9aaaaed 100755
---- a/configure
-+++ b/configure
-@@ -14064,8 +14064,6 @@ if test "x$ac_cv_lib_ffi_ffi_call" = xyes
- then :
+diff --git a/setup.py b/setup.py
+index ad8fb81..e57dfb8 100644
+--- a/setup.py
++++ b/setup.py
+@@ -1472,12 +1472,85 @@ class PyBuildExt(build_ext):
  
-                 have_libffi=yes
--        LIBFFI_CFLAGS="-I${SDKROOT}/usr/include/ffi -DUSING_APPLE_OS_LIBFFI=1"
--        LIBFFI_LIBS="-lffi"
+     def detect_decimal(self):
+         # Stefan Krah's _decimal module
++
++        # Taken from Python 3.10 setup.py
++        if '--with-system-libmpdec' in sysconfig.get_config_var("CONFIG_ARGS"):
++            include_dirs = []
++            libraries = ['mpdec']
++            sources = ['_decimal/_decimal.c']
++            depends = ['_decimal/docstrings.h']
++        else:
++            include_dirs = [os.path.abspath(os.path.join(self.srcdir, 'Modules', '_decimal', 'libmpdec'))]
++            libraries = ['m']
++            sources = [
++              '_decimal/_decimal.c',
++              '_decimal/libmpdec/basearith.c',
++              '_decimal/libmpdec/constants.c',
++              '_decimal/libmpdec/context.c',
++              '_decimal/libmpdec/convolute.c',
++              '_decimal/libmpdec/crt.c',
++              '_decimal/libmpdec/difradix2.c',
++              '_decimal/libmpdec/fnt.c',
++              '_decimal/libmpdec/fourstep.c',
++              '_decimal/libmpdec/io.c',
++              '_decimal/libmpdec/mpalloc.c',
++              '_decimal/libmpdec/mpdecimal.c',
++              '_decimal/libmpdec/numbertheory.c',
++              '_decimal/libmpdec/sixstep.c',
++              '_decimal/libmpdec/transpose.c',
++            ]
++            depends = [
++              '_decimal/docstrings.h',
++              '_decimal/libmpdec/basearith.h',
++              '_decimal/libmpdec/bits.h',
++              '_decimal/libmpdec/constants.h',
++              '_decimal/libmpdec/convolute.h',
++              '_decimal/libmpdec/crt.h',
++              '_decimal/libmpdec/difradix2.h',
++              '_decimal/libmpdec/fnt.h',
++              '_decimal/libmpdec/fourstep.h',
++              '_decimal/libmpdec/io.h',
++              '_decimal/libmpdec/mpalloc.h',
++              '_decimal/libmpdec/mpdecimal.h',
++              '_decimal/libmpdec/numbertheory.h',
++              '_decimal/libmpdec/sixstep.h',
++              '_decimal/libmpdec/transpose.h',
++              '_decimal/libmpdec/typearith.h',
++              '_decimal/libmpdec/umodarith.h',
++            ]
++
++        # Taken from Python 3.10 setup.py
++        config = {
++          'x64':     [('CONFIG_64','1'), ('ASM','1')],
++          'uint128': [('CONFIG_64','1'), ('ANSI','1'), ('HAVE_UINT128_T','1')],
++          'ansi64':  [('CONFIG_64','1'), ('ANSI','1')],
++          'ppro':    [('CONFIG_32','1'), ('PPRO','1'), ('ASM','1')],
++          'ansi32':  [('CONFIG_32','1'), ('ANSI','1')],
++          'ansi-legacy': [('CONFIG_32','1'), ('ANSI','1'), ('LEGACY_COMPILER','1')],
++          'universal':   [('UNIVERSAL','1')]
++        }
++
++        # Taken from Python 3.10 setup.py, but only the 'if' and 'elif' part
++        machine = os.environ.get('PYTHON_DECIMAL_WITH_MACHINE')
++        if machine:
++            # Override automatic configuration to facilitate testing.
++            define_macros = config[machine]
++        elif MACOS:
++            # Universal here means: build with the same options Python was built with.
++            define_macros = config['universal']
++        else:
++            raise DistutilsError("_decimal: unsupported architecture -- only macOs is supported")
++
+         self.addext(
+             Extension(
+                 '_decimal',
+-                ['_decimal/_decimal.c'],
+-                # Uncomment for extra functionality:
+-                # define_macros=[('EXTRA_FUNCTIONALITY', 1)]
++                include_dirs=include_dirs,
++                libraries=libraries,
++                define_macros=define_macros,
++                undef_macros=[],
++                extra_compile_args=[],
++                sources=sources,
++                depends=depends
+             )
+         )
  
- fi
- 
-@@ -14195,8 +14193,6 @@ if test "x$ac_cv_lib_ffi_ffi_call" = xyes
- then :
- 
-           have_libffi=yes
--          LIBFFI_CFLAGS=${LIBFFI_CFLAGS-""}
--          LIBFFI_LIBS=${LIBFFI_LIBS-"-lffi"}
- 
- else $as_nop
-   have_libffi=no
-@@ -14268,8 +14264,6 @@ if test "x$ac_cv_lib_ffi_ffi_call" = xyes
- then :
- 
-           have_libffi=yes
--          LIBFFI_CFLAGS=${LIBFFI_CFLAGS-""}
--          LIBFFI_LIBS=${LIBFFI_LIBS-"-lffi"}
- 
- else $as_nop
-   have_libffi=no
-@@ -14541,7 +14535,7 @@ libmpdec_machine=unknown
- if test "$libmpdec_system" = Darwin; then
-     # universal here means: build libmpdec with the same arch options
-     # the python interpreter was built with
--    libmpdec_machine=universal
-+    libmpdec_machine=$PYTHON_DECIMAL_WITH_MACHINE
- elif test $ac_cv_sizeof_size_t -eq 8; then
-     if test "$ac_cv_gcc_asm_for_x64" = yes; then
-         libmpdec_machine=x64
-diff --git a/configure.ac b/configure.ac
-index bd2be94..eacf823 100644
---- a/configure.ac
-+++ b/configure.ac
-@@ -3818,8 +3818,6 @@ AS_VAR_IF([ac_sys_system], [Darwin], [
-       AC_CHECK_LIB([ffi], [ffi_call], [
-         dnl use ffi from SDK root
-         have_libffi=yes
--        LIBFFI_CFLAGS="-I${SDKROOT}/usr/include/ffi -DUSING_APPLE_OS_LIBFFI=1"
--        LIBFFI_LIBS="-lffi"
-       ])
-     ])
-   ])
-@@ -3832,8 +3830,6 @@ AS_VAR_IF([have_libffi], [missing], [
-       AC_CHECK_HEADER([ffi.h], [
-         AC_CHECK_LIB([ffi], [ffi_call], [
-           have_libffi=yes
--          LIBFFI_CFLAGS=${LIBFFI_CFLAGS-""}
--          LIBFFI_LIBS=${LIBFFI_LIBS-"-lffi"}
-         ], [have_libffi=no])
-       ])
-     ])
-@@ -3929,7 +3925,7 @@ libmpdec_machine=unknown
- if test "$libmpdec_system" = Darwin; then
-     # universal here means: build libmpdec with the same arch options
-     # the python interpreter was built with
--    libmpdec_machine=universal
-+    libmpdec_machine=$PYTHON_DECIMAL_WITH_MACHINE
- elif test $ac_cv_sizeof_size_t -eq 8; then
-     if test "$ac_cv_gcc_asm_for_x64" = yes; then
-         libmpdec_machine=x64
 -- 
-2.43.0
+2.44.0

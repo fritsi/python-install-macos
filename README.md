@@ -3,8 +3,8 @@
 This repository provides scripts that assist in compiling Python from source for both Apple Intel and Apple Silicon
 platforms.
 
-**Supported Python versions:** `2.7.18`**,** `3.6.15`**,** `3.7.17`**,** `3.8.18`**,** `3.9.18`**,** `3.10.13`
-**,** `3.11.7`**,** `3.12.1`.
+**Supported Python versions:** `2.7.18`**,** `3.6.15`**,** `3.7.17`**,** `3.8.19`**,** `3.9.19`**,** `3.10.14`
+**,** `3.11.9`**,** `3.12.3`.
 
 For older Python versions, specific changes have been incorporated from newer Python releases to ensure compatibility
 with recent macOS versions and Apple Silicon hardware. _See [patches](patches)._
