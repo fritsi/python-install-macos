@@ -10,6 +10,11 @@ Regarding X11, please refer to the [About X11](../README.md#about-x11) section i
 Moreover, it's worth mentioning that **there's no need for manual installation** of these dependencies; the Python
 installer script will handle the installation of the required ones.
 
+### expat25
+
+This is an older version of `expat` that is required for Python versions **below 3.8**, as newer `expat` (2.6.+)
+versions are incompatible with them.
+
 ### libffi33
 
 This is an older version of `libffi` that is required for Python versions **below 3.8**, as newer `libffi` versions
@@ -122,6 +127,7 @@ brew install --formula --build-from-source formulas/libzip-fritsi.rb
 brew install --formula --build-from-source formulas/tcl-tk-fritsi-with-x11.rb
 brew install --formula --build-from-source formulas/sqlite-fritsi-with-x11.rb
 brew install --formula --build-from-source formulas/libffi33.rb
+brew install --formula --build-from-source formulas/expat25.rb
 ```
 
 Finally, if you are compiling **Python 3.7 or earlier** <ins>without</ins> X11 support, the following dependencies
@@ -132,6 +138,7 @@ brew install --formula --build-from-source formulas/libzip-fritsi.rb
 brew install --formula --build-from-source formulas/tcl-tk-fritsi.rb
 brew install --formula --build-from-source formulas/sqlite-fritsi.rb
 brew install --formula --build-from-source formulas/libffi33.rb
+brew install --formula --build-from-source formulas/expat25.rb
 ```
 
 **Failure when installing these dependencies will result in a failed Python installation.**

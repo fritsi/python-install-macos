@@ -27,6 +27,9 @@ if $G_PYTHON_COMPILE; then
 
         # Also, for Python versions smaller than 3.8, we need to use an older libffi library :(
         export T_LIBRARIES_TO_LOOKUP="${T_LIBRARIES_TO_LOOKUP//libffi/libffi33}"
+
+        # Finally, for Python versions smaller than 3.8, we need to use an older expat library as well :(
+        export T_LIBRARIES_TO_LOOKUP="${T_LIBRARIES_TO_LOOKUP//expat/expat25}"
     fi
 
     # User wants to use X11, let's use that version of SQLite and Tcl-Tk

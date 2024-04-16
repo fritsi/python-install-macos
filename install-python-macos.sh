@@ -404,6 +404,7 @@ G_PYTHON_COMPILE=true
             T_DEPENDENCIES+=("tcl-tk-fritsi-with-x11" "sqlite-fritsi-with-x11")
         fi
         T_DEPENDENCIES+=("libffi33")
+        T_DEPENDENCIES+=("expat25")
     fi
 
     # We'll collect the missing package here in case of dry run mode
