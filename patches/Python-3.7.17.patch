@@ -1,4 +1,4 @@
-From 588d457bab711ad47e5e8663f12f3615723e36ba Mon Sep 17 00:00:00 2001
+From 90cc0a9633c86dcfdaff4455cdfcf5530b509d70 Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
 Date: Mon, 16 Jan 2023 15:27:12 +0100
 Subject: [PATCH] Python 3.7.17 patching
@@ -11,6 +11,7 @@ Subject: [PATCH] Python 3.7.17 patching
  Lib/idlelib/idle_test/test_outwin.py       |  14 +++
  Lib/sysconfig.py                           |  12 +++
  Lib/test/support/__init__.py               |  18 ++--
+ Lib/test/test_asyncio/test_events.py       |   1 +
  Lib/test/test_bytes.py                     |   1 +
  Lib/test/test_capi.py                      |  30 +++---
  Lib/test/test_gdb.py                       |   2 +-
@@ -37,7 +38,7 @@ Subject: [PATCH] Python 3.7.17 patching
  configure.ac                               |   6 ++
  pyconfig.h.in                              |   3 +
  setup.py                                   |  67 +++++++++---
- 33 files changed, 410 insertions(+), 104 deletions(-)
+ 34 files changed, 411 insertions(+), 104 deletions(-)
 
 diff --git a/Lib/ctypes/macholib/dyld.py b/Lib/ctypes/macholib/dyld.py
 index 9d86b05..931a9e7 100644
@@ -252,6 +253,18 @@ index 8de486f..d60428a 100644
  
      # check on every platform whether tkinter can actually do anything
      if not reason:
+diff --git a/Lib/test/test_asyncio/test_events.py b/Lib/test/test_asyncio/test_events.py
+index d2c1d7c..6a8072f 100644
+--- a/Lib/test/test_asyncio/test_events.py
++++ b/Lib/test/test_asyncio/test_events.py
+@@ -1226,6 +1226,7 @@ class EventLoopTestsMixin:
+                                           ssl=sslcontext_client,
+                                           server_hostname='localhost')
+         client, pr = self.loop.run_until_complete(f_c)
++        self.loop.run_until_complete(proto.connected)
+ 
+         # extra info is available
+         self.check_ssl_extra_info(client,peername=(host, port),
 diff --git a/Lib/test/test_bytes.py b/Lib/test/test_bytes.py
 index 3387a1b..81a1b36 100644
 --- a/Lib/test/test_bytes.py

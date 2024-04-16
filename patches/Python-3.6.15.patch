@@ -1,4 +1,4 @@
-From 03599a32139cebe1de212183f348ff646cc50a85 Mon Sep 17 00:00:00 2001
+From 367fcdfbd2170e3e89f060fd8908339cd1fe98f3 Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
 Date: Mon, 16 Jan 2023 15:26:52 +0100
 Subject: [PATCH] Python 3.6.15 patching
@@ -10,6 +10,7 @@ Subject: [PATCH] Python 3.6.15 patching
  Lib/idlelib/idle_test/test_outwin.py          |  14 +
  Lib/sysconfig.py                              |  12 +
  Lib/test/support/__init__.py                  |  20 +-
+ Lib/test/test_asyncio/test_events.py          |   1 +
  Lib/test/test_bytes.py                        |   1 +
  Lib/test/test_gdb.py                          |   2 +-
  Lib/test/test_minidom.py                      |  17 +-
@@ -38,7 +39,7 @@ Subject: [PATCH] Python 3.6.15 patching
  configure.ac                                  |  19 +-
  pyconfig.h.in                                 |   3 +
  setup.py                                      | 262 +++++++++++++-----
- 34 files changed, 623 insertions(+), 159 deletions(-)
+ 35 files changed, 624 insertions(+), 159 deletions(-)
 
 diff --git a/Lib/ctypes/macholib/dyld.py b/Lib/ctypes/macholib/dyld.py
 index c158e67..e1c58fc 100644
@@ -251,6 +252,18 @@ index 66c0fed..978c8ad 100644
          raise TestDidNotRun
      if not result.wasSuccessful():
          if len(result.errors) == 1 and not result.failures:
+diff --git a/Lib/test/test_asyncio/test_events.py b/Lib/test/test_asyncio/test_events.py
+index b62c0f3..a49b255 100644
+--- a/Lib/test/test_asyncio/test_events.py
++++ b/Lib/test/test_asyncio/test_events.py
+@@ -1242,6 +1242,7 @@ class EventLoopTestsMixin:
+                                           ssl=sslcontext_client,
+                                           server_hostname='localhost')
+         client, pr = self.loop.run_until_complete(f_c)
++        self.loop.run_until_complete(proto.connected)
+ 
+         # extra info is available
+         self.check_ssl_extra_info(client,peername=(host, port),
 diff --git a/Lib/test/test_bytes.py b/Lib/test/test_bytes.py
 index 7fa2a38..624cae7 100644
 --- a/Lib/test/test_bytes.py
