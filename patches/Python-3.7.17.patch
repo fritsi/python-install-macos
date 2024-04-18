@@ -1,44 +1,45 @@
-From 90cc0a9633c86dcfdaff4455cdfcf5530b509d70 Mon Sep 17 00:00:00 2001
+From d11b5496bc15ff36448d9429f29947a3c7f0a5e5 Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
 Date: Mon, 16 Jan 2023 15:27:12 +0100
 Subject: [PATCH] Python 3.7.17 patching
 
 ---
- Lib/ctypes/macholib/dyld.py                |  10 ++
- Lib/ctypes/test/test_macholib.py           |   1 -
- Lib/distutils/tests/test_build_ext.py      |   6 ++
- Lib/idlelib/idle_test/test_colorizer.py    |  14 +++
- Lib/idlelib/idle_test/test_outwin.py       |  14 +++
- Lib/sysconfig.py                           |  12 +++
- Lib/test/support/__init__.py               |  18 ++--
- Lib/test/test_asyncio/test_events.py       |   1 +
- Lib/test/test_bytes.py                     |   1 +
- Lib/test/test_capi.py                      |  30 +++---
- Lib/test/test_gdb.py                       |   2 +-
- Lib/test/test_httpservers.py               |   4 +-
- Lib/test/test_mmap.py                      |  17 ++-
- Lib/test/test_platform.py                  |   2 +-
- Lib/test/test_posix.py                     |   8 +-
- Lib/test/test_unicode.py                   |   3 +
- Lib/tkinter/test/test_tkinter/test_misc.py |   1 +
- Lib/tkinter/test/test_ttk/test_widgets.py  |  48 ++++++---
- Makefile.pre.in                            |   6 +-
- Modules/Setup.dist                         |  16 ++-
- Modules/_ctypes/_ctypes.c                  |  31 ++++++
- Modules/_ctypes/callproc.c                 | 114 ++++++++++++++++++---
- Modules/_ctypes/ctypes.h                   |   1 +
- Modules/_decimal/_decimal.c                |  10 +-
- Modules/_decimal/libmpdec/mpdecimal.h      |   3 +
- Modules/_testcapimodule.c                  |  29 +++---
- Modules/getaddrinfo.c                      |   3 +
- Modules/getnameinfo.c                      |   3 +
- Modules/socketmodule.c                     |   3 +
- Modules/socketmodule.h                     |   3 +
- configure                                  |  25 +++++
- configure.ac                               |   6 ++
- pyconfig.h.in                              |   3 +
- setup.py                                   |  67 +++++++++---
- 34 files changed, 411 insertions(+), 104 deletions(-)
+ Lib/ctypes/macholib/dyld.py                   |  10 ++
+ Lib/ctypes/test/test_macholib.py              |   1 -
+ Lib/distutils/tests/test_build_ext.py         |   6 +
+ Lib/idlelib/idle_test/test_colorizer.py       |  14 +++
+ Lib/idlelib/idle_test/test_outwin.py          |  14 +++
+ Lib/sysconfig.py                              |  12 ++
+ Lib/test/support/__init__.py                  |  18 +--
+ Lib/test/test_asyncio/test_events.py          |   1 +
+ Lib/test/test_bytes.py                        |   1 +
+ Lib/test/test_capi.py                         |  30 ++---
+ Lib/test/test_gdb.py                          |   2 +-
+ Lib/test/test_httpservers.py                  |   4 +-
+ Lib/test/test_mmap.py                         |  17 ++-
+ Lib/test/test_platform.py                     |   2 +-
+ Lib/test/test_posix.py                        |   8 +-
+ Lib/test/test_unicode.py                      |   3 +
+ Lib/tkinter/test/test_tkinter/test_misc.py    |   1 +
+ Lib/tkinter/test/test_tkinter/test_widgets.py |  28 +++--
+ Lib/tkinter/test/test_ttk/test_widgets.py     |  61 +++++++---
+ Makefile.pre.in                               |   6 +-
+ Modules/Setup.dist                            |  16 ++-
+ Modules/_ctypes/_ctypes.c                     |  31 +++++
+ Modules/_ctypes/callproc.c                    | 114 ++++++++++++++++--
+ Modules/_ctypes/ctypes.h                      |   1 +
+ Modules/_decimal/_decimal.c                   |  10 +-
+ Modules/_decimal/libmpdec/mpdecimal.h         |   3 +
+ Modules/_testcapimodule.c                     |  29 ++---
+ Modules/getaddrinfo.c                         |   3 +
+ Modules/getnameinfo.c                         |   3 +
+ Modules/socketmodule.c                        |   3 +
+ Modules/socketmodule.h                        |   3 +
+ configure                                     |  25 ++++
+ configure.ac                                  |   6 +
+ pyconfig.h.in                                 |   3 +
+ setup.py                                      |  67 +++++++---
+ 35 files changed, 439 insertions(+), 117 deletions(-)
 
 diff --git a/Lib/ctypes/macholib/dyld.py b/Lib/ctypes/macholib/dyld.py
 index 9d86b05..931a9e7 100644
@@ -468,8 +469,54 @@ index 236cae0..90bba07 100644
      def test_clipboard_astral(self):
          root = self.root
          root.clipboard_clear()
+diff --git a/Lib/tkinter/test/test_tkinter/test_widgets.py b/Lib/tkinter/test/test_tkinter/test_widgets.py
+index 5cfab68..c51cf21 100644
+--- a/Lib/tkinter/test/test_tkinter/test_widgets.py
++++ b/Lib/tkinter/test/test_tkinter/test_widgets.py
+@@ -597,8 +597,12 @@ class TextTest(AbstractWidgetTest, unittest.TestCase):
+                             expected=('10.2', '20.7', '1i', '2i'))
+         else:
+             self.checkParam(widget, 'tabs', (10.2, 20.7, '1i', '2i'))
+-        self.checkParam(widget, 'tabs', '10.2 20.7 1i 2i',
+-                        expected=('10.2', '20.7', '1i', '2i'))
++        if get_tk_patchlevel() >= (8, 6, 14):
++            self.checkParam(widget, 'tabs', '10.2 20.7 1i 2i',
++                            expected=(10.2, 20.7, '1i', '2i'))
++        else:
++            self.checkParam(widget, 'tabs', '10.2 20.7 1i 2i',
++                            expected=('10.2', '20.7', '1i', '2i'))
+         self.checkParam(widget, 'tabs', '2c left 4c 6c center',
+                         expected=('2c', 'left', '4c', '6c', 'center'))
+         self.checkInvalidParam(widget, 'tabs', 'spam',
+@@ -755,12 +759,20 @@ class ListboxTest(AbstractWidgetTest, unittest.TestCase):
+             widget.itemconfigure()
+         with self.assertRaisesRegex(TclError, 'bad listbox index "red"'):
+             widget.itemconfigure('red')
+-        self.assertEqual(widget.itemconfigure(0, 'background'),
+-                         ('background', 'background', 'Background', '', 'red'))
+-        self.assertEqual(widget.itemconfigure('end', 'background'),
+-                         ('background', 'background', 'Background', '', 'violet'))
+-        self.assertEqual(widget.itemconfigure('@0,0', 'background'),
+-                         ('background', 'background', 'Background', '', 'red'))
++        if get_tk_patchlevel() >= (8, 6, 14):
++            self.assertEqual(widget.itemconfigure(0, 'background'),
++                             ('background', '', '', '', 'red'))
++            self.assertEqual(widget.itemconfigure('end', 'background'),
++                             ('background', '', '', '', 'violet'))
++            self.assertEqual(widget.itemconfigure('@0,0', 'background'),
++                             ('background', '', '', '', 'red'))
++        else:
++            self.assertEqual(widget.itemconfigure(0, 'background'),
++                             ('background', 'background', 'Background', '', 'red'))
++            self.assertEqual(widget.itemconfigure('end', 'background'),
++                             ('background', 'background', 'Background', '', 'violet'))
++            self.assertEqual(widget.itemconfigure('@0,0', 'background'),
++                             ('background', 'background', 'Background', '', 'red'))
+ 
+         d = widget.itemconfigure(0)
+         self.assertIsInstance(d, dict)
 diff --git a/Lib/tkinter/test/test_ttk/test_widgets.py b/Lib/tkinter/test/test_ttk/test_widgets.py
-index 9667e05..4dd2545 100644
+index 9667e05..37059ad 100644
 --- a/Lib/tkinter/test/test_ttk/test_widgets.py
 +++ b/Lib/tkinter/test/test_ttk/test_widgets.py
 @@ -14,6 +14,17 @@ from tkinter.test.widget_tests import (add_standard_options, noconv,
@@ -490,7 +537,29 @@ index 9667e05..4dd2545 100644
  class StandardTtkOptionsTests(StandardOptionsTests):
  
      def test_class(self):
-@@ -170,10 +181,13 @@ class AbstractLabelTest(AbstractWidgetTest):
+@@ -28,13 +39,16 @@ class StandardTtkOptionsTests(StandardOptionsTests):
+ 
+     def test_padding(self):
+         widget = self.create()
+-        self.checkParam(widget, 'padding', 0, expected=('0',))
+-        self.checkParam(widget, 'padding', 5, expected=('5',))
+-        self.checkParam(widget, 'padding', (5, 6), expected=('5', '6'))
++        conv = False
++        if get_tk_patchlevel() >= (8, 6, 14):
++            conv = lambda exp: tuple(int(i) for i in exp)
++        self.checkParam(widget, 'padding', 0, expected=('0',), conv=conv)
++        self.checkParam(widget, 'padding', 5, expected=('5',), conv=conv)
++        self.checkParam(widget, 'padding', (5, 6), expected=('5', '6'), conv=conv)
+         self.checkParam(widget, 'padding', (5, 6, 7),
+-                        expected=('5', '6', '7'))
++                        expected=('5', '6', '7'), conv=conv)
+         self.checkParam(widget, 'padding', (5, 6, 7, 8),
+-                        expected=('5', '6', '7', '8'))
++                        expected=('5', '6', '7', '8'), conv=conv)
+         self.checkParam(widget, 'padding', ('5p', '6p', '7p', '8p'))
+         self.checkParam(widget, 'padding', (), expected='')
+ 
+@@ -170,10 +184,13 @@ class AbstractLabelTest(AbstractWidgetTest):
                  errmsg='image "spam" doesn\'t exist')
  
      def test_compound(self):
@@ -507,7 +576,7 @@ index 9667e05..4dd2545 100644
  
      def test_state(self):
          widget = self.create()
-@@ -286,6 +300,10 @@ class EntryTest(AbstractWidgetTest, unittest.TestCase):
+@@ -286,6 +303,10 @@ class EntryTest(AbstractWidgetTest, unittest.TestCase):
          'validate', 'validatecommand', 'width', 'xscrollcommand',
      )
  
@@ -518,7 +587,7 @@ index 9667e05..4dd2545 100644
      def setUp(self):
          super().setUp()
          self.entry = self.create()
-@@ -329,12 +347,7 @@ class EntryTest(AbstractWidgetTest, unittest.TestCase):
+@@ -329,12 +350,7 @@ class EntryTest(AbstractWidgetTest, unittest.TestCase):
          self.entry.wait_visibility()
          self.entry.update_idletasks()
  
@@ -532,7 +601,7 @@ index 9667e05..4dd2545 100644
          self.assertEqual(self.entry.identify(-1, -1), "")
  
          self.assertRaises(tkinter.TclError, self.entry.identify, None, 5)
-@@ -424,6 +437,10 @@ class ComboboxTest(EntryTest, unittest.TestCase):
+@@ -424,6 +440,10 @@ class ComboboxTest(EntryTest, unittest.TestCase):
          'width', 'xscrollcommand',
      )
  
@@ -543,7 +612,7 @@ index 9667e05..4dd2545 100644
      def setUp(self):
          super().setUp()
          self.combo = self.create()
-@@ -934,7 +951,7 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
+@@ -934,7 +954,7 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
  
          self.nb.pack()
          self.nb.wait_visibility()
@@ -552,7 +621,7 @@ index 9667e05..4dd2545 100644
              tb_idx = "@20,5"
          else:
              tb_idx = "@5,5"
-@@ -1103,10 +1120,9 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
+@@ -1103,10 +1123,9 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
          self.nb.enable_traversal()
          self.nb.focus_force()
          simulate_mouse_click(self.nb, 5, 5)
@@ -566,7 +635,7 @@ index 9667e05..4dd2545 100644
          self.assertEqual(self.nb.select(), str(self.child1))
  
  @add_standard_options(IntegerSizeTests, StandardTtkOptionsTests)
-@@ -1119,6 +1135,10 @@ class SpinboxTest(EntryTest, unittest.TestCase):
+@@ -1119,6 +1138,10 @@ class SpinboxTest(EntryTest, unittest.TestCase):
          'values', 'width', 'wrap', 'xscrollcommand',
      )
  

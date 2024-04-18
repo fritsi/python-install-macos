@@ -1,4 +1,4 @@
-From 367fcdfbd2170e3e89f060fd8908339cd1fe98f3 Mon Sep 17 00:00:00 2001
+From cd9d9f5a0f41cfa9d63cfe96ba9a7f36fa03db98 Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
 Date: Mon, 16 Jan 2023 15:26:52 +0100
 Subject: [PATCH] Python 3.6.15 patching
@@ -20,8 +20,8 @@ Subject: [PATCH] Python 3.6.15 patching
  Lib/test/test_regrtest.py                     |  12 +
  Lib/test/test_unicode.py                      |   3 +
  Lib/test/test_xml_etree.py                    |   1 +
- Lib/tkinter/test/test_tkinter/test_widgets.py |   3 +-
- Lib/tkinter/test/test_ttk/test_widgets.py     |  44 ++-
+ Lib/tkinter/test/test_tkinter/test_widgets.py |  31 ++-
+ Lib/tkinter/test/test_ttk/test_widgets.py     |  57 ++--
  Makefile.pre.in                               |   6 +-
  Modules/Setup.dist                            |  16 +-
  Modules/_ctypes/_ctypes.c                     |  31 +++
@@ -39,7 +39,7 @@ Subject: [PATCH] Python 3.6.15 patching
  configure.ac                                  |  19 +-
  pyconfig.h.in                                 |   3 +
  setup.py                                      | 262 +++++++++++++-----
- 35 files changed, 624 insertions(+), 159 deletions(-)
+ 35 files changed, 652 insertions(+), 172 deletions(-)
 
 diff --git a/Lib/ctypes/macholib/dyld.py b/Lib/ctypes/macholib/dyld.py
 index c158e67..e1c58fc 100644
@@ -471,10 +471,52 @@ index b01709e..3eee447 100644
          e = ET.XML('<prefix:localname xmlns:prefix="${stuff}"/>')
          self.assertEqual(e.tag, '{${stuff}}localname')
 diff --git a/Lib/tkinter/test/test_tkinter/test_widgets.py b/Lib/tkinter/test/test_tkinter/test_widgets.py
-index 3fb6411..5cfab68 100644
+index 3fb6411..c51cf21 100644
 --- a/Lib/tkinter/test/test_tkinter/test_widgets.py
 +++ b/Lib/tkinter/test/test_tkinter/test_widgets.py
-@@ -864,7 +864,8 @@ class ScaleTest(AbstractWidgetTest, unittest.TestCase):
+@@ -597,8 +597,12 @@ class TextTest(AbstractWidgetTest, unittest.TestCase):
+                             expected=('10.2', '20.7', '1i', '2i'))
+         else:
+             self.checkParam(widget, 'tabs', (10.2, 20.7, '1i', '2i'))
+-        self.checkParam(widget, 'tabs', '10.2 20.7 1i 2i',
+-                        expected=('10.2', '20.7', '1i', '2i'))
++        if get_tk_patchlevel() >= (8, 6, 14):
++            self.checkParam(widget, 'tabs', '10.2 20.7 1i 2i',
++                            expected=(10.2, 20.7, '1i', '2i'))
++        else:
++            self.checkParam(widget, 'tabs', '10.2 20.7 1i 2i',
++                            expected=('10.2', '20.7', '1i', '2i'))
+         self.checkParam(widget, 'tabs', '2c left 4c 6c center',
+                         expected=('2c', 'left', '4c', '6c', 'center'))
+         self.checkInvalidParam(widget, 'tabs', 'spam',
+@@ -755,12 +759,20 @@ class ListboxTest(AbstractWidgetTest, unittest.TestCase):
+             widget.itemconfigure()
+         with self.assertRaisesRegex(TclError, 'bad listbox index "red"'):
+             widget.itemconfigure('red')
+-        self.assertEqual(widget.itemconfigure(0, 'background'),
+-                         ('background', 'background', 'Background', '', 'red'))
+-        self.assertEqual(widget.itemconfigure('end', 'background'),
+-                         ('background', 'background', 'Background', '', 'violet'))
+-        self.assertEqual(widget.itemconfigure('@0,0', 'background'),
+-                         ('background', 'background', 'Background', '', 'red'))
++        if get_tk_patchlevel() >= (8, 6, 14):
++            self.assertEqual(widget.itemconfigure(0, 'background'),
++                             ('background', '', '', '', 'red'))
++            self.assertEqual(widget.itemconfigure('end', 'background'),
++                             ('background', '', '', '', 'violet'))
++            self.assertEqual(widget.itemconfigure('@0,0', 'background'),
++                             ('background', '', '', '', 'red'))
++        else:
++            self.assertEqual(widget.itemconfigure(0, 'background'),
++                             ('background', 'background', 'Background', '', 'red'))
++            self.assertEqual(widget.itemconfigure('end', 'background'),
++                             ('background', 'background', 'Background', '', 'violet'))
++            self.assertEqual(widget.itemconfigure('@0,0', 'background'),
++                             ('background', 'background', 'Background', '', 'red'))
+ 
+         d = widget.itemconfigure(0)
+         self.assertIsInstance(d, dict)
+@@ -864,7 +876,8 @@ class ScaleTest(AbstractWidgetTest, unittest.TestCase):
  
      def test_from(self):
          widget = self.create()
@@ -485,7 +527,7 @@ index 3fb6411..5cfab68 100644
      def test_label(self):
          widget = self.create()
 diff --git a/Lib/tkinter/test/test_ttk/test_widgets.py b/Lib/tkinter/test/test_ttk/test_widgets.py
-index 13e0568..f88a15f 100644
+index 13e0568..9266312 100644
 --- a/Lib/tkinter/test/test_ttk/test_widgets.py
 +++ b/Lib/tkinter/test/test_ttk/test_widgets.py
 @@ -14,6 +14,17 @@ from tkinter.test.widget_tests import (add_standard_options, noconv,
@@ -506,7 +548,29 @@ index 13e0568..f88a15f 100644
  class StandardTtkOptionsTests(StandardOptionsTests):
  
      def test_class(self):
-@@ -170,10 +181,13 @@ class AbstractLabelTest(AbstractWidgetTest):
+@@ -28,13 +39,16 @@ class StandardTtkOptionsTests(StandardOptionsTests):
+ 
+     def test_padding(self):
+         widget = self.create()
+-        self.checkParam(widget, 'padding', 0, expected=('0',))
+-        self.checkParam(widget, 'padding', 5, expected=('5',))
+-        self.checkParam(widget, 'padding', (5, 6), expected=('5', '6'))
++        conv = False
++        if get_tk_patchlevel() >= (8, 6, 14):
++            conv = lambda exp: tuple(int(i) for i in exp)
++        self.checkParam(widget, 'padding', 0, expected=('0',), conv=conv)
++        self.checkParam(widget, 'padding', 5, expected=('5',), conv=conv)
++        self.checkParam(widget, 'padding', (5, 6), expected=('5', '6'), conv=conv)
+         self.checkParam(widget, 'padding', (5, 6, 7),
+-                        expected=('5', '6', '7'))
++                        expected=('5', '6', '7'), conv=conv)
+         self.checkParam(widget, 'padding', (5, 6, 7, 8),
+-                        expected=('5', '6', '7', '8'))
++                        expected=('5', '6', '7', '8'), conv=conv)
+         self.checkParam(widget, 'padding', ('5p', '6p', '7p', '8p'))
+         self.checkParam(widget, 'padding', (), expected='')
+ 
+@@ -170,10 +184,13 @@ class AbstractLabelTest(AbstractWidgetTest):
                  errmsg='image "spam" doesn\'t exist')
  
      def test_compound(self):
@@ -523,7 +587,7 @@ index 13e0568..f88a15f 100644
  
      def test_state(self):
          widget = self.create()
-@@ -286,6 +300,10 @@ class EntryTest(AbstractWidgetTest, unittest.TestCase):
+@@ -286,6 +303,10 @@ class EntryTest(AbstractWidgetTest, unittest.TestCase):
          'validate', 'validatecommand', 'width', 'xscrollcommand',
      )
  
@@ -534,7 +598,7 @@ index 13e0568..f88a15f 100644
      def setUp(self):
          super().setUp()
          self.entry = self.create()
-@@ -329,12 +347,7 @@ class EntryTest(AbstractWidgetTest, unittest.TestCase):
+@@ -329,12 +350,7 @@ class EntryTest(AbstractWidgetTest, unittest.TestCase):
          self.entry.wait_visibility()
          self.entry.update_idletasks()
  
@@ -548,7 +612,7 @@ index 13e0568..f88a15f 100644
          self.assertEqual(self.entry.identify(-1, -1), "")
  
          self.assertRaises(tkinter.TclError, self.entry.identify, None, 5)
-@@ -424,6 +437,10 @@ class ComboboxTest(EntryTest, unittest.TestCase):
+@@ -424,6 +440,10 @@ class ComboboxTest(EntryTest, unittest.TestCase):
          'width', 'xscrollcommand',
      )
  
@@ -559,7 +623,7 @@ index 13e0568..f88a15f 100644
      def setUp(self):
          super().setUp()
          self.combo = self.create()
-@@ -935,7 +952,7 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
+@@ -935,7 +955,7 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
  
          self.nb.pack()
          self.nb.wait_visibility()
@@ -568,7 +632,7 @@ index 13e0568..f88a15f 100644
              tb_idx = "@20,5"
          else:
              tb_idx = "@5,5"
-@@ -1104,10 +1121,9 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
+@@ -1104,10 +1124,9 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
          self.nb.enable_traversal()
          self.nb.focus_force()
          simulate_mouse_click(self.nb, 5, 5)

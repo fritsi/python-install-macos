@@ -1,25 +1,26 @@
-From fda4aaebcb16b1db1993f3230e42edaf0f507fc2 Mon Sep 17 00:00:00 2001
+From 41444a0bb1aa2866d12193d5a2a96e2aa1bd9401 Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
 Date: Tue, 16 Apr 2024 14:32:02 +0200
 Subject: [PATCH] Python 3.8.19 patching
 
 ---
- Lib/distutils/tests/test_build_ext.py     |  6 +++
- Lib/idlelib/idle_test/test_colorizer.py   | 14 +++++++
- Lib/idlelib/idle_test/test_outwin.py      | 14 +++++++
- Lib/test/support/__init__.py              | 18 ++++-----
- Lib/test/test_gdb.py                      |  2 +-
- Lib/test/test_mmap.py                     |  8 +++-
- Lib/test/test_posix.py                    |  8 ++--
- Lib/tkinter/test/test_ttk/test_widgets.py | 47 ++++++++++++++++-------
- Modules/Setup                             | 16 ++++----
- Modules/_decimal/_decimal.c               |  4 +-
- Modules/getaddrinfo.c                     |  3 ++
- Modules/getnameinfo.c                     |  3 ++
- Modules/socketmodule.c                    |  3 ++
- Modules/socketmodule.h                    |  3 ++
- setup.py                                  |  2 +-
- 15 files changed, 109 insertions(+), 42 deletions(-)
+ Lib/distutils/tests/test_build_ext.py         |  6 ++
+ Lib/idlelib/idle_test/test_colorizer.py       | 14 +++++
+ Lib/idlelib/idle_test/test_outwin.py          | 14 +++++
+ Lib/test/support/__init__.py                  | 18 +++---
+ Lib/test/test_gdb.py                          |  2 +-
+ Lib/test/test_mmap.py                         |  8 ++-
+ Lib/test/test_posix.py                        |  8 +--
+ Lib/tkinter/test/test_tkinter/test_widgets.py | 28 ++++++---
+ Lib/tkinter/test/test_ttk/test_widgets.py     | 60 +++++++++++++------
+ Modules/Setup                                 | 16 +++--
+ Modules/_decimal/_decimal.c                   |  4 +-
+ Modules/getaddrinfo.c                         |  3 +
+ Modules/getnameinfo.c                         |  3 +
+ Modules/socketmodule.c                        |  3 +
+ Modules/socketmodule.h                        |  3 +
+ setup.py                                      |  2 +-
+ 16 files changed, 137 insertions(+), 55 deletions(-)
 
 diff --git a/Lib/distutils/tests/test_build_ext.py b/Lib/distutils/tests/test_build_ext.py
 index 808c0dc..7e4632f 100644
@@ -222,8 +223,54 @@ index 9bdd284..3f6028d 100644
          # groups, ignoring order, duplicates, and the effective gid.
          # #10822/#26944 - It is implementation defined whether
          # posix.getgroups() includes the effective gid.
+diff --git a/Lib/tkinter/test/test_tkinter/test_widgets.py b/Lib/tkinter/test/test_tkinter/test_widgets.py
+index e4c155e..5d75d33 100644
+--- a/Lib/tkinter/test/test_tkinter/test_widgets.py
++++ b/Lib/tkinter/test/test_tkinter/test_widgets.py
+@@ -652,8 +652,12 @@ class TextTest(AbstractWidgetTest, unittest.TestCase):
+                             expected=('10.2', '20.7', '1i', '2i'))
+         else:
+             self.checkParam(widget, 'tabs', (10.2, 20.7, '1i', '2i'))
+-        self.checkParam(widget, 'tabs', '10.2 20.7 1i 2i',
+-                        expected=('10.2', '20.7', '1i', '2i'))
++        if get_tk_patchlevel() >= (8, 6, 14):
++            self.checkParam(widget, 'tabs', '10.2 20.7 1i 2i',
++                            expected=(10.2, 20.7, '1i', '2i'))
++        else:
++            self.checkParam(widget, 'tabs', '10.2 20.7 1i 2i',
++                            expected=('10.2', '20.7', '1i', '2i'))
+         self.checkParam(widget, 'tabs', '2c left 4c 6c center',
+                         expected=('2c', 'left', '4c', '6c', 'center'))
+         self.checkInvalidParam(widget, 'tabs', 'spam',
+@@ -833,12 +837,20 @@ class ListboxTest(AbstractWidgetTest, unittest.TestCase):
+             widget.itemconfigure()
+         with self.assertRaisesRegex(TclError, 'bad listbox index "red"'):
+             widget.itemconfigure('red')
+-        self.assertEqual(widget.itemconfigure(0, 'background'),
+-                         ('background', 'background', 'Background', '', 'red'))
+-        self.assertEqual(widget.itemconfigure('end', 'background'),
+-                         ('background', 'background', 'Background', '', 'violet'))
+-        self.assertEqual(widget.itemconfigure('@0,0', 'background'),
+-                         ('background', 'background', 'Background', '', 'red'))
++        if get_tk_patchlevel() >= (8, 6, 14):
++            self.assertEqual(widget.itemconfigure(0, 'background'),
++                             ('background', '', '', '', 'red'))
++            self.assertEqual(widget.itemconfigure('end', 'background'),
++                             ('background', '', '', '', 'violet'))
++            self.assertEqual(widget.itemconfigure('@0,0', 'background'),
++                             ('background', '', '', '', 'red'))
++        else:
++            self.assertEqual(widget.itemconfigure(0, 'background'),
++                             ('background', 'background', 'Background', '', 'red'))
++            self.assertEqual(widget.itemconfigure('end', 'background'),
++                             ('background', 'background', 'Background', '', 'violet'))
++            self.assertEqual(widget.itemconfigure('@0,0', 'background'),
++                             ('background', 'background', 'Background', '', 'red'))
+ 
+         d = widget.itemconfigure(0)
+         self.assertIsInstance(d, dict)
 diff --git a/Lib/tkinter/test/test_ttk/test_widgets.py b/Lib/tkinter/test/test_ttk/test_widgets.py
-index 88a800d..6324f26 100644
+index 88a800d..47b49af 100644
 --- a/Lib/tkinter/test/test_ttk/test_widgets.py
 +++ b/Lib/tkinter/test/test_ttk/test_widgets.py
 @@ -14,6 +14,17 @@ from tkinter.test.widget_tests import (add_standard_options, noconv,
@@ -244,7 +291,29 @@ index 88a800d..6324f26 100644
  class StandardTtkOptionsTests(StandardOptionsTests):
  
      def test_configure_class(self):
-@@ -288,6 +299,10 @@ class EntryTest(AbstractWidgetTest, unittest.TestCase):
+@@ -28,13 +39,16 @@ class StandardTtkOptionsTests(StandardOptionsTests):
+ 
+     def test_configure_padding(self):
+         widget = self.create()
+-        self.checkParam(widget, 'padding', 0, expected=('0',))
+-        self.checkParam(widget, 'padding', 5, expected=('5',))
+-        self.checkParam(widget, 'padding', (5, 6), expected=('5', '6'))
++        conv = False
++        if get_tk_patchlevel() >= (8, 6, 14):
++            conv = lambda exp: tuple(int(i) for i in exp)
++        self.checkParam(widget, 'padding', 0, expected=('0',), conv=conv)
++        self.checkParam(widget, 'padding', 5, expected=('5',), conv=conv)
++        self.checkParam(widget, 'padding', (5, 6), expected=('5', '6'), conv=conv)
+         self.checkParam(widget, 'padding', (5, 6, 7),
+-                        expected=('5', '6', '7'))
++                        expected=('5', '6', '7'), conv=conv)
+         self.checkParam(widget, 'padding', (5, 6, 7, 8),
+-                        expected=('5', '6', '7', '8'))
++                        expected=('5', '6', '7', '8'), conv=conv)
+         self.checkParam(widget, 'padding', ('5p', '6p', '7p', '8p'))
+         self.checkParam(widget, 'padding', (), expected='')
+ 
+@@ -288,6 +302,10 @@ class EntryTest(AbstractWidgetTest, unittest.TestCase):
          'validate', 'validatecommand', 'width', 'xscrollcommand',
      )
  
@@ -255,7 +324,7 @@ index 88a800d..6324f26 100644
      def setUp(self):
          super().setUp()
          self.entry = self.create()
-@@ -330,12 +345,7 @@ class EntryTest(AbstractWidgetTest, unittest.TestCase):
+@@ -330,12 +348,7 @@ class EntryTest(AbstractWidgetTest, unittest.TestCase):
          self.entry.pack()
          self.entry.update()
  
@@ -269,7 +338,7 @@ index 88a800d..6324f26 100644
          self.assertEqual(self.entry.identify(-1, -1), "")
  
          self.assertRaises(tkinter.TclError, self.entry.identify, None, 5)
-@@ -425,6 +435,10 @@ class ComboboxTest(EntryTest, unittest.TestCase):
+@@ -425,6 +438,10 @@ class ComboboxTest(EntryTest, unittest.TestCase):
          'width', 'xscrollcommand',
      )
  
@@ -280,7 +349,7 @@ index 88a800d..6324f26 100644
      def setUp(self):
          super().setUp()
          self.combo = self.create()
-@@ -439,7 +453,8 @@ class ComboboxTest(EntryTest, unittest.TestCase):
+@@ -439,7 +456,8 @@ class ComboboxTest(EntryTest, unittest.TestCase):
      def _show_drop_down_listbox(self):
          width = self.combo.winfo_width()
          x, y = width - 5, 5
@@ -290,7 +359,7 @@ index 88a800d..6324f26 100644
          self.combo.event_generate('<ButtonPress-1>', x=x, y=y)
          self.combo.event_generate('<ButtonRelease-1>', x=x, y=y)
          self.combo.update_idletasks()
-@@ -935,7 +950,7 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
+@@ -935,7 +953,7 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
  
          self.nb.pack()
          self.nb.update()
@@ -299,7 +368,7 @@ index 88a800d..6324f26 100644
              tb_idx = "@20,5"
          else:
              tb_idx = "@5,5"
-@@ -1089,7 +1104,8 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
+@@ -1089,7 +1107,8 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
  
          self.nb.select(0)
  
@@ -309,7 +378,7 @@ index 88a800d..6324f26 100644
          simulate_mouse_click(self.nb, 5, 5)
          self.nb.focus_force()
          self.nb.event_generate('<Control-Tab>')
-@@ -1104,12 +1120,11 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
+@@ -1104,12 +1123,11 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
          self.nb.tab(self.child1, text='a', underline=0)
          self.nb.enable_traversal()
          self.nb.focus_force()
@@ -326,7 +395,7 @@ index 88a800d..6324f26 100644
          self.assertEqual(self.nb.select(), str(self.child1))
  
  @add_standard_options(IntegerSizeTests, StandardTtkOptionsTests)
-@@ -1122,6 +1137,10 @@ class SpinboxTest(EntryTest, unittest.TestCase):
+@@ -1122,6 +1140,10 @@ class SpinboxTest(EntryTest, unittest.TestCase):
          'values', 'width', 'wrap', 'xscrollcommand',
      )
  
