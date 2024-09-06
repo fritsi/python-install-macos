@@ -1,10 +1,10 @@
 class SqliteFritsiWithX11 < Formula
   desc "Command-line interface for SQLite"
   homepage "https://sqlite.org/index.html"
-  version "3.45.2"
+  version "3.46.0"
 
-  url "https://www.sqlite.org/2024/sqlite-autoconf-3450200.tar.gz"
-  sha256 "bc9067442eedf3dd39989b5c5cfbfff37ae66cc9c99274e0c3052dc4d4a8f6ae"
+  url "https://www.sqlite.org/2024/sqlite-autoconf-3460000.tar.gz"
+  sha256 "6f8e6a7b335273748816f9b3b62bbdc372a889de8782d7f048c653a447417a7d"
 
   license "blessing"
 
