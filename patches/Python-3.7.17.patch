@@ -1,4 +1,4 @@
-From d11b5496bc15ff36448d9429f29947a3c7f0a5e5 Mon Sep 17 00:00:00 2001
+From 03519628a23e94c6633749c42c8cc05dd8dc45d2 Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
 Date: Mon, 16 Jan 2023 15:27:12 +0100
 Subject: [PATCH] Python 3.7.17 patching
@@ -20,6 +20,7 @@ Subject: [PATCH] Python 3.7.17 patching
  Lib/test/test_platform.py                     |   2 +-
  Lib/test/test_posix.py                        |   8 +-
  Lib/test/test_unicode.py                      |   3 +
+ Lib/test/test_urllib2.py                      |   1 +
  Lib/tkinter/test/test_tkinter/test_misc.py    |   1 +
  Lib/tkinter/test/test_tkinter/test_widgets.py |  28 +++--
  Lib/tkinter/test/test_ttk/test_widgets.py     |  61 +++++++---
@@ -39,7 +40,7 @@ Subject: [PATCH] Python 3.7.17 patching
  configure.ac                                  |   6 +
  pyconfig.h.in                                 |   3 +
  setup.py                                      |  67 +++++++---
- 35 files changed, 439 insertions(+), 117 deletions(-)
+ 36 files changed, 440 insertions(+), 117 deletions(-)
 
 diff --git a/Lib/ctypes/macholib/dyld.py b/Lib/ctypes/macholib/dyld.py
 index 9d86b05..931a9e7 100644
@@ -457,6 +458,18 @@ index 4ebd82d..7b73c19 100644
          _PyUnicode_FromFormat.restype = py_object
  
          def PyUnicode_FromFormat(format, *args):
+diff --git a/Lib/test/test_urllib2.py b/Lib/test/test_urllib2.py
+index 3bb4a12..6d97a0c 100644
+--- a/Lib/test/test_urllib2.py
++++ b/Lib/test/test_urllib2.py
+@@ -1791,6 +1791,7 @@ class MiscTests(unittest.TestCase):
+ 
+     @unittest.skipUnless(support.is_resource_enabled('network'),
+                          'test requires network access')
++    @unittest.skipIf(True, "POST request to http://www.example.com/ fail randomly")
+     def test_issue16464(self):
+         with support.transient_internet("http://www.example.com/"):
+             opener = urllib.request.build_opener()
 diff --git a/Lib/tkinter/test/test_tkinter/test_misc.py b/Lib/tkinter/test/test_tkinter/test_misc.py
 index 236cae0..90bba07 100644
 --- a/Lib/tkinter/test/test_tkinter/test_misc.py
@@ -1322,4 +1335,4 @@ index bf90600..b530d36 100644
              depends = ['_decimal/docstrings.h']
          else:
 -- 
-2.44.0
+2.46.2

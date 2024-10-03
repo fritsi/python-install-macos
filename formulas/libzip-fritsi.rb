@@ -1,10 +1,10 @@
 class LibzipFritsi < Formula
   desc "C library for reading, creating, and modifying zip archives"
   homepage "https://libzip.org/"
-  version "1.10.1"
+  version "1.11.1"
 
-  url "https://libzip.org/download/libzip-1.10.1.tar.xz"
-  sha256 "dc3c8d5b4c8bbd09626864f6bcf93de701540f761d76b85d7c7d710f4bd90318"
+  url "https://libzip.org/download/libzip-1.11.1.tar.xz"
+  sha256 "721e0e4e851073b508c243fd75eda04e4c5006158a900441de10ce274cc3b633"
 
   license "BSD-3-Clause"
 

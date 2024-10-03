@@ -1,34 +1,32 @@
-From 6c66da373435f0cf18e0517009083cbc44ce8d07 Mon Sep 17 00:00:00 2001
+From 5c59e404be331a60de36e5b18e15a111ce8bed7c Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
-Date: Tue, 9 Jan 2024 11:09:24 +0100
-Subject: [PATCH] Python 3.11.9 patching
+Date: Tue, 16 Apr 2024 14:32:02 +0200
+Subject: [PATCH] Python 3.8.20 patching
 
 ---
  Lib/distutils/tests/test_build_ext.py         |  6 ++
- Lib/idlelib/idle_test/test_colorizer.py       | 15 ++++
- Lib/idlelib/idle_test/test_editor.py          | 14 ++++
- Lib/idlelib/idle_test/test_outwin.py          | 14 ++++
- Lib/idlelib/idle_test/test_sidebar.py         | 42 ++++------
- Lib/test/support/__init__.py                  | 18 ++---
- Lib/test/test_mmap.py                         |  6 +-
- Lib/test/test_posix.py                        |  8 +-
- Lib/test/test_shutil.py                       |  2 +
- Lib/test/test_tools/test_freeze.py            |  1 +
- Lib/tkinter/test/test_tkinter/test_widgets.py | 28 +++++--
- Lib/tkinter/test/test_ttk/test_widgets.py     | 50 ++++++++----
- Modules/Setup                                 | 17 ++--
+ Lib/idlelib/idle_test/test_colorizer.py       | 14 +++++
+ Lib/idlelib/idle_test/test_outwin.py          | 14 +++++
+ Lib/test/support/__init__.py                  | 18 +++---
+ Lib/test/test_gdb.py                          |  2 +-
+ Lib/test/test_mmap.py                         |  8 ++-
+ Lib/test/test_posix.py                        |  8 +--
+ Lib/tkinter/test/test_tkinter/test_widgets.py | 28 ++++++---
+ Lib/tkinter/test/test_ttk/test_widgets.py     | 60 +++++++++++++------
+ Modules/Setup                                 | 16 +++--
+ Modules/_decimal/_decimal.c                   |  4 +-
  Modules/getaddrinfo.c                         |  3 +
  Modules/getnameinfo.c                         |  3 +
  Modules/socketmodule.c                        |  3 +
  Modules/socketmodule.h                        |  3 +
- setup.py                                      | 79 ++++++++++++++++++-
- 18 files changed, 239 insertions(+), 73 deletions(-)
+ setup.py                                      |  2 +-
+ 16 files changed, 137 insertions(+), 55 deletions(-)
 
 diff --git a/Lib/distutils/tests/test_build_ext.py b/Lib/distutils/tests/test_build_ext.py
-index e89dc50..e026599 100644
+index 808c0dc..7e4632f 100644
 --- a/Lib/distutils/tests/test_build_ext.py
 +++ b/Lib/distutils/tests/test_build_ext.py
-@@ -459,6 +459,9 @@ class BuildExtTestCase(TempdirManager,
+@@ -453,6 +453,9 @@ class BuildExtTestCase(TempdirManager,
          # deployment target higher than that of the interpreter: the ext
          # module may depend on some newer OS feature.
          deptarget = sysconfig.get_config_var('MACOSX_DEPLOYMENT_TARGET')
@@ -38,7 +36,7 @@ index e89dc50..e026599 100644
          if deptarget:
              # increment the minor version number (i.e. 10.6 -> 10.7)
              deptarget = [int(x) for x in deptarget.split('.')]
-@@ -494,6 +497,9 @@ class BuildExtTestCase(TempdirManager,
+@@ -488,6 +491,9 @@ class BuildExtTestCase(TempdirManager,
  
          # get the deployment target that the interpreter was built with
          target = sysconfig.get_config_var('MACOSX_DEPLOYMENT_TARGET')
@@ -49,18 +47,18 @@ index e89dc50..e026599 100644
          # format the target value as defined in the Apple
          # Availability Macros.  We can't use the macro names since
 diff --git a/Lib/idlelib/idle_test/test_colorizer.py b/Lib/idlelib/idle_test/test_colorizer.py
-index 308bc38..579fd04 100644
+index c31c492..170f18d 100644
 --- a/Lib/idlelib/idle_test/test_colorizer.py
 +++ b/Lib/idlelib/idle_test/test_colorizer.py
-@@ -1,4 +1,6 @@
- "Test colorizer, coverage 99%."
-+
+@@ -1,5 +1,6 @@
+ "Test colorizer, coverage 93%."
+ 
 +import sys
  from idlelib import colorizer
  from test.support import requires
  import unittest
-@@ -54,6 +56,17 @@ source = textwrap.dedent("""\
-     """)
+@@ -30,6 +31,17 @@ source = (
+     )
  
  
 +def is_macos_aqua(root):
@@ -77,7 +75,7 @@ index 308bc38..579fd04 100644
  def setUpModule():
      colorizer.idleConf.userCfg = testcfg
  
-@@ -171,6 +184,8 @@ class ColorDelegatorTest(unittest.TestCase):
+@@ -147,6 +159,8 @@ class ColorDelegatorTest(unittest.TestCase):
          root = cls.root = Tk()
          root.withdraw()
          text = cls.text = Text(root)
@@ -86,46 +84,8 @@ index 308bc38..579fd04 100644
          cls.percolator = Percolator(text)
          # Delegator stack = [Delegator(text)]
  
-diff --git a/Lib/idlelib/idle_test/test_editor.py b/Lib/idlelib/idle_test/test_editor.py
-index 0dfe2f3..d16dd41 100644
---- a/Lib/idlelib/idle_test/test_editor.py
-+++ b/Lib/idlelib/idle_test/test_editor.py
-@@ -1,5 +1,6 @@
- "Test editor, coverage 53%."
- 
-+import sys
- from idlelib import editor
- import unittest
- from collections import namedtuple
-@@ -9,6 +10,17 @@ from tkinter import Tk, Text
- Editor = editor.EditorWindow
- 
- 
-+def is_macos_aqua(root):
-+    # Not macOS
-+    if sys.platform != 'darwin':
-+        return False
-+    # Getting the Windowing System from the Tk root
-+    windowing_system = (getattr(root, '_windowingsystem', '') or '').strip()
-+    if not windowing_system:
-+        raise Exception('Could not get the Windowing System')
-+    return windowing_system.lower() == 'aqua'
-+
-+
- class EditorWindowTest(unittest.TestCase):
- 
-     @classmethod
-@@ -189,6 +201,8 @@ class IndentSearcherTest(unittest.TestCase):
-         cls.root = Tk()
-         cls.root.withdraw()
-         cls.text = Text(cls.root)
-+        if is_macos_aqua(cls.root):
-+            cls.text.update = cls.text.update_idletasks
- 
-     @classmethod
-     def tearDownClass(cls):
 diff --git a/Lib/idlelib/idle_test/test_outwin.py b/Lib/idlelib/idle_test/test_outwin.py
-index d6e85ad..e118921 100644
+index e347bfc..ba0ad37 100644
 --- a/Lib/idlelib/idle_test/test_outwin.py
 +++ b/Lib/idlelib/idle_test/test_outwin.py
 @@ -1,5 +1,6 @@
@@ -162,83 +122,11 @@ index d6e85ad..e118921 100644
  
      @classmethod
      def tearDownClass(cls):
-diff --git a/Lib/idlelib/idle_test/test_sidebar.py b/Lib/idlelib/idle_test/test_sidebar.py
-index 605e7a8..90ca8ca 100644
---- a/Lib/idlelib/idle_test/test_sidebar.py
-+++ b/Lib/idlelib/idle_test/test_sidebar.py
-@@ -40,28 +40,22 @@ class LineNumbersTest(unittest.TestCase):
-     @classmethod
-     def setUpClass(cls):
-         requires('gui')
--        cls.root = tk.Tk()
--        cls.root.withdraw()
- 
--        cls.text_frame = tk.Frame(cls.root)
--        cls.text_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
--        cls.text_frame.rowconfigure(1, weight=1)
--        cls.text_frame.columnconfigure(1, weight=1)
-+    def setUp(self):
-+        self.root = tk.Tk()
-+        self.root.withdraw()
- 
--        cls.text = tk.Text(cls.text_frame, width=80, height=24, wrap=tk.NONE)
--        cls.text.grid(row=1, column=1, sticky=tk.NSEW)
-+        self.text_frame = tk.Frame(self.root)
-+        self.text_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-+        self.text_frame.rowconfigure(1, weight=1)
-+        self.text_frame.columnconfigure(1, weight=1)
- 
--        cls.editwin = Dummy_editwin(cls.text)
--        cls.editwin.vbar = tk.Scrollbar(cls.text_frame)
-+        self.text = tk.Text(self.text_frame, width=80, height=24, wrap=tk.NONE)
-+        self.text.grid(row=1, column=1, sticky=tk.NSEW)
- 
--    @classmethod
--    def tearDownClass(cls):
--        cls.editwin.per.close()
--        cls.root.update_idletasks()
--        cls.root.destroy()
--        del cls.text, cls.text_frame, cls.editwin, cls.root
-+        self.editwin = Dummy_editwin(self.text)
-+        self.editwin.vbar = tk.Scrollbar(self.text_frame)
- 
--    def setUp(self):
-         self.linenumber = idlelib.sidebar.LineNumbers(self.editwin)
- 
-         self.highlight_cfg = {"background": '#abcdef',
-@@ -85,7 +79,10 @@ class LineNumbersTest(unittest.TestCase):
-         self.addCleanup(GetFont_patcher.stop)
- 
-     def tearDown(self):
--        self.text.delete('1.0', 'end')
-+        self.root.destroy()
-+        self.root.quit()
-+
-+        del self.text, self.text_frame, self.editwin, self.root
- 
-     def get_selection(self):
-         return tuple(map(str, self.text.tag_ranges('sel')))
-@@ -690,14 +687,7 @@ class ShellSidebarTest(unittest.TestCase):
-         last_lineno = get_end_linenumber(text)
-         self.assertIsNotNone(text.dlineinfo(text.index(f'{last_lineno}.0')))
- 
--        # Delta for <MouseWheel>, whose meaning is platform-dependent.
--        delta = 1 if sidebar.canvas._windowingsystem == 'aqua' else 120
--
--        # Scroll up.
--        if sidebar.canvas._windowingsystem == 'x11':
--            sidebar.canvas.event_generate('<Button-4>', x=0, y=0)
--        else:
--            sidebar.canvas.event_generate('<MouseWheel>', x=0, y=0, delta=delta)
-+        sidebar.canvas.event_generate('<MouseWheel>', x=0, y=0, delta=120)
-         yield
-         self.assertIsNone(text.dlineinfo(text.index(f'{last_lineno}.0')))
- 
 diff --git a/Lib/test/support/__init__.py b/Lib/test/support/__init__.py
-index 059542c..2b4d0d8 100644
+index fa5a028..dcd877c 100644
 --- a/Lib/test/support/__init__.py
 +++ b/Lib/test/support/__init__.py
-@@ -255,15 +255,15 @@ def _is_gui_available():
+@@ -532,15 +532,15 @@ def _is_gui_available():
  
          if app_services.CGMainDisplayID() == 0:
              reason = "gui tests cannot run without OS X window manager"
@@ -263,23 +151,38 @@ index 059542c..2b4d0d8 100644
  
      # check on every platform whether tkinter can actually do anything
      if not reason:
+diff --git a/Lib/test/test_gdb.py b/Lib/test/test_gdb.py
+index d90ca5a..3b3a17a 100644
+--- a/Lib/test/test_gdb.py
++++ b/Lib/test/test_gdb.py
+@@ -137,7 +137,7 @@ HAS_PYUP_PYDOWN = gdb_has_frame_select()
+ 
+ BREAKPOINT_FN='builtin_id'
+ 
+-@unittest.skipIf(support.PGO, "not useful for PGO")
++@unittest.skipIf(sys.platform == "darwin", "Daniel Fritsi: gdb requires code signing on MacOS")
+ class DebuggerTests(unittest.TestCase):
+ 
+     """Test that the debugger can debug Python."""
 diff --git a/Lib/test/test_mmap.py b/Lib/test/test_mmap.py
-index 1867e8c..bac895f 100644
+index 358a01d..73c9146 100644
 --- a/Lib/test/test_mmap.py
 +++ b/Lib/test/test_mmap.py
-@@ -7,6 +7,7 @@ import unittest
+@@ -4,6 +4,7 @@ import unittest
  import os
  import re
  import itertools
 +import platform
- import random
  import socket
- import string
-@@ -259,7 +260,10 @@ class MmapTests(unittest.TestCase):
+ import sys
+ import weakref
+@@ -243,8 +244,11 @@ class MmapTests(unittest.TestCase):
+                 try:
                      m = mmap.mmap(f.fileno(), mapsize, prot=prot)
                  except PermissionError:
-                     # on macOS 14, PROT_READ | PROT_EXEC is not allowed
+-                    # on macOS 14, PROT_READ | PROT_WRITE is not allowed
 -                    pass
++                    # on macOS 14, PROT_READ | PROT_EXEC is not allowed
 +                    if sys.platform == 'darwin' and int(platform.mac_ver()[0].split('.')[0]) >= 14:
 +                        pass
 +                    else:
@@ -288,19 +191,19 @@ index 1867e8c..bac895f 100644
                      self.assertRaises(TypeError, m.write, b"abcdef")
                      self.assertRaises(TypeError, m.write_byte, 0)
 diff --git a/Lib/test/test_posix.py b/Lib/test/test_posix.py
-index 221d25a..7ca9bfa 100644
+index 9bdd284..3f6028d 100644
 --- a/Lib/test/test_posix.py
 +++ b/Lib/test/test_posix.py
-@@ -1193,7 +1193,7 @@ class PosixTester(unittest.TestCase):
-     @unittest.skipUnless(hasattr(os, 'popen'), "test needs os.popen()")
-     @support.requires_subprocess()
+@@ -1031,7 +1031,7 @@ class PosixTester(unittest.TestCase):
+ 
+     @unittest.skipUnless(hasattr(os, 'getegid'), "test needs os.getegid()")
      def test_getgroups(self):
 -        with os.popen('id -G 2>/dev/null') as idg:
 +        with os.popen('/usr/bin/id -G 2>/dev/null') as idg:
              groups = idg.read().strip()
              ret = idg.close()
  
-@@ -1201,8 +1201,8 @@ class PosixTester(unittest.TestCase):
+@@ -1039,8 +1039,8 @@ class PosixTester(unittest.TestCase):
              idg_groups = set(int(g) for g in groups.split())
          except ValueError:
              idg_groups = set()
@@ -311,7 +214,7 @@ index 221d25a..7ca9bfa 100644
  
          # Issues 16698: OS X ABIs prior to 10.6 have limits on getgroups()
          if sys.platform == 'darwin':
-@@ -1211,7 +1211,7 @@ class PosixTester(unittest.TestCase):
+@@ -1049,7 +1049,7 @@ class PosixTester(unittest.TestCase):
              if tuple(int(n) for n in dt.split('.')[0:2]) < (10, 6):
                  raise unittest.SkipTest("getgroups(2) is broken prior to 10.6")
  
@@ -320,42 +223,17 @@ index 221d25a..7ca9bfa 100644
          # groups, ignoring order, duplicates, and the effective gid.
          # #10822/#26944 - It is implementation defined whether
          # posix.getgroups() includes the effective gid.
-diff --git a/Lib/test/test_shutil.py b/Lib/test/test_shutil.py
-index 6728d30..e2cb218 100644
---- a/Lib/test/test_shutil.py
-+++ b/Lib/test/test_shutil.py
-@@ -1477,6 +1477,8 @@ class TestArchives(BaseTest, unittest.TestCase):
-             import platform
-             if int(platform.mac_ver()[0].split('.')[0]) >= 11:
-                 tar_cmd.insert(1, '--no-mac-metadata')
-+                # But in this case we need to make sure to use the system tar
-+                tar_cmd[0] = '/usr/bin/tar'
-         subprocess.check_call(tar_cmd, cwd=root_dir,
-                               stdout=subprocess.DEVNULL)
- 
-diff --git a/Lib/test/test_tools/test_freeze.py b/Lib/test/test_tools/test_freeze.py
-index 0e7ed67..1826a4f 100644
---- a/Lib/test/test_tools/test_freeze.py
-+++ b/Lib/test/test_tools/test_freeze.py
-@@ -24,6 +24,7 @@ with imports_under_tool('freeze', 'test'):
- class TestFreeze(unittest.TestCase):
- 
-     @support.requires_resource('cpu') # Building Python is slow
-+    @unittest.skipIf(True, "Daniel Fritsi: This does not seem to work")
-     def test_freeze_simple_script(self):
-         script = textwrap.dedent("""
-             import sys
 diff --git a/Lib/tkinter/test/test_tkinter/test_widgets.py b/Lib/tkinter/test/test_tkinter/test_widgets.py
-index 24d00b7..cb237f3 100644
+index e4c155e..5d75d33 100644
 --- a/Lib/tkinter/test/test_tkinter/test_widgets.py
 +++ b/Lib/tkinter/test/test_tkinter/test_widgets.py
-@@ -660,8 +660,12 @@ class TextTest(AbstractWidgetTest, unittest.TestCase):
-     def test_configure_tabs(self):
-         widget = self.create()
-         self.checkParam(widget, 'tabs', (10.2, 20.7, '1i', '2i'))
+@@ -652,8 +652,12 @@ class TextTest(AbstractWidgetTest, unittest.TestCase):
+                             expected=('10.2', '20.7', '1i', '2i'))
+         else:
+             self.checkParam(widget, 'tabs', (10.2, 20.7, '1i', '2i'))
 -        self.checkParam(widget, 'tabs', '10.2 20.7 1i 2i',
 -                        expected=('10.2', '20.7', '1i', '2i'))
-+        if get_tk_patchlevel(self.root) >= (8, 6, 14):
++        if get_tk_patchlevel() >= (8, 6, 14):
 +            self.checkParam(widget, 'tabs', '10.2 20.7 1i 2i',
 +                            expected=(10.2, 20.7, '1i', '2i'))
 +        else:
@@ -364,7 +242,7 @@ index 24d00b7..cb237f3 100644
          self.checkParam(widget, 'tabs', '2c left 4c 6c center',
                          expected=('2c', 'left', '4c', '6c', 'center'))
          self.checkInvalidParam(widget, 'tabs', 'spam',
-@@ -994,12 +998,20 @@ class ListboxTest(AbstractWidgetTest, unittest.TestCase):
+@@ -833,12 +837,20 @@ class ListboxTest(AbstractWidgetTest, unittest.TestCase):
              widget.itemconfigure()
          with self.assertRaisesRegex(TclError, 'bad listbox index "red"'):
              widget.itemconfigure('red')
@@ -374,7 +252,7 @@ index 24d00b7..cb237f3 100644
 -                         ('background', 'background', 'Background', '', 'violet'))
 -        self.assertEqual(widget.itemconfigure('@0,0', 'background'),
 -                         ('background', 'background', 'Background', '', 'red'))
-+        if get_tk_patchlevel(self.root) >= (8, 6, 14):
++        if get_tk_patchlevel() >= (8, 6, 14):
 +            self.assertEqual(widget.itemconfigure(0, 'background'),
 +                             ('background', '', '', '', 'red'))
 +            self.assertEqual(widget.itemconfigure('end', 'background'),
@@ -392,10 +270,10 @@ index 24d00b7..cb237f3 100644
          d = widget.itemconfigure(0)
          self.assertIsInstance(d, dict)
 diff --git a/Lib/tkinter/test/test_ttk/test_widgets.py b/Lib/tkinter/test/test_ttk/test_widgets.py
-index 2ba54cf..dca235d 100644
+index 88a800d..47b49af 100644
 --- a/Lib/tkinter/test/test_ttk/test_widgets.py
 +++ b/Lib/tkinter/test/test_ttk/test_widgets.py
-@@ -14,6 +14,17 @@ from tkinter.test.widget_tests import (add_standard_options,
+@@ -14,6 +14,17 @@ from tkinter.test.widget_tests import (add_standard_options, noconv,
  requires('gui')
  
  
@@ -421,7 +299,7 @@ index 2ba54cf..dca235d 100644
 -        self.checkParam(widget, 'padding', 5, expected=('5',))
 -        self.checkParam(widget, 'padding', (5, 6), expected=('5', '6'))
 +        conv = False
-+        if get_tk_patchlevel(self.root) >= (8, 6, 14):
++        if get_tk_patchlevel() >= (8, 6, 14):
 +            conv = lambda exp: tuple(int(i) for i in exp)
 +        self.checkParam(widget, 'padding', 0, expected=('0',), conv=conv)
 +        self.checkParam(widget, 'padding', 5, expected=('5',), conv=conv)
@@ -435,50 +313,53 @@ index 2ba54cf..dca235d 100644
          self.checkParam(widget, 'padding', ('5p', '6p', '7p', '8p'))
          self.checkParam(widget, 'padding', (), expected='')
  
-@@ -320,7 +334,10 @@ class EntryTest(AbstractWidgetTest, unittest.TestCase):
-         'show', 'state', 'style', 'takefocus', 'textvariable',
+@@ -288,6 +302,10 @@ class EntryTest(AbstractWidgetTest, unittest.TestCase):
          'validate', 'validatecommand', 'width', 'xscrollcommand',
      )
--    IDENTIFY_AS = 'Entry.field' if sys.platform == 'darwin' else 'textarea'
-+
+ 
 +    @classmethod
 +    def identify_as(cls):
 +        return ('Entry.field',) if is_macos_aqua(cls.root) else ('textarea',)
- 
++
      def setUp(self):
          super().setUp()
-@@ -362,8 +379,7 @@ class EntryTest(AbstractWidgetTest, unittest.TestCase):
+         self.entry = self.create()
+@@ -330,12 +348,7 @@ class EntryTest(AbstractWidgetTest, unittest.TestCase):
          self.entry.pack()
          self.entry.update()
  
 -        # bpo-27313: macOS Cocoa widget differs from X, allow either
--        self.assertEqual(self.entry.identify(5, 5), self.IDENTIFY_AS)
+-        if sys.platform == 'darwin':
+-            self.assertIn(self.entry.identify(5, 5),
+-                ("textarea", "Combobox.button") )
+-        else:
+-            self.assertEqual(self.entry.identify(5, 5), "textarea")
 +        self.assertIn(self.entry.identify(5, 5), self.identify_as())
          self.assertEqual(self.entry.identify(-1, -1), "")
  
          self.assertRaises(tkinter.TclError, self.entry.identify, None, 5)
-@@ -449,7 +465,10 @@ class ComboboxTest(EntryTest, unittest.TestCase):
-         'validate', 'validatecommand', 'values',
+@@ -425,6 +438,10 @@ class ComboboxTest(EntryTest, unittest.TestCase):
          'width', 'xscrollcommand',
      )
--    IDENTIFY_AS = 'Combobox.button' if sys.platform == 'darwin' else 'textarea'
-+
+ 
 +    @classmethod
 +    def identify_as(cls):
 +        return ('Combobox.button', 'textarea') if is_macos_aqua(cls.root) else ('textarea',)
- 
++
      def setUp(self):
          super().setUp()
-@@ -465,7 +484,7 @@ class ComboboxTest(EntryTest, unittest.TestCase):
+         self.combo = self.create()
+@@ -439,7 +456,8 @@ class ComboboxTest(EntryTest, unittest.TestCase):
      def _show_drop_down_listbox(self):
          width = self.combo.winfo_width()
          x, y = width - 5, 5
--        if sys.platform != 'darwin':  # there's no down arrow on macOS
+-        self.assertRegex(self.combo.identify(x, y), r'.*downarrow\Z')
 +        if not is_macos_aqua(self.root):  # there's no down arrow on macOS
-             self.assertRegex(self.combo.identify(x, y), r'.*downarrow\Z')
++            self.assertRegex(self.combo.identify(x, y), r'.*downarrow\Z')
          self.combo.event_generate('<ButtonPress-1>', x=x, y=y)
          self.combo.event_generate('<ButtonRelease-1>', x=x, y=y)
-@@ -954,7 +973,7 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
+         self.combo.update_idletasks()
+@@ -935,7 +953,7 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
  
          self.nb.pack()
          self.nb.update()
@@ -487,92 +368,128 @@ index 2ba54cf..dca235d 100644
              tb_idx = "@20,5"
          else:
              tb_idx = "@5,5"
-@@ -1100,7 +1119,7 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
+@@ -1089,7 +1107,8 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
  
          self.nb.select(0)
  
--        focus_identify_as = 'focus' if sys.platform != 'darwin' else ''
+-        self.assertEqual(self.nb.identify(5, 5), 'focus')
 +        focus_identify_as = 'focus' if not is_macos_aqua(self.root) else ''
-         self.assertEqual(self.nb.identify(5, 5), focus_identify_as)
++        self.assertEqual(self.nb.identify(5, 5), focus_identify_as)
          simulate_mouse_click(self.nb, 5, 5)
          self.nb.focus_force()
-@@ -1121,7 +1140,7 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
+         self.nb.event_generate('<Control-Tab>')
+@@ -1104,12 +1123,11 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
+         self.nb.tab(self.child1, text='a', underline=0)
+         self.nb.enable_traversal()
+         self.nb.focus_force()
+-        self.assertEqual(self.nb.identify(5, 5), 'focus')
++        self.assertEqual(self.nb.identify(5, 5), focus_identify_as)
          simulate_mouse_click(self.nb, 5, 5)
-         # on macOS Emacs-style keyboard shortcuts are region-dependent;
-         # let's use the regular arrow keys instead
 -        if sys.platform == 'darwin':
-+        if is_macos_aqua(self.root):
-             begin = '<Left>'
-             end = '<Right>'
-         else:
-@@ -1142,7 +1161,10 @@ class SpinboxTest(EntryTest, unittest.TestCase):
-         'takefocus', 'textvariable', 'to', 'validate', 'validatecommand',
+-            self.nb.event_generate('<Option-a>')
+-        else:
+-            self.nb.event_generate('<Alt-a>')
++        # on macOS Emacs-style keyboard shortcuts are region-dependent;
++        # let's use the regular arrow keys instead
++        self.nb.event_generate('<Left>' if is_macos_aqua(self.root) else '<Alt-a>')
+         self.assertEqual(self.nb.select(), str(self.child1))
+ 
+ @add_standard_options(IntegerSizeTests, StandardTtkOptionsTests)
+@@ -1122,6 +1140,10 @@ class SpinboxTest(EntryTest, unittest.TestCase):
          'values', 'width', 'wrap', 'xscrollcommand',
      )
--    IDENTIFY_AS = 'Spinbox.field' if sys.platform == 'darwin' else 'textarea'
-+
+ 
 +    @classmethod
 +    def identify_as(cls):
 +        return ('Spinbox.field',) if is_macos_aqua(cls.root) else ('textarea',)
- 
++
      def setUp(self):
          super().setUp()
+         self.spin = self.create()
 diff --git a/Modules/Setup b/Modules/Setup
-index d3647ec..c0c732f 100644
+index 983fa01..3a0e588 100644
 --- a/Modules/Setup
 +++ b/Modules/Setup
-@@ -144,7 +144,7 @@ PYTHONPATH=$(COREPYTHONPATH)
- #_pickle _pickle.c
- #_queue _queuemodule.c
- #_random _randommodule.c
--#_socket socketmodule.c
-+_socket socketmodule.c $(EXT_COMPILER_FLAGS)
- #_statistics _statisticsmodule.c
- #_struct _struct.c
- #_typing _typingmodule.c
-@@ -205,15 +205,16 @@ PYTHONPATH=$(COREPYTHONPATH)
- #_gdbm _gdbmmodule.c -lgdbm
- #_lzma _lzmamodule.c -llzma
- #_uuid _uuidmodule.c -luuid
--#zlib  zlibmodule.c -lz
-+
-+zlib zlibmodule.c $(EXT_COMPILER_FLAGS) -lz
+@@ -161,7 +161,7 @@ _symtable symtablemodule.c
+ # it, depending on your system -- see the GNU readline instructions.
+ # It's okay for this to be a shared library, too.
  
- # The readline module also supports libeditline (-leditline).
- # Some systems may require -ltermcap or -ltermlib.
 -#readline readline.c -lreadline -ltermcap
 +readline readline.c $(EXT_COMPILER_FLAGS) -lreadline -ltermcap
  
- # OpenSSL bindings
--#_ssl _ssl.c $(OPENSSL_INCLUDES) $(OPENSSL_LDFLAGS) $(OPENSSL_LIBS)
--#_hashlib _hashopenssl.c $(OPENSSL_INCLUDES) $(OPENSSL_LDFLAGS) -lcrypto
-+_ssl _ssl.c -DUSE_SSL $(EXT_COMPILER_FLAGS) -lssl -lcrypto
-+_hashlib _hashopenssl.c $(EXT_COMPILER_FLAGS) -lcrypto
  
- # To statically link OpenSSL:
- # _ssl _ssl.c $(OPENSSL_INCLUDES) $(OPENSSL_LDFLAGS) \
-@@ -234,7 +235,7 @@ PYTHONPATH=$(COREPYTHONPATH)
+ # Modules that should always be present (non UNIX dependent):
+@@ -203,14 +203,12 @@ _symtable symtablemodule.c
+ #_csv _csv.c
+ 
+ # Socket module helper for socket(2)
+-#_socket socketmodule.c
++_socket socketmodule.c $(EXT_COMPILER_FLAGS)
+ 
+ # Socket module helper for SSL support; you must comment out the other
+ # socket line above, and possibly edit the SSL variable:
+ #SSL=/usr/local/ssl
+-#_ssl _ssl.c \
+-#	-DUSE_SSL -I$(SSL)/include -I$(SSL)/include/openssl \
+-#	-L$(SSL)/lib -lssl -lcrypto
++_ssl _ssl.c -DUSE_SSL $(EXT_COMPILER_FLAGS) -lssl -lcrypto
+ 
+ # The crypt module is now disabled by default because it breaks builds
+ # on many systems (where -lcrypt is needed), e.g. Linux (I believe).
+@@ -266,7 +264,7 @@ _symtable symtablemodule.c
  # every system.
  
  # *** Always uncomment this (leave the leading underscore in!):
--#_tkinter _tkinter.c tkappinit.c -DWITH_APPINIT $(TCLTK_INCLUDES) $(TCLTK_LIBS) \
+-# _tkinter _tkinter.c tkappinit.c -DWITH_APPINIT \
 +_tkinter _tkinter.c tkappinit.c -DWITH_APPINIT $(EXT_COMPILER_FLAGS) -ltk8.6 -ltcl8.6
  # *** Uncomment and edit to reflect where your Tcl/Tk libraries are:
  #	-L/usr/local/lib \
  # *** Uncomment and edit to reflect where your Tcl/Tk headers are:
-@@ -264,8 +265,8 @@ PYTHONPATH=$(COREPYTHONPATH)
- #	-lX11
+@@ -305,9 +303,9 @@ _symtable symtablemodule.c
+ # provided by the ncurses library.  e.g. on Linux, link with -lncurses
+ # instead of -lcurses).
  
- # Some system have -lcurses 
--#_curses -lncurses -lncursesw -ltermcap _cursesmodule.c
--#_curses_panel -lpanel -lncurses _curses_panel.c
+-#_curses _cursesmodule.c -lcurses -ltermcap
 +_curses _cursesmodule.c $(EXT_COMPILER_FLAGS) -lncursesw -ltermcap
+ # Wrapper for the panel library that's part of ncurses and SYSV curses.
+-#_curses_panel _curses_panel.c -lpanel -lncurses
 +_curses_panel _curses_panel.c $(EXT_COMPILER_FLAGS) -lpanelw -lncursesw
  
- # macOS specific module, needs SystemConfiguration and CoreFoundation framework
- # _scproxy _scproxy.c
+ 
+ # Modules that provide persistent dictionary-like semantics.  You will
+@@ -334,7 +332,7 @@ _symtable symtablemodule.c
+ # Andrew Kuchling's zlib module.
+ # This require zlib 1.1.3 (or later).
+ # See http://www.gzip.org/zlib/
+-#zlib zlibmodule.c -I$(prefix)/include -L$(exec_prefix)/lib -lz
++zlib zlibmodule.c $(EXT_COMPILER_FLAGS) -lz
+ 
+ # Interface to the Expat XML parser
+ # More information on Expat can be found at www.libexpat.org.
+diff --git a/Modules/_decimal/_decimal.c b/Modules/_decimal/_decimal.c
+index eb1f1a0..3304195 100644
+--- a/Modules/_decimal/_decimal.c
++++ b/Modules/_decimal/_decimal.c
+@@ -3284,7 +3284,7 @@ dec_format(PyObject *dec, PyObject *args)
+     }
+     else {
+         size_t n = strlen(spec.dot);
+-        if (n > 1 || (n == 1 && !isascii((uchar)spec.dot[0]))) {
++        if (n > 1 || (n == 1 && !isascii((unsigned char)spec.dot[0]))) {
+             /* fix locale dependent non-ascii characters */
+             dot = dotsep_as_utf8(spec.dot);
+             if (dot == NULL) {
+@@ -3293,7 +3293,7 @@ dec_format(PyObject *dec, PyObject *args)
+             spec.dot = PyBytes_AS_STRING(dot);
+         }
+         n = strlen(spec.sep);
+-        if (n > 1 || (n == 1 && !isascii((uchar)spec.sep[0]))) {
++        if (n > 1 || (n == 1 && !isascii((unsigned char)spec.sep[0]))) {
+             /* fix locale dependent non-ascii characters */
+             sep = dotsep_as_utf8(spec.sep);
+             if (sep == NULL) {
 diff --git a/Modules/getaddrinfo.c b/Modules/getaddrinfo.c
-index 0b4620e..3fd52ef 100644
+index 5aaa6e7..d863ec9 100644
 --- a/Modules/getaddrinfo.c
 +++ b/Modules/getaddrinfo.c
 @@ -43,6 +43,9 @@
@@ -586,7 +503,7 @@ index 0b4620e..3fd52ef 100644
  #include <arpa/inet.h>
  #include <arpa/nameser.h>
 diff --git a/Modules/getnameinfo.c b/Modules/getnameinfo.c
-index 335021f..c26d9aa 100644
+index f014c11..a1554a5 100644
 --- a/Modules/getnameinfo.c
 +++ b/Modules/getnameinfo.c
 @@ -37,6 +37,9 @@
@@ -600,10 +517,10 @@ index 335021f..c26d9aa 100644
  #include <arpa/inet.h>
  #include <arpa/nameser.h>
 diff --git a/Modules/socketmodule.c b/Modules/socketmodule.c
-index f0c9b46..92d4bcb 100644
+index c085b77..ac12fcc 100644
 --- a/Modules/socketmodule.c
 +++ b/Modules/socketmodule.c
-@@ -219,6 +219,9 @@ shutdown(how) -- shut down traffic in one or both directions\n\
+@@ -257,6 +257,9 @@ http://cvsweb.netbsd.org/bsdweb.cgi/src/lib/libc/net/getaddrinfo.c.diff?r1=1.82&
  #undef _XOPEN_SOURCE
  #include <sys/socket.h>
  #include <sys/types.h>
@@ -614,7 +531,7 @@ index f0c9b46..92d4bcb 100644
  #ifdef _SS_ALIGNSIZE
  #define HAVE_GETADDRINFO 1
 diff --git a/Modules/socketmodule.h b/Modules/socketmodule.h
-index 1b35b11..7a9d5d1 100644
+index dff1f8f..ec7fbee 100644
 --- a/Modules/socketmodule.h
 +++ b/Modules/socketmodule.h
 @@ -7,6 +7,9 @@
@@ -625,100 +542,20 @@ index 1b35b11..7a9d5d1 100644
 +#define __APPLE_USE_RFC_3542 1
 +#endif
  # include <netinet/in.h>
- # include <netinet/tcp.h>
- 
+ # if !defined(__CYGWIN__)
+ #  include <netinet/tcp.h>
 diff --git a/setup.py b/setup.py
-index ad8fb81..e57dfb8 100644
+index 57be07a..3b01f9c 100644
 --- a/setup.py
 +++ b/setup.py
-@@ -1472,12 +1472,85 @@ class PyBuildExt(build_ext):
- 
-     def detect_decimal(self):
-         # Stefan Krah's _decimal module
-+
-+        # Taken from Python 3.10 setup.py
-+        if '--with-system-libmpdec' in sysconfig.get_config_var("CONFIG_ARGS"):
-+            include_dirs = []
+@@ -2055,7 +2055,7 @@ class PyBuildExt(build_ext):
+         undef_macros = []
+         if '--with-system-libmpdec' in sysconfig.get_config_var("CONFIG_ARGS"):
+             include_dirs = []
+-            libraries = [':libmpdec.so.2']
 +            libraries = ['mpdec']
-+            sources = ['_decimal/_decimal.c']
-+            depends = ['_decimal/docstrings.h']
-+        else:
-+            include_dirs = [os.path.abspath(os.path.join(self.srcdir, 'Modules', '_decimal', 'libmpdec'))]
-+            libraries = ['m']
-+            sources = [
-+              '_decimal/_decimal.c',
-+              '_decimal/libmpdec/basearith.c',
-+              '_decimal/libmpdec/constants.c',
-+              '_decimal/libmpdec/context.c',
-+              '_decimal/libmpdec/convolute.c',
-+              '_decimal/libmpdec/crt.c',
-+              '_decimal/libmpdec/difradix2.c',
-+              '_decimal/libmpdec/fnt.c',
-+              '_decimal/libmpdec/fourstep.c',
-+              '_decimal/libmpdec/io.c',
-+              '_decimal/libmpdec/mpalloc.c',
-+              '_decimal/libmpdec/mpdecimal.c',
-+              '_decimal/libmpdec/numbertheory.c',
-+              '_decimal/libmpdec/sixstep.c',
-+              '_decimal/libmpdec/transpose.c',
-+            ]
-+            depends = [
-+              '_decimal/docstrings.h',
-+              '_decimal/libmpdec/basearith.h',
-+              '_decimal/libmpdec/bits.h',
-+              '_decimal/libmpdec/constants.h',
-+              '_decimal/libmpdec/convolute.h',
-+              '_decimal/libmpdec/crt.h',
-+              '_decimal/libmpdec/difradix2.h',
-+              '_decimal/libmpdec/fnt.h',
-+              '_decimal/libmpdec/fourstep.h',
-+              '_decimal/libmpdec/io.h',
-+              '_decimal/libmpdec/mpalloc.h',
-+              '_decimal/libmpdec/mpdecimal.h',
-+              '_decimal/libmpdec/numbertheory.h',
-+              '_decimal/libmpdec/sixstep.h',
-+              '_decimal/libmpdec/transpose.h',
-+              '_decimal/libmpdec/typearith.h',
-+              '_decimal/libmpdec/umodarith.h',
-+            ]
-+
-+        # Taken from Python 3.10 setup.py
-+        config = {
-+          'x64':     [('CONFIG_64','1'), ('ASM','1')],
-+          'uint128': [('CONFIG_64','1'), ('ANSI','1'), ('HAVE_UINT128_T','1')],
-+          'ansi64':  [('CONFIG_64','1'), ('ANSI','1')],
-+          'ppro':    [('CONFIG_32','1'), ('PPRO','1'), ('ASM','1')],
-+          'ansi32':  [('CONFIG_32','1'), ('ANSI','1')],
-+          'ansi-legacy': [('CONFIG_32','1'), ('ANSI','1'), ('LEGACY_COMPILER','1')],
-+          'universal':   [('UNIVERSAL','1')]
-+        }
-+
-+        # Taken from Python 3.10 setup.py, but only the 'if' and 'elif' part
-+        machine = os.environ.get('PYTHON_DECIMAL_WITH_MACHINE')
-+        if machine:
-+            # Override automatic configuration to facilitate testing.
-+            define_macros = config[machine]
-+        elif MACOS:
-+            # Universal here means: build with the same options Python was built with.
-+            define_macros = config['universal']
-+        else:
-+            raise DistutilsError("_decimal: unsupported architecture -- only macOs is supported")
-+
-         self.addext(
-             Extension(
-                 '_decimal',
--                ['_decimal/_decimal.c'],
--                # Uncomment for extra functionality:
--                # define_macros=[('EXTRA_FUNCTIONALITY', 1)]
-+                include_dirs=include_dirs,
-+                libraries=libraries,
-+                define_macros=define_macros,
-+                undef_macros=[],
-+                extra_compile_args=[],
-+                sources=sources,
-+                depends=depends
-             )
-         )
- 
+             sources = ['_decimal/_decimal.c']
+             depends = ['_decimal/docstrings.h']
+         else:
 -- 
-2.44.0
+2.46.2

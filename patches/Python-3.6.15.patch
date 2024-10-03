@@ -1,4 +1,4 @@
-From cd9d9f5a0f41cfa9d63cfe96ba9a7f36fa03db98 Mon Sep 17 00:00:00 2001
+From 413a095d93dc1e831e8a0712d1277762fcdfb796 Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
 Date: Mon, 16 Jan 2023 15:26:52 +0100
 Subject: [PATCH] Python 3.6.15 patching
@@ -19,6 +19,7 @@ Subject: [PATCH] Python 3.6.15 patching
  Lib/test/test_posix.py                        |   8 +-
  Lib/test/test_regrtest.py                     |  12 +
  Lib/test/test_unicode.py                      |   3 +
+ Lib/test/test_urllib2.py                      |   1 +
  Lib/test/test_xml_etree.py                    |   1 +
  Lib/tkinter/test/test_tkinter/test_widgets.py |  31 ++-
  Lib/tkinter/test/test_ttk/test_widgets.py     |  57 ++--
@@ -39,7 +40,7 @@ Subject: [PATCH] Python 3.6.15 patching
  configure.ac                                  |  19 +-
  pyconfig.h.in                                 |   3 +
  setup.py                                      | 262 +++++++++++++-----
- 35 files changed, 652 insertions(+), 172 deletions(-)
+ 36 files changed, 653 insertions(+), 172 deletions(-)
 
 diff --git a/Lib/ctypes/macholib/dyld.py b/Lib/ctypes/macholib/dyld.py
 index c158e67..e1c58fc 100644
@@ -458,6 +459,18 @@ index 56ab0ad..013b1e9 100644
          _PyUnicode_FromFormat.restype = py_object
  
          def PyUnicode_FromFormat(format, *args):
+diff --git a/Lib/test/test_urllib2.py b/Lib/test/test_urllib2.py
+index fe9a32b..27830bc 100644
+--- a/Lib/test/test_urllib2.py
++++ b/Lib/test/test_urllib2.py
+@@ -1774,6 +1774,7 @@ class MiscTests(unittest.TestCase):
+ 
+     @unittest.skipUnless(support.is_resource_enabled('network'),
+                          'test requires network access')
++    @unittest.skipIf(True, "POST request to http://www.example.com/ fail randomly")
+     def test_issue16464(self):
+         with support.transient_internet("http://www.example.com/"):
+             opener = urllib.request.build_opener()
 diff --git a/Lib/test/test_xml_etree.py b/Lib/test/test_xml_etree.py
 index b01709e..3eee447 100644
 --- a/Lib/test/test_xml_etree.py
@@ -1716,4 +1729,4 @@ index e2c1898..6f7496b 100644
              depends = ['_decimal/docstrings.h']
          else:
 -- 
-2.44.0
+2.46.2

@@ -3,7 +3,8 @@ class GettextFritsi < Formula
   homepage "https://www.gnu.org/software/gettext/"
   version "0.21.1"
 
-  url "https://ftp.gnu.org/gnu/gettext/gettext-0.21.1.tar.gz"
+  url "http://ftp.vim.org/ftp/gnu/gettext/gettext-0.21.1.tar.gz"
+  mirror "https://ftp.gnu.org/gnu/gettext/gettext-0.21.1.tar.gz"
   mirror "https://ftpmirror.gnu.org/gettext/gettext-0.21.1.tar.gz"
   mirror "http://ftp.gnu.org/gnu/gettext/gettext-0.21.1.tar.gz"
   sha256 "e8c3650e1d8cee875c4f355642382c1df83058bd5a11ee8555c0cf276d646d45"
