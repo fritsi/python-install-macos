@@ -30,7 +30,7 @@ source "$SCRIPTS_DIR/utils/print-func.sh"
 source "$SCRIPTS_DIR/utils/exec-func.sh"
 source "$SCRIPTS_DIR/utils/utils.sh"
 
-SUPPORTED_VERSIONS=("2.7.18" "3.6.15" "3.7.17" "3.8.20" "3.9.20" "3.10.15" "3.11.10" "3.12.6")
+SUPPORTED_VERSIONS=("2.7.18" "3.6.15" "3.7.17" "3.8.20" "3.9.20" "3.10.15" "3.11.10" "3.12.7")
 
 SUPPORTED_VERSIONS_TEXT="$(versions="${SUPPORTED_VERSIONS[*]}" && echo "${versions// /, }")"
 

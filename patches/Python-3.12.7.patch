@@ -1,12 +1,12 @@
-From 88e85fc8d64aad3f0a48fbbef96b51e48286ad0c Mon Sep 17 00:00:00 2001
+From 9c7d2d1d4fe7733b19c59e578793f4b10728af7b Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
-Date: Tue, 9 Jan 2024 11:10:47 +0100
-Subject: [PATCH] Python 3.12.6 patching
+Date: Thu, 3 Oct 2024 15:44:26 +0200
+Subject: [PATCH] Python 3.12.7 patching
 
 ---
  Lib/idlelib/idle_test/test_colorizer.py | 15 +++++++++
  Lib/idlelib/idle_test/test_editor.py    | 14 +++++++++
- Lib/idlelib/idle_test/test_outwin.py    | 14 +++++++++
+ Lib/idlelib/idle_test/test_outwin.py    | 13 +++++++-
  Lib/idlelib/idle_test/test_sidebar.py   | 42 ++++++++++---------------
  Lib/test/support/__init__.py            | 18 +++++------
  Lib/test/test_mmap.py                   |  6 +++-
@@ -20,9 +20,9 @@ Subject: [PATCH] Python 3.12.6 patching
  Modules/getnameinfo.c                   |  3 ++
  Modules/socketmodule.c                  |  3 ++
  Modules/socketmodule.h                  |  3 ++
- configure                               |  8 +----
+ configure                               |  9 +-----
  configure.ac                            |  6 +---
- 18 files changed, 142 insertions(+), 72 deletions(-)
+ 18 files changed, 140 insertions(+), 74 deletions(-)
 
 diff --git a/Lib/idlelib/idle_test/test_colorizer.py b/Lib/idlelib/idle_test/test_colorizer.py
 index 308bc38..579fd04 100644
@@ -101,17 +101,10 @@ index 0dfe2f3..d16dd41 100644
      @classmethod
      def tearDownClass(cls):
 diff --git a/Lib/idlelib/idle_test/test_outwin.py b/Lib/idlelib/idle_test/test_outwin.py
-index d6e85ad..e118921 100644
+index 81f4aad..d2e0f59 100644
 --- a/Lib/idlelib/idle_test/test_outwin.py
 +++ b/Lib/idlelib/idle_test/test_outwin.py
-@@ -1,5 +1,6 @@
- "Test outwin, coverage 76%."
- 
-+import sys
- from idlelib import outwin
- import unittest
- from test.support import requires
-@@ -9,6 +10,17 @@ from idlelib.idle_test.mock_idle import Func
+@@ -10,6 +10,17 @@ from idlelib.idle_test.mock_idle import Func
  from unittest import mock
  
  
@@ -129,15 +122,15 @@ index d6e85ad..e118921 100644
  class OutputWindowTest(unittest.TestCase):
  
      @classmethod
-@@ -18,6 +30,8 @@ class OutputWindowTest(unittest.TestCase):
+@@ -19,7 +30,7 @@ class OutputWindowTest(unittest.TestCase):
          root.withdraw()
          w = cls.window = outwin.OutputWindow(None, None, None, root)
          cls.text = w.text = Text(root)
+-        if sys.platform == 'darwin':  # Issue 112938
 +        if is_macos_aqua(root):
-+            cls.text.update = cls.text.update_idletasks
- 
-     @classmethod
-     def tearDownClass(cls):
+             cls.text.update = cls.text.update_idletasks
+             # Without this, test write, writelines, and goto... fail.
+             # The reasons and why macOS-specific are unclear.
 diff --git a/Lib/idlelib/idle_test/test_sidebar.py b/Lib/idlelib/idle_test/test_sidebar.py
 index 605e7a8..90ca8ca 100644
 --- a/Lib/idlelib/idle_test/test_sidebar.py
@@ -264,10 +257,10 @@ index 1867e8c..bac895f 100644
                      self.assertRaises(TypeError, m.write, b"abcdef")
                      self.assertRaises(TypeError, m.write_byte, 0)
 diff --git a/Lib/test/test_posix.py b/Lib/test/test_posix.py
-index 7ed45ac..21f7023 100644
+index aa81132..36432a2 100644
 --- a/Lib/test/test_posix.py
 +++ b/Lib/test/test_posix.py
-@@ -1204,7 +1204,7 @@ class PosixTester(unittest.TestCase):
+@@ -1206,7 +1206,7 @@ class PosixTester(unittest.TestCase):
      @unittest.skipUnless(hasattr(os, 'popen'), "test needs os.popen()")
      @support.requires_subprocess()
      def test_getgroups(self):
@@ -276,7 +269,7 @@ index 7ed45ac..21f7023 100644
              groups = idg.read().strip()
              ret = idg.close()
  
-@@ -1212,8 +1212,8 @@ class PosixTester(unittest.TestCase):
+@@ -1214,8 +1214,8 @@ class PosixTester(unittest.TestCase):
              idg_groups = set(int(g) for g in groups.split())
          except ValueError:
              idg_groups = set()
@@ -287,7 +280,7 @@ index 7ed45ac..21f7023 100644
  
          # Issues 16698: OS X ABIs prior to 10.6 have limits on getgroups()
          if sys.platform == 'darwin':
-@@ -1222,7 +1222,7 @@ class PosixTester(unittest.TestCase):
+@@ -1224,7 +1224,7 @@ class PosixTester(unittest.TestCase):
              if tuple(int(n) for n in dt.split('.')[0:2]) < (10, 6):
                  raise unittest.SkipTest("getgroups(2) is broken prior to 10.6")
  
@@ -310,10 +303,10 @@ index 7bc5d12..7a78642 100644
                                stdout=subprocess.DEVNULL)
  
 diff --git a/Lib/test/test_signal.py b/Lib/test/test_signal.py
-index c7b9549..31c3f37 100644
+index a45527d..ed30405 100644
 --- a/Lib/test/test_signal.py
 +++ b/Lib/test/test_signal.py
-@@ -839,12 +839,16 @@ class ItimerTest(unittest.TestCase):
+@@ -841,12 +841,16 @@ class ItimerTest(unittest.TestCase):
          signal.signal(signal.SIGVTALRM, self.sig_vtalrm)
          signal.setitimer(self.itimer, 0.3, 0.2)
  
@@ -331,7 +324,7 @@ index c7b9549..31c3f37 100644
  
          # virtual itimer should be (0.0, 0.0) now
          self.assertEqual(signal.getitimer(self.itimer), (0.0, 0.0))
-@@ -856,12 +860,16 @@ class ItimerTest(unittest.TestCase):
+@@ -858,12 +862,16 @@ class ItimerTest(unittest.TestCase):
          signal.signal(signal.SIGPROF, self.sig_prof)
          signal.setitimer(self.itimer, 0.2, 0.2)
  
@@ -349,7 +342,7 @@ index c7b9549..31c3f37 100644
  
          # profiling itimer should be (0.0, 0.0) now
          self.assertEqual(signal.getitimer(self.itimer), (0.0, 0.0))
-@@ -1336,7 +1344,7 @@ class StressTest(unittest.TestCase):
+@@ -1338,7 +1346,7 @@ class StressTest(unittest.TestCase):
  
              expected_sigs += 2
              # Wait for handlers to run to avoid signal coalescing
@@ -371,7 +364,7 @@ index 0e7ed67..1826a4f 100644
          script = textwrap.dedent("""
              import sys
 diff --git a/Lib/test/test_ttk/test_widgets.py b/Lib/test/test_ttk/test_widgets.py
-index eee3916..7b73230 100644
+index 3e541fb..cb21eb2 100644
 --- a/Lib/test/test_ttk/test_widgets.py
 +++ b/Lib/test/test_ttk/test_widgets.py
 @@ -14,6 +14,17 @@ from test.test_tkinter.widget_tests import (add_standard_options,
@@ -435,7 +428,7 @@ index eee3916..7b73230 100644
              self.assertRegex(self.combo.identify(x, y), r'.*downarrow\Z')
          self.combo.event_generate('<ButtonPress-1>', x=x, y=y)
          self.combo.event_generate('<ButtonRelease-1>', x=x, y=y)
-@@ -997,7 +1013,7 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
+@@ -1010,7 +1026,7 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
  
          self.nb.pack()
          self.nb.update()
@@ -444,7 +437,7 @@ index eee3916..7b73230 100644
              tb_idx = "@20,5"
          else:
              tb_idx = "@5,5"
-@@ -1147,7 +1163,7 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
+@@ -1160,7 +1176,7 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
  
          self.nb.select(0)
  
@@ -453,7 +446,7 @@ index eee3916..7b73230 100644
          self.assertEqual(self.nb.identify(5, 5), focus_identify_as)
          simulate_mouse_click(self.nb, 5, 5)
          self.nb.focus_force()
-@@ -1168,7 +1184,7 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
+@@ -1181,7 +1197,7 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
          simulate_mouse_click(self.nb, 5, 5)
          # on macOS Emacs-style keyboard shortcuts are region-dependent;
          # let's use the regular arrow keys instead
@@ -462,7 +455,7 @@ index eee3916..7b73230 100644
              begin = '<Left>'
              end = '<Right>'
          else:
-@@ -1191,7 +1207,10 @@ class SpinboxTest(EntryTest, unittest.TestCase):
+@@ -1204,7 +1220,10 @@ class SpinboxTest(EntryTest, unittest.TestCase):
          'takefocus', 'textvariable', 'to', 'validate', 'validatecommand',
          'values', 'width', 'wrap', 'xscrollcommand',
      )
@@ -585,7 +578,7 @@ index f5ca004..1c36d5d 100644
  # include <netinet/tcp.h>
  
 diff --git a/configure b/configure
-index 4dfaeec..d2c9165 100755
+index 1c75810..50f7caa 100755
 --- a/configure
 +++ b/configure
 @@ -14089,8 +14089,6 @@ if test "x$ac_cv_lib_ffi_ffi_call" = xyes
@@ -624,8 +617,13 @@ index 4dfaeec..d2c9165 100755
  elif test $ac_cv_sizeof_size_t -eq 8; then
      if test "$ac_cv_gcc_asm_for_x64" = yes; then
          libmpdec_machine=x64
+@@ -32988,4 +32982,3 @@ Platform \"$host\" with compiler \"$ac_cv_cc_name\" is not supported by the
+ CPython core team, see https://peps.python.org/pep-0011/ for more information.
+ " >&2;}
+ fi
+-
 diff --git a/configure.ac b/configure.ac
-index 0d6df8e..29ad3d7 100644
+index d0d5405..a5fcd76 100644
 --- a/configure.ac
 +++ b/configure.ac
 @@ -3844,8 +3844,6 @@ AS_VAR_IF([ac_sys_system], [Darwin], [
