@@ -1,7 +1,7 @@
-From 1fb59bf56782bd23c2b2c8a03ce44a21fc1aa808 Mon Sep 17 00:00:00 2001
+From 4b58acf457e95bc610f7ea58354c1be501dcac67 Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
 Date: Sun, 26 Feb 2023 20:34:05 +0100
-Subject: [PATCH] Python 3.10.15 patching
+Subject: [PATCH] Python 3.10.16 patching
 
 ---
  Lib/distutils/tests/test_build_ext.py         |  6 +++
@@ -583,4 +583,4 @@ index e4f375d..16bdb2e 100644
  # if !defined(__CYGWIN__)
  #  include <netinet/tcp.h>
 -- 
-2.46.2
+2.47.1
