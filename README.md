@@ -4,7 +4,7 @@ This repository provides scripts that assist in compiling Python from source for
 platforms.
 
 **Supported Python versions:** `2.7.18`**,** `3.6.15`**,** `3.7.17`**,** `3.8.20`**,** `3.9.21`**,** `3.10.16`
-**,** `3.11.11`**,** `3.12.8`.
+**,** `3.11.11`**,** `3.12.9`.
 
 For older Python versions, specific changes have been incorporated from newer Python releases to ensure compatibility
 with recent macOS versions and Apple Silicon hardware. _See [patches](patches)._

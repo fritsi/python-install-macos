@@ -1,11 +1,11 @@
 class TclTkFritsiWithOpenssl3 < Formula
   desc "Tool Command Language"
   homepage "https://www.tcl-lang.org"
-  version "8.6.14"
+  version "8.6.16"
 
-  url "https://downloads.sourceforge.net/project/tcl/Tcl/8.6.14/tcl8.6.14-src.tar.gz"
-  mirror "https://fossies.org/linux/misc/tcl8.6.14-src.tar.gz"
-  sha256 "5880225babf7954c58d4fb0f5cf6279104ce1cd6aa9b71e9a6322540e1c4de66"
+  url "https://downloads.sourceforge.net/project/tcl/Tcl/8.6.16/tcl8.6.16-src.tar.gz"
+  mirror "https://fossies.org/linux/misc/tcl8.6.16-src.tar.gz"
+  sha256 "91cb8fa61771c63c262efb553059b7c7ad6757afa5857af6265e4b0bdc2a14a5"
 
   license "TCL"
 
@@ -23,13 +23,13 @@ class TclTkFritsiWithOpenssl3 < Formula
   depends_on "zlib"
 
   resource "critcl" do
-    url "https://github.com/andreas-kupries/critcl/archive/3.2.tar.gz"
-    sha256 "20061944e28dda4ab2098b8f77682cab77973f8961f6fa60b95bcc09a546789e"
+    url "https://github.com/andreas-kupries/critcl/archive/3.3.1.tar.gz"
+    sha256 "d970a06ae1cdee7854ca1bc571e8b5fe7189788dc5a806bce67e24bbadbe7ae2"
   end
 
   resource "tcllib" do
-    url "https://downloads.sourceforge.net/project/tcllib/tcllib/1.21/tcllib-1.21.tar.xz"
-    sha256 "10c7749e30fdd6092251930e8a1aa289b193a3b7f1abf17fee1d4fa89814762f"
+    url "https://downloads.sourceforge.net/project/tcllib/tcllib/2.0/tcllib-2.0.tar.xz"
+    sha256 "642c2c679c9017ab6fded03324e4ce9b5f4292473b62520e82aacebb63c0ce20"
   end
 
   resource "tcltls" do
@@ -38,9 +38,9 @@ class TclTkFritsiWithOpenssl3 < Formula
   end
 
   resource "tk" do
-    url "https://downloads.sourceforge.net/project/tcl/Tcl/8.6.14/tk8.6.14-src.tar.gz"
-    mirror "https://fossies.org/linux/misc/tk8.6.14-src.tar.gz"
-    sha256 "8ffdb720f47a6ca6107eac2dd877e30b0ef7fac14f3a84ebbd0b3612cee41a94"
+    url "https://downloads.sourceforge.net/project/tcl/Tcl/8.6.16/tk8.6.16-src.tar.gz"
+    mirror "https://fossies.org/linux/misc/tk8.6.16-src.tar.gz"
+    sha256 "be9f94d3575d4b3099d84bc3c10de8994df2d7aa405208173c709cc404a7e5fe"
   end
 
   resource "itk4" do
@@ -49,6 +49,9 @@ class TclTkFritsiWithOpenssl3 < Formula
   end
 
   def install
+    # Remove bundled zlib
+    rm_r("compat/zlib")
+
     %w[libx11 libxau libxcb libxdmcp libxext openssl@3.0 zlib].each do |name|
       add_lib_to_compiler_flags(Formula[name].opt_prefix)
     end
@@ -69,7 +72,8 @@ class TclTkFritsiWithOpenssl3 < Formula
       "--sbindir=#{prefix}/sbin",
       "--sysconfdir=#{prefix}/etc",
       "--localstatedir=#{prefix}/var",
-      "--mandir=#{man}"
+      "--mandir=#{man}",
+      "--enable-man-suffix"
     ]
 
     cd "unix" do

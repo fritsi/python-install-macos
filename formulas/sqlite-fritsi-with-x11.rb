@@ -1,10 +1,10 @@
 class SqliteFritsiWithX11 < Formula
   desc "Command-line interface for SQLite"
   homepage "https://sqlite.org/index.html"
-  version "3.46.1"
+  version "3.49.1"
 
-  url "https://www.sqlite.org/2024/sqlite-autoconf-3460100.tar.gz"
-  sha256 "67d3fe6d268e6eaddcae3727fce58fcc8e9c53869bdd07a0c61e38ddf2965071"
+  url "https://www.sqlite.org/2025/sqlite-autoconf-3490100.tar.gz"
+  sha256 "106642d8ccb36c5f7323b64e4152e9b719f7c0215acf5bfeac3d5e7f97b59254"
 
   license "blessing"
 
@@ -46,7 +46,6 @@ class SqliteFritsiWithX11 < Formula
       "--prefix=#{prefix}",
       "--disable-dependency-tracking",
       "--disable-editline",
-      "--enable-dynamic-extensions",
       "--enable-fts3",
       "--enable-fts4",
       "--enable-fts5",
@@ -59,9 +58,7 @@ class SqliteFritsiWithX11 < Formula
       "--enable-readline",
       "--enable-rtree",
       "--enable-session",
-      "--enable-tcl",
       "--enable-threadsafe",
-      "--with-tcl=#{Formula["tcl-tk-fritsi-with-x11"].opt_lib}",
       "--with-readline-inc=-I#{Formula["readline-fritsi"].opt_include}",
       "--with-readline-lib=-L#{Formula["readline-fritsi"].opt_lib} -lreadline"
     ]

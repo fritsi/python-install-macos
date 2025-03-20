@@ -1,4 +1,4 @@
-From 3b3aa1cb45a3bd68943ced756d2849a9c1fa050f Mon Sep 17 00:00:00 2001
+From 17e457f98d2a86468e7a78d1b3ffad9e52a705d7 Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
 Date: Tue, 9 Jan 2024 11:09:24 +0100
 Subject: [PATCH] Python 3.11.11 patching
@@ -15,14 +15,14 @@ Subject: [PATCH] Python 3.11.11 patching
  Lib/test/test_shutil.py                       |  2 +
  Lib/test/test_tools/test_freeze.py            |  1 +
  Lib/tkinter/test/test_tkinter/test_widgets.py | 28 +++++--
- Lib/tkinter/test/test_ttk/test_widgets.py     | 50 ++++++++----
+ Lib/tkinter/test/test_ttk/test_widgets.py     | 64 +++++++++++----
  Modules/Setup                                 | 17 ++--
  Modules/getaddrinfo.c                         |  3 +
  Modules/getnameinfo.c                         |  3 +
  Modules/socketmodule.c                        |  3 +
  Modules/socketmodule.h                        |  3 +
  setup.py                                      | 79 ++++++++++++++++++-
- 18 files changed, 239 insertions(+), 73 deletions(-)
+ 18 files changed, 253 insertions(+), 73 deletions(-)
 
 diff --git a/Lib/distutils/tests/test_build_ext.py b/Lib/distutils/tests/test_build_ext.py
 index e89dc50..e026599 100644
@@ -392,7 +392,7 @@ index 24d00b7..cb237f3 100644
          d = widget.itemconfigure(0)
          self.assertIsInstance(d, dict)
 diff --git a/Lib/tkinter/test/test_ttk/test_widgets.py b/Lib/tkinter/test/test_ttk/test_widgets.py
-index 2ba54cf..dca235d 100644
+index 2ba54cf..6a9aed2 100644
 --- a/Lib/tkinter/test/test_ttk/test_widgets.py
 +++ b/Lib/tkinter/test/test_ttk/test_widgets.py
 @@ -14,6 +14,17 @@ from tkinter.test.widget_tests import (add_standard_options,
@@ -478,7 +478,28 @@ index 2ba54cf..dca235d 100644
              self.assertRegex(self.combo.identify(x, y), r'.*downarrow\Z')
          self.combo.event_generate('<ButtonPress-1>', x=x, y=y)
          self.combo.event_generate('<ButtonRelease-1>', x=x, y=y)
-@@ -954,7 +973,7 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
+@@ -940,6 +959,20 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
+     def create(self, **kwargs):
+         return ttk.Notebook(self.root, **kwargs)
+ 
++    def test_configure_height(self):
++        widget = self.create()
++        if get_tk_patchlevel(self.root) < (8, 6, 15):
++            self.checkIntegerParam(widget, 'height', 100, -100, 0)
++        else:
++            self.checkPixelsParam(widget, 'height', '5c', 100, -100, 0, conv=False)
++
++    def test_configure_width(self):
++        widget = self.create()
++        if get_tk_patchlevel(self.root) < (8, 6, 15):
++            self.checkIntegerParam(widget, 'width', 402, -402, 0)
++        else:
++            self.checkPixelsParam(widget, 'width', '10c', 402, -402, 0, conv=False)
++
+     def test_tab_identifiers(self):
+         self.nb.forget(0)
+         self.nb.hide(self.child2)
+@@ -954,7 +987,7 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
  
          self.nb.pack()
          self.nb.update()
@@ -487,7 +508,7 @@ index 2ba54cf..dca235d 100644
              tb_idx = "@20,5"
          else:
              tb_idx = "@5,5"
-@@ -1100,7 +1119,7 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
+@@ -1100,7 +1133,7 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
  
          self.nb.select(0)
  
@@ -496,7 +517,7 @@ index 2ba54cf..dca235d 100644
          self.assertEqual(self.nb.identify(5, 5), focus_identify_as)
          simulate_mouse_click(self.nb, 5, 5)
          self.nb.focus_force()
-@@ -1121,7 +1140,7 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
+@@ -1121,7 +1154,7 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
          simulate_mouse_click(self.nb, 5, 5)
          # on macOS Emacs-style keyboard shortcuts are region-dependent;
          # let's use the regular arrow keys instead
@@ -505,7 +526,7 @@ index 2ba54cf..dca235d 100644
              begin = '<Left>'
              end = '<Right>'
          else:
-@@ -1142,7 +1161,10 @@ class SpinboxTest(EntryTest, unittest.TestCase):
+@@ -1142,7 +1175,10 @@ class SpinboxTest(EntryTest, unittest.TestCase):
          'takefocus', 'textvariable', 'to', 'validate', 'validatecommand',
          'values', 'width', 'wrap', 'xscrollcommand',
      )
@@ -721,4 +742,4 @@ index ad8fb81..e57dfb8 100644
          )
  
 -- 
-2.47.1
+2.49.0

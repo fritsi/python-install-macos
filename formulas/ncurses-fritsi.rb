@@ -3,8 +3,7 @@ class NcursesFritsi < Formula
   homepage "https://invisible-island.net/ncurses/announce.html"
   version "6.5"
 
-  url "http://ftp.vim.org/ftp/gnu/ncurses/ncurses-6.5.tar.gz"
-  mirror "https://ftp.gnu.org/gnu/ncurses/ncurses-6.5.tar.gz"
+  url "https://ftp.gnu.org/gnu/ncurses/ncurses-6.5.tar.gz"
   mirror "https://invisible-mirror.net/archives/ncurses/ncurses-6.5.tar.gz"
   mirror "ftp://ftp.invisible-island.net/ncurses/ncurses-6.5.tar.gz"
   mirror "https://ftpmirror.gnu.org/ncurses/ncurses-6.5.tar.gz"

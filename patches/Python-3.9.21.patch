@@ -1,26 +1,26 @@
-From bdaa080dff161edcf792100479b0d0e455ee794d Mon Sep 17 00:00:00 2001
+From 2276d47b13f599dba16977d9e12d35744eed6a04 Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
 Date: Tue, 16 Apr 2024 14:32:56 +0200
 Subject: [PATCH] Python 3.9.21 patching
 
 ---
- Lib/distutils/tests/test_build_ext.py         |  6 +++
- Lib/idlelib/idle_test/test_colorizer.py       | 14 ++++++
- Lib/idlelib/idle_test/test_outwin.py          | 14 ++++++
- Lib/test/support/__init__.py                  | 18 +++----
+ Lib/distutils/tests/test_build_ext.py         |  6 ++
+ Lib/idlelib/idle_test/test_colorizer.py       | 14 ++++
+ Lib/idlelib/idle_test/test_outwin.py          | 14 ++++
+ Lib/test/support/__init__.py                  | 18 +++---
  Lib/test/test_gdb.py                          |  2 +-
  Lib/test/test_mmap.py                         |  8 ++-
  Lib/test/test_posix.py                        |  8 +--
- Lib/tkinter/test/test_tkinter/test_widgets.py | 28 ++++++++---
- Lib/tkinter/test/test_ttk/test_widgets.py     | 50 +++++++++++++------
- Modules/Setup                                 | 16 +++---
+ Lib/tkinter/test/test_tkinter/test_widgets.py | 28 +++++---
+ Lib/tkinter/test/test_ttk/test_widgets.py     | 64 +++++++++++++++----
+ Modules/Setup                                 | 16 ++---
  Modules/_decimal/_decimal.c                   |  4 +-
- Modules/getaddrinfo.c                         |  3 ++
- Modules/getnameinfo.c                         |  3 ++
- Modules/socketmodule.c                        |  3 ++
- Modules/socketmodule.h                        |  3 ++
+ Modules/getaddrinfo.c                         |  3 +
+ Modules/getnameinfo.c                         |  3 +
+ Modules/socketmodule.c                        |  3 +
+ Modules/socketmodule.h                        |  3 +
  setup.py                                      |  2 +-
- 16 files changed, 132 insertions(+), 50 deletions(-)
+ 16 files changed, 146 insertions(+), 50 deletions(-)
 
 diff --git a/Lib/distutils/tests/test_build_ext.py b/Lib/distutils/tests/test_build_ext.py
 index 808c0dc..7e4632f 100644
@@ -270,7 +270,7 @@ index c0b92bf..1fdfc74 100644
          d = widget.itemconfigure(0)
          self.assertIsInstance(d, dict)
 diff --git a/Lib/tkinter/test/test_ttk/test_widgets.py b/Lib/tkinter/test/test_ttk/test_widgets.py
-index 1cb7e74..2221e97 100644
+index 1cb7e74..42f171d 100644
 --- a/Lib/tkinter/test/test_ttk/test_widgets.py
 +++ b/Lib/tkinter/test/test_ttk/test_widgets.py
 @@ -14,6 +14,17 @@ from tkinter.test.widget_tests import (add_standard_options, noconv,
@@ -356,7 +356,28 @@ index 1cb7e74..2221e97 100644
              self.assertRegex(self.combo.identify(x, y), r'.*downarrow\Z')
          self.combo.event_generate('<ButtonPress-1>', x=x, y=y)
          self.combo.event_generate('<ButtonRelease-1>', x=x, y=y)
-@@ -920,7 +939,7 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
+@@ -906,6 +925,20 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
+     def create(self, **kwargs):
+         return ttk.Notebook(self.root, **kwargs)
+ 
++    def test_configure_height(self):
++        widget = self.create()
++        if get_tk_patchlevel() < (8, 6, 15):
++            self.checkIntegerParam(widget, 'height', 100, -100, 0)
++        else:
++            self.checkPixelsParam(widget, 'height', '5c', 100, -100, 0, conv=False)
++
++    def test_configure_width(self):
++        widget = self.create()
++        if get_tk_patchlevel() < (8, 6, 15):
++            self.checkIntegerParam(widget, 'width', 402, -402, 0)
++        else:
++            self.checkPixelsParam(widget, 'width', '10c', 402, -402, 0, conv=False)
++
+     def test_tab_identifiers(self):
+         self.nb.forget(0)
+         self.nb.hide(self.child2)
+@@ -920,7 +953,7 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
  
          self.nb.pack()
          self.nb.update()
@@ -365,7 +386,7 @@ index 1cb7e74..2221e97 100644
              tb_idx = "@20,5"
          else:
              tb_idx = "@5,5"
-@@ -1066,7 +1085,7 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
+@@ -1066,7 +1099,7 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
  
          self.nb.select(0)
  
@@ -374,7 +395,7 @@ index 1cb7e74..2221e97 100644
          self.assertEqual(self.nb.identify(5, 5), focus_identify_as)
          simulate_mouse_click(self.nb, 5, 5)
          self.nb.focus_force()
-@@ -1087,7 +1106,7 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
+@@ -1087,7 +1120,7 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
          simulate_mouse_click(self.nb, 5, 5)
          # on macOS Emacs-style keyboard shortcuts are region-dependent;
          # let's use the regular arrow keys instead
@@ -383,7 +404,7 @@ index 1cb7e74..2221e97 100644
              begin = '<Left>'
              end = '<Right>'
          else:
-@@ -1108,7 +1127,10 @@ class SpinboxTest(EntryTest, unittest.TestCase):
+@@ -1108,7 +1141,10 @@ class SpinboxTest(EntryTest, unittest.TestCase):
          'takefocus', 'textvariable', 'to', 'validate', 'validatecommand',
          'values', 'width', 'wrap', 'xscrollcommand',
      )
@@ -547,4 +568,4 @@ index 0bec170..9b75e53 100644
              depends = ['_decimal/docstrings.h']
          else:
 -- 
-2.47.1
+2.49.0

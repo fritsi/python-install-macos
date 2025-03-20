@@ -1,7 +1,7 @@
-From 5cd1d7e972b0d2bf3ee5ff09c7351a3c5657810d Mon Sep 17 00:00:00 2001
+From 35ddd71113b12ca92f63c5c62948a850cbcaa97a Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
 Date: Mon, 16 Dec 2024 11:04:40 +0100
-Subject: [PATCH] Python 3.12.8 patching
+Subject: [PATCH] Python 3.12.9 patching
 
 ---
  Lib/idlelib/idle_test/test_colorizer.py | 15 +++++++++
@@ -13,7 +13,7 @@ Subject: [PATCH] Python 3.12.8 patching
  Lib/test/test_shutil.py                 |  2 ++
  Lib/test/test_signal.py                 | 14 +++++++--
  Lib/test/test_tools/test_freeze.py      |  1 +
- Lib/test/test_ttk/test_widgets.py       | 19 ++++++++---
+ Lib/test/test_ttk/test_widgets.py       | 23 ++++++++++----
  Modules/Setup                           | 17 +++++-----
  Modules/getaddrinfo.c                   |  3 ++
  Modules/getnameinfo.c                   |  3 ++
@@ -21,7 +21,7 @@ Subject: [PATCH] Python 3.12.8 patching
  Modules/socketmodule.h                  |  3 ++
  configure                               |  9 +-----
  configure.ac                            |  6 +---
- 17 files changed, 118 insertions(+), 60 deletions(-)
+ 17 files changed, 120 insertions(+), 62 deletions(-)
 
 diff --git a/Lib/idlelib/idle_test/test_colorizer.py b/Lib/idlelib/idle_test/test_colorizer.py
 index 308bc38..579fd04 100644
@@ -131,7 +131,7 @@ index 81f4aad..d2e0f59 100644
              # Without this, test write, writelines, and goto... fail.
              # The reasons and why macOS-specific are unclear.
 diff --git a/Lib/idlelib/idle_test/test_sidebar.py b/Lib/idlelib/idle_test/test_sidebar.py
-index 605e7a8..90ca8ca 100644
+index 3e85456..239d8d5 100644
 --- a/Lib/idlelib/idle_test/test_sidebar.py
 +++ b/Lib/idlelib/idle_test/test_sidebar.py
 @@ -40,28 +40,22 @@ class LineNumbersTest(unittest.TestCase):
@@ -186,7 +186,7 @@ index 605e7a8..90ca8ca 100644
  
      def get_selection(self):
          return tuple(map(str, self.text.tag_ranges('sel')))
-@@ -690,14 +687,7 @@ class ShellSidebarTest(unittest.TestCase):
+@@ -690,14 +687,7 @@ class ShellSidebarTest(unittest.TestCase, ExtraAssertions):
          last_lineno = get_end_linenumber(text)
          self.assertIsNotNone(text.dlineinfo(text.index(f'{last_lineno}.0')))
  
@@ -334,7 +334,7 @@ index 0e7ed67..1826a4f 100644
          script = textwrap.dedent("""
              import sys
 diff --git a/Lib/test/test_ttk/test_widgets.py b/Lib/test/test_ttk/test_widgets.py
-index ceba95c..c365ca2 100644
+index ceba95c..b2fd9b5 100644
 --- a/Lib/test/test_ttk/test_widgets.py
 +++ b/Lib/test/test_ttk/test_widgets.py
 @@ -14,6 +14,17 @@ from test.test_tkinter.widget_tests import (add_standard_options,
@@ -364,6 +364,18 @@ index ceba95c..c365ca2 100644
              self.assertRegex(self.combo.identify(x, y), r'.*downarrow\Z')
          self.combo.event_generate('<ButtonPress-1>', x=x, y=y)
          self.combo.event_generate('<ButtonRelease-1>', x=x, y=y)
+@@ -985,9 +996,9 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
+     def test_configure_height(self):
+         widget = self.create()
+         if get_tk_patchlevel(self.root) < (8, 6, 15):
+-            self.checkIntegerParam(widget, 'height', 402, -402, 0)
++            self.checkIntegerParam(widget, 'height', 100, -100, 0)
+         else:
+-            self.checkPixelsParam(widget, 'height', '10c', 402, -402, 0, conv=False)
++            self.checkPixelsParam(widget, 'height', '5c', 100, -100, 0, conv=False)
+ 
+     def test_configure_width(self):
+         widget = self.create()
 @@ -1010,7 +1021,7 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
  
          self.nb.pack()
@@ -502,10 +514,10 @@ index f5ca004..1c36d5d 100644
  # include <netinet/tcp.h>
  
 diff --git a/configure b/configure
-index 241cf8f..30abda9 100755
+index 89edc42..01be71b 100755
 --- a/configure
 +++ b/configure
-@@ -14092,8 +14092,6 @@ if test "x$ac_cv_lib_ffi_ffi_call" = xyes
+@@ -14112,8 +14112,6 @@ if test "x$ac_cv_lib_ffi_ffi_call" = xyes
  then :
  
                  have_libffi=yes
@@ -514,7 +526,7 @@ index 241cf8f..30abda9 100755
  
  fi
  
-@@ -14223,8 +14221,6 @@ if test "x$ac_cv_lib_ffi_ffi_call" = xyes
+@@ -14243,8 +14241,6 @@ if test "x$ac_cv_lib_ffi_ffi_call" = xyes
  then :
  
            have_libffi=yes
@@ -523,7 +535,7 @@ index 241cf8f..30abda9 100755
  
  else $as_nop
    have_libffi=no
-@@ -14296,8 +14292,6 @@ if test "x$ac_cv_lib_ffi_ffi_call" = xyes
+@@ -14316,8 +14312,6 @@ if test "x$ac_cv_lib_ffi_ffi_call" = xyes
  then :
  
            have_libffi=yes
@@ -532,7 +544,7 @@ index 241cf8f..30abda9 100755
  
  else $as_nop
    have_libffi=no
-@@ -14569,7 +14563,7 @@ libmpdec_machine=unknown
+@@ -14589,7 +14583,7 @@ libmpdec_machine=unknown
  if test "$libmpdec_system" = Darwin; then
      # universal here means: build libmpdec with the same arch options
      # the python interpreter was built with
@@ -541,16 +553,16 @@ index 241cf8f..30abda9 100755
  elif test $ac_cv_sizeof_size_t -eq 8; then
      if test "$ac_cv_gcc_asm_for_x64" = yes; then
          libmpdec_machine=x64
-@@ -32993,4 +32987,3 @@ Platform \"$host\" with compiler \"$ac_cv_cc_name\" is not supported by the
+@@ -33013,4 +33007,3 @@ Platform \"$host\" with compiler \"$ac_cv_cc_name\" is not supported by the
  CPython core team, see https://peps.python.org/pep-0011/ for more information.
  " >&2;}
  fi
 -
 diff --git a/configure.ac b/configure.ac
-index 9270b5f..c2b24ce 100644
+index 1a02d19..eecf154 100644
 --- a/configure.ac
 +++ b/configure.ac
-@@ -3847,8 +3847,6 @@ AS_VAR_IF([ac_sys_system], [Darwin], [
+@@ -3868,8 +3868,6 @@ AS_VAR_IF([ac_sys_system], [Darwin], [
        AC_CHECK_LIB([ffi], [ffi_call], [
          dnl use ffi from SDK root
          have_libffi=yes
@@ -559,7 +571,7 @@ index 9270b5f..c2b24ce 100644
        ])
      ])
    ])
-@@ -3861,8 +3859,6 @@ AS_VAR_IF([have_libffi], [missing], [
+@@ -3882,8 +3880,6 @@ AS_VAR_IF([have_libffi], [missing], [
        AC_CHECK_HEADER([ffi.h], [
          AC_CHECK_LIB([ffi], [ffi_call], [
            have_libffi=yes
@@ -568,7 +580,7 @@ index 9270b5f..c2b24ce 100644
          ], [have_libffi=no])
        ])
      ])
-@@ -3958,7 +3954,7 @@ libmpdec_machine=unknown
+@@ -3979,7 +3975,7 @@ libmpdec_machine=unknown
  if test "$libmpdec_system" = Darwin; then
      # universal here means: build libmpdec with the same arch options
      # the python interpreter was built with
@@ -578,4 +590,4 @@ index 9270b5f..c2b24ce 100644
      if test "$ac_cv_gcc_asm_for_x64" = yes; then
          libmpdec_machine=x64
 -- 
-2.47.1
+2.49.0

@@ -1,12 +1,12 @@
 class ZstdFritsi < Formula
   desc "Zstandard is a real-time compression algorithm"
   homepage "https://facebook.github.io/zstd/"
-  version "1.5.6"
+  version "1.5.7"
 
-  url "https://github.com/facebook/zstd/archive/refs/tags/v1.5.6.tar.gz"
-  mirror "http://fresh-center.net/linux/misc/zstd-1.5.6.tar.gz"
-  mirror "http://fresh-center.net/linux/misc/legacy/zstd-1.5.6.tar.gz"
-  sha256 "30f35f71c1203369dc979ecde0400ffea93c27391bfd2ac5a9715d2173d92ff7"
+  url "https://github.com/facebook/zstd/archive/refs/tags/v1.5.7.tar.gz"
+  mirror "http://fresh-center.net/linux/misc/zstd-1.5.7.tar.gz"
+  mirror "http://fresh-center.net/linux/misc/legacy/zstd-1.5.7.tar.gz"
+  sha256 "37d7284556b20954e56e1ca85b80226768902e2edabd3b649e9e72c0c9012ee3"
 
   license "BSD-3-Clause"
 

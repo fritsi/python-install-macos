@@ -1,4 +1,4 @@
-From f5655edd6d7ed2d2174b82af75ee6a9308c833ac Mon Sep 17 00:00:00 2001
+From b1b438b4f06e33b89ef1a2b8a69b0e3eb3822bbb Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
 Date: Mon, 16 Jan 2023 15:26:35 +0100
 Subject: [PATCH] Python 2.7.18 patching
@@ -8,7 +8,7 @@ Subject: [PATCH] Python 2.7.18 patching
  Lib/ctypes/test/test_macholib.py             |  14 +-
  Lib/distutils/tests/test_build_ext.py        |   8 +-
  Lib/lib-tk/test/test_tkinter/test_widgets.py |  32 ++-
- Lib/lib-tk/test/test_ttk/test_widgets.py     |  57 +++--
+ Lib/lib-tk/test/test_ttk/test_widgets.py     |  71 ++++--
  Lib/sysconfig.py                             |  18 +-
  Lib/test/support/__init__.py                 |  18 +-
  Lib/test/test_gdb.py                         |   1 +
@@ -38,7 +38,7 @@ Subject: [PATCH] Python 2.7.18 patching
  configure.ac                                 |   9 +
  pyconfig.h.in                                |   3 +
  setup.py                                     | 216 ++++++++++++++-----
- 34 files changed, 539 insertions(+), 146 deletions(-)
+ 34 files changed, 553 insertions(+), 146 deletions(-)
 
 diff --git a/Lib/ctypes/macholib/dyld.py b/Lib/ctypes/macholib/dyld.py
 index 1fdf8d6..8553106 100644
@@ -188,7 +188,7 @@ index 4b196ac..3262672 100644
      def test_label(self):
          widget = self.create()
 diff --git a/Lib/lib-tk/test/test_ttk/test_widgets.py b/Lib/lib-tk/test/test_ttk/test_widgets.py
-index 47cd7af..6f213e0 100644
+index 47cd7af..166095b 100644
 --- a/Lib/lib-tk/test/test_ttk/test_widgets.py
 +++ b/Lib/lib-tk/test/test_ttk/test_widgets.py
 @@ -16,6 +16,17 @@ from widget_tests import (add_standard_options, noconv, noconv_meth,
@@ -284,7 +284,28 @@ index 47cd7af..6f213e0 100644
      def setUp(self):
          super(ComboboxTest, self).setUp()
          self.combo = self.create()
-@@ -936,7 +956,7 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
+@@ -922,6 +942,20 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
+     def create(self, **kwargs):
+         return ttk.Notebook(self.root, **kwargs)
+ 
++    def test_height(self):
++        widget = self.create()
++        if get_tk_patchlevel() < (8, 6, 15):
++            self.checkIntegerParam(widget, 'height', 100, -100, 0)
++        else:
++            self.checkPixelsParam(widget, 'height', '5c', 100, -100, 0, conv=False)
++
++    def test_width(self):
++        widget = self.create()
++        if get_tk_patchlevel() < (8, 6, 15):
++            self.checkIntegerParam(widget, 'width', 402, -402, 0)
++        else:
++            self.checkPixelsParam(widget, 'width', '10c', 402, -402, 0, conv=False)
++
+     def test_tab_identifiers(self):
+         self.nb.forget(0)
+         self.nb.hide(self.child2)
+@@ -936,7 +970,7 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
  
          self.nb.pack()
          self.nb.wait_visibility()
@@ -293,7 +314,7 @@ index 47cd7af..6f213e0 100644
              tb_idx = "@20,5"
          else:
              tb_idx = "@5,5"
-@@ -1105,10 +1125,9 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
+@@ -1105,10 +1139,9 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
          self.nb.enable_traversal()
          self.nb.focus_force()
          simulate_mouse_click(self.nb, 5, 5)
@@ -1473,4 +1494,4 @@ index f764223..ff2298a 100644
              self.use_system_libffi = True
  
 -- 
-2.46.0
+2.49.0

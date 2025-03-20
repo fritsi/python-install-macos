@@ -1,4 +1,4 @@
-From 03519628a23e94c6633749c42c8cc05dd8dc45d2 Mon Sep 17 00:00:00 2001
+From cb4ee0b7bb7f39eb5dbef09aba8ff26a89d0f001 Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
 Date: Mon, 16 Jan 2023 15:27:12 +0100
 Subject: [PATCH] Python 3.7.17 patching
@@ -23,7 +23,7 @@ Subject: [PATCH] Python 3.7.17 patching
  Lib/test/test_urllib2.py                      |   1 +
  Lib/tkinter/test/test_tkinter/test_misc.py    |   1 +
  Lib/tkinter/test/test_tkinter/test_widgets.py |  28 +++--
- Lib/tkinter/test/test_ttk/test_widgets.py     |  61 +++++++---
+ Lib/tkinter/test/test_ttk/test_widgets.py     |  75 +++++++++---
  Makefile.pre.in                               |   6 +-
  Modules/Setup.dist                            |  16 ++-
  Modules/_ctypes/_ctypes.c                     |  31 +++++
@@ -40,7 +40,7 @@ Subject: [PATCH] Python 3.7.17 patching
  configure.ac                                  |   6 +
  pyconfig.h.in                                 |   3 +
  setup.py                                      |  67 +++++++---
- 36 files changed, 440 insertions(+), 117 deletions(-)
+ 36 files changed, 454 insertions(+), 117 deletions(-)
 
 diff --git a/Lib/ctypes/macholib/dyld.py b/Lib/ctypes/macholib/dyld.py
 index 9d86b05..931a9e7 100644
@@ -529,7 +529,7 @@ index 5cfab68..c51cf21 100644
          d = widget.itemconfigure(0)
          self.assertIsInstance(d, dict)
 diff --git a/Lib/tkinter/test/test_ttk/test_widgets.py b/Lib/tkinter/test/test_ttk/test_widgets.py
-index 9667e05..37059ad 100644
+index 9667e05..dd7ce53 100644
 --- a/Lib/tkinter/test/test_ttk/test_widgets.py
 +++ b/Lib/tkinter/test/test_ttk/test_widgets.py
 @@ -14,6 +14,17 @@ from tkinter.test.widget_tests import (add_standard_options, noconv,
@@ -625,7 +625,28 @@ index 9667e05..37059ad 100644
      def setUp(self):
          super().setUp()
          self.combo = self.create()
-@@ -934,7 +954,7 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
+@@ -920,6 +940,20 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
+     def create(self, **kwargs):
+         return ttk.Notebook(self.root, **kwargs)
+ 
++    def test_height(self):
++        widget = self.create()
++        if get_tk_patchlevel() < (8, 6, 15):
++            self.checkIntegerParam(widget, 'height', 100, -100, 0)
++        else:
++            self.checkPixelsParam(widget, 'height', '5c', 100, -100, 0, conv=False)
++
++    def test_width(self):
++        widget = self.create()
++        if get_tk_patchlevel() < (8, 6, 15):
++            self.checkIntegerParam(widget, 'width', 402, -402, 0)
++        else:
++            self.checkPixelsParam(widget, 'width', '10c', 402, -402, 0, conv=False)
++
+     def test_tab_identifiers(self):
+         self.nb.forget(0)
+         self.nb.hide(self.child2)
+@@ -934,7 +968,7 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
  
          self.nb.pack()
          self.nb.wait_visibility()
@@ -634,7 +655,7 @@ index 9667e05..37059ad 100644
              tb_idx = "@20,5"
          else:
              tb_idx = "@5,5"
-@@ -1103,10 +1123,9 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
+@@ -1103,10 +1137,9 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
          self.nb.enable_traversal()
          self.nb.focus_force()
          simulate_mouse_click(self.nb, 5, 5)
@@ -648,7 +669,7 @@ index 9667e05..37059ad 100644
          self.assertEqual(self.nb.select(), str(self.child1))
  
  @add_standard_options(IntegerSizeTests, StandardTtkOptionsTests)
-@@ -1119,6 +1138,10 @@ class SpinboxTest(EntryTest, unittest.TestCase):
+@@ -1119,6 +1152,10 @@ class SpinboxTest(EntryTest, unittest.TestCase):
          'values', 'width', 'wrap', 'xscrollcommand',
      )
  
@@ -1335,4 +1356,4 @@ index bf90600..b530d36 100644
              depends = ['_decimal/docstrings.h']
          else:
 -- 
-2.46.2
+2.49.0
