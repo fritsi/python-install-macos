@@ -1,7 +1,7 @@
-From 35ddd71113b12ca92f63c5c62948a850cbcaa97a Mon Sep 17 00:00:00 2001
+From 413c68048685f024e0c9bbe51edc2b6529f7a6e8 Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
-Date: Mon, 16 Dec 2024 11:04:40 +0100
-Subject: [PATCH] Python 3.12.9 patching
+Date: Wed, 9 Apr 2025 11:05:32 +0200
+Subject: [PATCH] Python 3.12.10 patching
 
 ---
  Lib/idlelib/idle_test/test_colorizer.py | 15 +++++++++
@@ -260,7 +260,7 @@ index e225b89..15f1b38 100644
          # #10822/#26944 - It is implementation defined whether
          # posix.getgroups() includes the effective gid.
 diff --git a/Lib/test/test_shutil.py b/Lib/test/test_shutil.py
-index c553ea0..061369f 100644
+index 669f6a2..905a558 100644
 --- a/Lib/test/test_shutil.py
 +++ b/Lib/test/test_shutil.py
 @@ -1701,6 +1701,8 @@ class TestArchives(BaseTest, unittest.TestCase):
@@ -273,17 +273,17 @@ index c553ea0..061369f 100644
                                stdout=subprocess.DEVNULL)
  
 diff --git a/Lib/test/test_signal.py b/Lib/test/test_signal.py
-index a45527d..ed30405 100644
+index 9a01ad0..4dfd6e0 100644
 --- a/Lib/test/test_signal.py
 +++ b/Lib/test/test_signal.py
 @@ -841,12 +841,16 @@ class ItimerTest(unittest.TestCase):
          signal.signal(signal.SIGVTALRM, self.sig_vtalrm)
-         signal.setitimer(self.itimer, 0.3, 0.2)
+         signal.setitimer(self.itimer, 0.001, 0.001)
  
 -        for _ in support.busy_retry(support.LONG_TIMEOUT):
 +        for _ in support.busy_retry(60.0, error=False):
              # use up some virtual time by doing real work
-             _ = pow(12345, 67890, 10000019)
+             _ = sum(i * i for i in range(10**5))
              if signal.getitimer(self.itimer) == (0.0, 0.0):
                  # sig_vtalrm handler stopped this itimer
                  break
@@ -301,7 +301,7 @@ index a45527d..ed30405 100644
 -        for _ in support.busy_retry(support.LONG_TIMEOUT):
 +        for _ in support.busy_retry(60.0, error=False):
              # do some work
-             _ = pow(12345, 67890, 10000019)
+             _ = sum(i * i for i in range(10**5))
              if signal.getitimer(self.itimer) == (0.0, 0.0):
                  # sig_prof handler stopped this itimer
                  break
@@ -486,7 +486,7 @@ index 335021f..c26d9aa 100644
  #include <arpa/inet.h>
  #include <arpa/nameser.h>
 diff --git a/Modules/socketmodule.c b/Modules/socketmodule.c
-index 7f2ebba..71c5478 100644
+index 27afd73..03af08e 100644
 --- a/Modules/socketmodule.c
 +++ b/Modules/socketmodule.c
 @@ -220,6 +220,9 @@ shutdown(how) -- shut down traffic in one or both directions\n\
