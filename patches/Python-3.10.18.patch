@@ -1,7 +1,7 @@
-From fecd6a0e2e919b5657c5c48ff138c874bb138724 Mon Sep 17 00:00:00 2001
+From d95d98fae175d3d8761d008d40ded6b6bb93750f Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
-Date: Wed, 9 Apr 2025 11:05:15 +0200
-Subject: [PATCH] Python 3.10.17 patching
+Date: Sat, 14 Jun 2025 17:45:53 +0200
+Subject: [PATCH] Python 3.10.18 patching
 
 ---
  Lib/distutils/tests/test_build_ext.py     |  6 +++
