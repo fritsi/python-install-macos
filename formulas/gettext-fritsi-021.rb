@@ -1,12 +1,12 @@
-class GettextFritsi < Formula
+class GettextFritsi021 < Formula
   desc "GNU internationalization (i18n) and localization (l10n) library"
   homepage "https://www.gnu.org/software/gettext/"
-  version "0.25"
+  version "0.21.1"
 
-  url "https://ftp.gnu.org/gnu/gettext/gettext-0.25.tar.gz"
-  mirror "https://ftpmirror.gnu.org/gettext/gettext-0.25.tar.gz"
-  mirror "http://ftp.gnu.org/gnu/gettext/gettext-0.25.tar.gz"
-  sha256 "aee02dab79d9138fdcc7226b67ec985121bce6007edebe30d0e39d42f69a340e"
+  url "https://ftp.gnu.org/gnu/gettext/gettext-0.21.1.tar.gz"
+  mirror "https://ftpmirror.gnu.org/gettext/gettext-0.21.1.tar.gz"
+  mirror "http://ftp.gnu.org/gnu/gettext/gettext-0.21.1.tar.gz"
+  sha256 "e8c3650e1d8cee875c4f355642382c1df83058bd5a11ee8555c0cf276d646d45"
 
   license "GPL-3.0-or-later"
 
@@ -14,17 +14,11 @@ class GettextFritsi < Formula
 
   depends_on "pkg-config" => :build
 
-  depends_on "libunistring"
   depends_on "libxml2"
   depends_on "ncurses-fritsi"
 
   def install
-    # macOS iconv implementation is slightly broken since Sonoma.
-    # This is also why we skip `make check`.
-    # upstream bug report, https://savannah.gnu.org/bugs/index.php?66541
-    ENV["am_cv_func_iconv_works"] = "yes" if MacOS.version == :sequoia
-
-    %w[libunistring libxml2 ncurses-fritsi].each do |name|
+    %w[libxml2 ncurses-fritsi].each do |name|
       add_lib_to_compiler_flags(Formula[name].opt_prefix)
     end
 
@@ -46,7 +40,6 @@ class GettextFritsi < Formula
       "--with-included-libxml",
       "--with-libncurses-prefix=#{Formula["ncurses-fritsi"].opt_prefix}",
       "--with-libtermcap-prefix=#{Formula["ncurses-fritsi"].opt_prefix}",
-      "--with-libunistring-prefix=#{Formula["libunistring"].opt_prefix}",
       "--with-libxml2-prefix=#{Formula["libxml2"].opt_prefix}",
       "--without-cvs",
       "--without-git",

@@ -24,6 +24,8 @@ class ZstdFritsi < Formula
       add_lib_to_compiler_flags(Formula[name].opt_prefix)
     end
 
+    ENV.prepend(["LDFLAGS", "LDXXFLAGS"], "-Wl,-headerpad_max_install_names", " ")
+
     args = [
       "-DCMAKE_BUILD_TYPE=Release",
       "-DCMAKE_CXX_STANDARD=11",

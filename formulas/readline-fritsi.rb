@@ -40,6 +40,8 @@ class ReadlineFritsi < Formula
   def install
     add_lib_to_compiler_flags(Formula["ncurses-fritsi"].opt_prefix)
 
+    ENV.prepend(["LDFLAGS", "LDXXFLAGS"], "-Wl,-headerpad_max_install_names", " ")
+
     configure_args = [
       "--prefix=#{prefix}",
       "--enable-multibyte",

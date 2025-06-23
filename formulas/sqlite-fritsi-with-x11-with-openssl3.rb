@@ -1,10 +1,10 @@
 class SqliteFritsiWithX11WithOpenssl3 < Formula
   desc "Command-line interface for SQLite"
   homepage "https://sqlite.org/index.html"
-  version "3.49.1"
+  version "3.50.1"
 
-  url "https://www.sqlite.org/2025/sqlite-autoconf-3490100.tar.gz"
-  sha256 "106642d8ccb36c5f7323b64e4152e9b719f7c0215acf5bfeac3d5e7f97b59254"
+  url "https://www.sqlite.org/2025/sqlite-autoconf-3500100.tar.gz"
+  sha256 "00a65114d697cfaa8fe0630281d76fd1b77afcd95cd5e40ec6a02cbbadbfea71"
 
   license "blessing"
 
@@ -26,6 +26,8 @@ class SqliteFritsiWithX11WithOpenssl3 < Formula
     %w[bzip2 libx11 libxau libxcb libxdmcp libxext openssl@3.0].each do |name|
       add_lib_to_compiler_flags(Formula[name].opt_prefix)
     end
+
+    ENV.prepend(["LDFLAGS", "LDXXFLAGS"], "-Wl,-headerpad_max_install_names", " ")
 
     ENV.append "CPPFLAGS", %w[
         -DSQLITE_ENABLE_API_ARMOR=1

@@ -25,6 +25,9 @@ if $G_PYTHON_COMPILE; then
         # For older Python versions we still need OpenSSL 1.1 :(
         export T_LIBRARIES_TO_LOOKUP="${T_LIBRARIES_TO_LOOKUP//openssl@3.0/openssl@1.1}"
 
+        # For Python versions smaller than 3.8, we need to use an older gettext library :(
+        export T_LIBRARIES_TO_LOOKUP="${T_LIBRARIES_TO_LOOKUP//gettext-fritsi/gettext-fritsi-021}"
+
         # Also, for Python versions smaller than 3.8, we need to use an older libffi library :(
         export T_LIBRARIES_TO_LOOKUP="${T_LIBRARIES_TO_LOOKUP//libffi/libffi33}"
 

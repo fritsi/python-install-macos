@@ -18,6 +18,8 @@ class NcursesFritsi < Formula
   def install
     (lib / "pkgconfig").mkpath
 
+    ENV.prepend(["LDFLAGS", "LDXXFLAGS"], "-Wl,-headerpad_max_install_names", " ")
+
     args = [
       "--prefix=#{prefix}",
       "--enable-const",

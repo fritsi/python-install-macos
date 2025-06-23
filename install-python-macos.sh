@@ -388,8 +388,9 @@ G_PYTHON_COMPILE=true
 
     # Assembling the internal dependencies we need to install
     # We need to install them in the exact same order as we put them into the array
-    T_DEPENDENCIES=("ncurses-fritsi" "readline-fritsi" "gettext-fritsi" "zstd-fritsi")
+    T_DEPENDENCIES=("ncurses-fritsi" "readline-fritsi" "zstd-fritsi")
     if [[ "$PY_VERSION_NUM" -ge 308 ]]; then
+        T_DEPENDENCIES+=("gettext-fritsi")
         T_DEPENDENCIES+=("libzip-fritsi-with-openssl3")
         if ! $P_USE_X11; then
             T_DEPENDENCIES+=("tcl-tk-fritsi-with-openssl3" "sqlite-fritsi-with-openssl3")
@@ -397,6 +398,7 @@ G_PYTHON_COMPILE=true
             T_DEPENDENCIES+=("tcl-tk-fritsi-with-x11-with-openssl3" "sqlite-fritsi-with-x11-with-openssl3")
         fi
     else
+        T_DEPENDENCIES+=("gettext-fritsi-021")
         T_DEPENDENCIES+=("libzip-fritsi")
         if ! $P_USE_X11; then
             T_DEPENDENCIES+=("tcl-tk-fritsi" "sqlite-fritsi")

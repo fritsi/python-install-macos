@@ -98,13 +98,13 @@ you enable X11 support:
 ```shell
 brew install --formula --build-from-source formulas/ncurses-fritsi.rb
 brew install --formula --build-from-source formulas/readline-fritsi.rb
-brew install --formula --build-from-source formulas/gettext-fritsi.rb
 brew install --formula --build-from-source formulas/zstd-fritsi.rb
 ```
 
 If you plan to compile **Python 3.8 or newer** <ins>with</ins> X11 support, you will also need the following packages:
 
 ```shell
+brew install --formula --build-from-source formulas/gettext-fritsi.rb
 brew install --formula --build-from-source formulas/libzip-fritsi-with-openssl3.rb
 brew install --formula --build-from-source formulas/tcl-tk-fritsi-with-x11-with-openssl3.rb
 brew install --formula --build-from-source formulas/sqlite-fritsi-with-x11-with-openssl3.rb
@@ -114,6 +114,7 @@ On the other hand, if you intend to compile **Python 3.8 or newer** <ins>without
 dependencies are required:
 
 ```shell
+brew install --formula --build-from-source formulas/gettext-fritsi.rb
 brew install --formula --build-from-source formulas/libzip-fritsi-with-openssl3.rb
 brew install --formula --build-from-source formulas/tcl-tk-fritsi-with-openssl3.rb
 brew install --formula --build-from-source formulas/sqlite-fritsi-with-openssl3.rb
@@ -123,6 +124,7 @@ For those compiling **Python 3.7 or earlier** <ins>with</ins> X11 support, ensur
 packages:
 
 ```shell
+brew install --formula --build-from-source formulas/gettext-fritsi-021.rb
 brew install --formula --build-from-source formulas/libzip-fritsi.rb
 brew install --formula --build-from-source formulas/tcl-tk-fritsi-with-x11.rb
 brew install --formula --build-from-source formulas/sqlite-fritsi-with-x11.rb
@@ -134,6 +136,7 @@ Finally, if you are compiling **Python 3.7 or earlier** <ins>without</ins> X11 s
 are necessary:
 
 ```shell
+brew install --formula --build-from-source formulas/gettext-fritsi-021.rb
 brew install --formula --build-from-source formulas/libzip-fritsi.rb
 brew install --formula --build-from-source formulas/tcl-tk-fritsi.rb
 brew install --formula --build-from-source formulas/sqlite-fritsi.rb

@@ -1,10 +1,10 @@
 class LibzipFritsi < Formula
   desc "C library for reading, creating, and modifying zip archives"
   homepage "https://libzip.org/"
-  version "1.11.3"
+  version "1.11.4"
 
-  url "https://libzip.org/download/libzip-1.11.3.tar.xz"
-  sha256 "9509d878ba788271c8b5abca9cfde1720f075335686237b7e9a9e7210fe67c1b"
+  url "https://libzip.org/download/libzip-1.11.4.tar.xz"
+  sha256 "8a247f57d1e3e6f6d11413b12a6f28a9d388de110adc0ec608d893180ed7097b"
 
   license "BSD-3-Clause"
 
@@ -24,6 +24,8 @@ class LibzipFritsi < Formula
     %w[bzip2 lz4 openssl@1.1 xz zlib zstd-fritsi].each do |name|
       add_lib_to_compiler_flags(Formula[name].opt_prefix)
     end
+
+    ENV.prepend(["LDFLAGS", "LDXXFLAGS"], "-Wl,-headerpad_max_install_names", " ")
 
     args = [
       "-DBUILD_REGRESS=OFF",

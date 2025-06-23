@@ -9,7 +9,7 @@ platforms.
 For older Python versions, specific changes have been incorporated from newer Python releases to ensure compatibility
 with recent macOS versions and Apple Silicon hardware. _See [patches](patches)._
 
-**Tested on Apple Intel macOS Big Sur, and Sonoma and Apple M1 macOS Ventura.**
+**Tested on ~~Apple Intel macOS Big Sur, and Sonoma and~~ Apple M1 macOS Sequoia.**
 
 ## Usage
 

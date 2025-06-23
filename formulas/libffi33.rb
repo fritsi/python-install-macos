@@ -18,9 +18,10 @@ class Libffi33 < Formula
   on_macos do
     if Hardware::CPU.arm?
       # Improved aarch64-apple-darwin support. See https://github.com/libffi/libffi/pull/565
+      # + https://github.com/libffi/libffi/issues/852
       patch do
-        url "https://raw.githubusercontent.com/Homebrew/formula-patches/06252df03c68aee70856e5842f85f20b259e5250/libffi/libffi-3.3-arm64.patch"
-        sha256 "9290aba7f3131ca19eb28fa7ded836b80f15cf633ffac95dc52b14d0a668d1fa"
+        url "https://raw.githubusercontent.com/fritsi/python-install-macos/refs/heads/master/patches/libffi33.patch"
+        sha256 "4dca7ec070198209603ae7e2ba9b1501423c0109785b7943aad9bd57a2783977"
       end
     end
   end
