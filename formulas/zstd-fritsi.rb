@@ -13,7 +13,7 @@ class ZstdFritsi < Formula
   keg_only "This is a custom fork, so we do not want to symlink it into brew --prefix"
 
   depends_on "cmake" => :build
-  depends_on "pkg-config" => :build
+  depends_on "pkgconf" => :build
 
   depends_on "lz4"
   depends_on "xz"
@@ -31,6 +31,7 @@ class ZstdFritsi < Formula
       "-DCMAKE_CXX_STANDARD=11",
       "-DCMAKE_VERBOSE_MAKEFILE=ON",
       "-DCMAKE_FIND_FRAMEWORK=LAST",
+      "-DBUILD_SHARED_LIBS=ON",
       "-DBUILD_TESTING=OFF",
       "-Wno-dev",
       "-DCMAKE_INSTALL_PREFIX=#{prefix}",

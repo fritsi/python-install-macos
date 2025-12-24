@@ -11,7 +11,7 @@ class LibzipFritsi < Formula
   keg_only "This is a custom fork, so we do not want to symlink it into brew --prefix"
 
   depends_on "cmake" => :build
-  depends_on "pkg-config" => :build
+  depends_on "pkgconf" => :build
 
   depends_on "bzip2"
   depends_on "lz4"

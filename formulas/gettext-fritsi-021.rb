@@ -3,8 +3,8 @@ class GettextFritsi021 < Formula
   homepage "https://www.gnu.org/software/gettext/"
   version "0.21.1"
 
-  url "https://ftp.gnu.org/gnu/gettext/gettext-0.21.1.tar.gz"
-  mirror "https://ftpmirror.gnu.org/gettext/gettext-0.21.1.tar.gz"
+  url "https://ftpmirror.gnu.org/gnu/gettext/gettext-0.21.1.tar.gz"
+  mirror "https://ftp.gnu.org/gnu/gettext/gettext-0.21.1.tar.gz"
   mirror "http://ftp.gnu.org/gnu/gettext/gettext-0.21.1.tar.gz"
   sha256 "e8c3650e1d8cee875c4f355642382c1df83058bd5a11ee8555c0cf276d646d45"
 
@@ -12,7 +12,7 @@ class GettextFritsi021 < Formula
 
   keg_only "This is a custom fork, so we do not want to symlink it into brew --prefix"
 
-  depends_on "pkg-config" => :build
+  depends_on "pkgconf" => :build
 
   depends_on "libxml2"
   depends_on "ncurses-fritsi"
@@ -23,6 +23,11 @@ class GettextFritsi021 < Formula
     end
 
     ENV.prepend(["LDFLAGS", "LDXXFLAGS"], "-Wl,-headerpad_max_install_names", " ")
+
+    # Workaround for newer Clang
+    if DevelopmentTools.clang_build_version >= 1500
+        ENV.append(["CFLAGS", "CXXFLAGS", "CPPFLAGS"], "-Wno-incompatible-function-pointer-types", " ")
+    end
 
     args = [
       "--disable-silent-rules",

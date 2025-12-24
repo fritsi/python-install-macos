@@ -3,22 +3,24 @@ class NcursesFritsi < Formula
   homepage "https://invisible-island.net/ncurses/announce.html"
   version "6.5"
 
-  url "https://ftp.gnu.org/gnu/ncurses/ncurses-6.5.tar.gz"
+  url "https://ftpmirror.gnu.org/gnu/ncurses/ncurses-6.5.tar.gz"
   mirror "https://invisible-mirror.net/archives/ncurses/ncurses-6.5.tar.gz"
   mirror "ftp://ftp.invisible-island.net/ncurses/ncurses-6.5.tar.gz"
-  mirror "https://ftpmirror.gnu.org/ncurses/ncurses-6.5.tar.gz"
+  mirror "https://ftp.gnu.org/gnu/ncurses/ncurses-6.5.tar.gz"
   sha256 "136d91bc269a9a5785e5f9e980bc76ab57428f604ce3e5a5a90cebc767971cc6"
 
   license "MIT"
 
   keg_only "This is a custom fork, so we do not want to symlink it into brew --prefix"
 
-  depends_on "pkg-config" => :build
+  depends_on "pkgconf" => :build
 
   def install
     (lib / "pkgconfig").mkpath
 
     ENV.prepend(["LDFLAGS", "LDXXFLAGS"], "-Wl,-headerpad_max_install_names", " ")
+
+    ENV.delete("TERMINFO")
 
     args = [
       "--prefix=#{prefix}",

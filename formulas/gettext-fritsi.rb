@@ -1,34 +1,38 @@
 class GettextFritsi < Formula
   desc "GNU internationalization (i18n) and localization (l10n) library"
   homepage "https://www.gnu.org/software/gettext/"
-  version "0.25"
+  version "0.26"
 
-  url "https://ftp.gnu.org/gnu/gettext/gettext-0.25.tar.gz"
-  mirror "https://ftpmirror.gnu.org/gettext/gettext-0.25.tar.gz"
-  mirror "http://ftp.gnu.org/gnu/gettext/gettext-0.25.tar.gz"
-  sha256 "aee02dab79d9138fdcc7226b67ec985121bce6007edebe30d0e39d42f69a340e"
+  url "https://ftpmirror.gnu.org/gnu/gettext/gettext-0.26.tar.gz"
+  mirror "https://ftp.gnu.org/gnu/gettext/gettext-0.26.tar.gz"
+  mirror "http://ftp.gnu.org/gnu/gettext/gettext-0.26.tar.gz"
+  sha256 "39acf4b0371e9b110b60005562aace5b3631fed9b1bb9ecccfc7f56e58bb1d7f"
 
   license "GPL-3.0-or-later"
 
   keg_only "This is a custom fork, so we do not want to symlink it into brew --prefix"
 
-  depends_on "pkg-config" => :build
+  depends_on "pkgconf" => :build
 
   depends_on "libunistring"
   depends_on "libxml2"
   depends_on "ncurses-fritsi"
 
   def install
-    # macOS iconv implementation is slightly broken since Sonoma.
-    # This is also why we skip `make check`.
+    # macOS iconv implementation is slightly broken since Sonoma
     # upstream bug report, https://savannah.gnu.org/bugs/index.php?66541
-    ENV["am_cv_func_iconv_works"] = "yes" if MacOS.version == :sequoia
+    ENV["am_cv_func_iconv_works"] = "yes" if MacOS.version >= :sequoia
 
     %w[libunistring libxml2 ncurses-fritsi].each do |name|
       add_lib_to_compiler_flags(Formula[name].opt_prefix)
     end
 
     ENV.prepend(["LDFLAGS", "LDXXFLAGS"], "-Wl,-headerpad_max_install_names", " ")
+
+    # Workaround for newer Clang
+    if DevelopmentTools.clang_build_version >= 1500
+        ENV.append(["CFLAGS", "CXXFLAGS", "CPPFLAGS"], "-Wno-incompatible-function-pointer-types", " ")
+    end
 
     args = [
       "--disable-silent-rules",

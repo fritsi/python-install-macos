@@ -1,7 +1,7 @@
-From 673aed8e1d9be63a1d175daa9d2ad3f13c817870 Mon Sep 17 00:00:00 2001
+From 086450ae3ac37d0c9006e33d6652f37b10fac10c Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
-Date: Sat, 14 Jun 2025 17:46:03 +0200
-Subject: [PATCH] Python 3.12.11 patching
+Date: Wed, 24 Dec 2025 22:11:01 +0100
+Subject: [PATCH] Python 3.12.12 patching
 
 ---
  Lib/idlelib/idle_test/test_colorizer.py | 15 +++++++++
@@ -590,4 +590,4 @@ index 1a02d19..eecf154 100644
      if test "$ac_cv_gcc_asm_for_x64" = yes; then
          libmpdec_machine=x64
 -- 
-2.49.0
+2.52.0

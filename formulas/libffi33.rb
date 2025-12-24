@@ -13,7 +13,7 @@ class Libffi33 < Formula
 
   keg_only "This is a custom fork, so we do not want to symlink it into brew --prefix"
 
-  depends_on "pkg-config" => :build
+  depends_on "pkgconf" => :build
 
   on_macos do
     if Hardware::CPU.arm?

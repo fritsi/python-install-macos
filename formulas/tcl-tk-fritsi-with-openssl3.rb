@@ -1,18 +1,17 @@
 class TclTkFritsiWithOpenssl3 < Formula
   desc "Tool Command Language"
   homepage "https://www.tcl-lang.org"
-  version "8.6.16"
+  version "8.6.17"
 
-  url "https://downloads.sourceforge.net/project/tcl/Tcl/8.6.16/tcl8.6.16-src.tar.gz"
-  mirror "https://fossies.org/linux/misc/tcl8.6.16-src.tar.gz"
-  sha256 "91cb8fa61771c63c262efb553059b7c7ad6757afa5857af6265e4b0bdc2a14a5"
+  url "https://downloads.sourceforge.net/project/tcl/Tcl/8.6.17/tcl8.6.17-src.tar.gz"
+  sha256 "a3903371efcce8a405c5c245d029e9f6850258a60fa3761c4d58995610949b31"
 
   license "TCL"
 
   keg_only "This is a custom fork, so we do not want to symlink it into brew --prefix"
 
   depends_on "freetype" => :build
-  depends_on "pkg-config" => :build
+  depends_on "pkgconf" => :build
 
   depends_on "libx11"
   depends_on "libxau"
@@ -38,9 +37,8 @@ class TclTkFritsiWithOpenssl3 < Formula
   end
 
   resource "tk" do
-    url "https://downloads.sourceforge.net/project/tcl/Tcl/8.6.16/tk8.6.16-src.tar.gz"
-    mirror "https://fossies.org/linux/misc/tk8.6.16-src.tar.gz"
-    sha256 "be9f94d3575d4b3099d84bc3c10de8994df2d7aa405208173c709cc404a7e5fe"
+    url "https://downloads.sourceforge.net/project/tcl/Tcl/8.6.17/tk8.6.17-src.tar.gz"
+    sha256 "e4982df6f969c08bf9dd858a6891059b4a3f50dc6c87c10abadbbe2fc4838946"
   end
 
   resource "itk4" do

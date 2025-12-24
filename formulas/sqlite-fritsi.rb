@@ -1,16 +1,16 @@
 class SqliteFritsi < Formula
   desc "Command-line interface for SQLite"
   homepage "https://sqlite.org/index.html"
-  version "3.50.1"
+  version "3.51.1"
 
-  url "https://www.sqlite.org/2025/sqlite-autoconf-3500100.tar.gz"
-  sha256 "00a65114d697cfaa8fe0630281d76fd1b77afcd95cd5e40ec6a02cbbadbfea71"
+  url "https://sqlite.org/2025/sqlite-autoconf-3510100.tar.gz"
+  sha256 "4f2445cd70479724d32ad015ec7fd37fbb6f6130013bd4bfbc80c32beb42b7e0"
 
   license "blessing"
 
   keg_only "This is a custom fork, so we do not want to symlink it into brew --prefix"
 
-  depends_on "pkg-config" => :build
+  depends_on "pkgconf" => :build
 
   depends_on "ncurses-fritsi"
   depends_on "readline-fritsi"
@@ -36,6 +36,7 @@ class SqliteFritsi < Formula
         -DSQLITE_ENABLE_FTS3=1
         -DSQLITE_ENABLE_FTS3_PARENTHESIS=1
         -DSQLITE_ENABLE_FTS5=1
+        -DSQLITE_ENABLE_GEOPOLY=1
         -DSQLITE_ENABLE_JSON1=1
         -DSQLITE_ENABLE_MEMORY_MANAGEMENT=1
         -DSQLITE_ENABLE_RTREE=1
