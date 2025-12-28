@@ -770,7 +770,7 @@ function runTests() {
             export LANGUAGE="en_US:en"
 
             # Unsetting these as they would mess with the tests
-            unset PYTHONHTTPSVERIFY
+            unset PYTHONHTTPSVERIFY PYTHONDONTWRITEBYTECODE
             if ! $P_USE_X11; then
                 unset DISPLAY
             fi
@@ -788,9 +788,9 @@ function runTests() {
                 echo "    export LANGUAGE=\"en_US:en\""
                 echo ""
                 if ! $P_USE_X11; then
-                    echo "    unset PYTHONHTTPSVERIFY DISPLAY"
+                    echo "    unset PYTHONHTTPSVERIFY PYTHONDONTWRITEBYTECODE DISPLAY"
                 else
-                    echo "    unset PYTHONHTTPSVERIFY"
+                    echo "    unset PYTHONHTTPSVERIFY PYTHONDONTWRITEBYTECODE"
                 fi
                 echo ""
                 echo "    export TK_SILENCE_DEPRECATION=1"
