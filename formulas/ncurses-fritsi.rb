@@ -1,13 +1,13 @@
 class NcursesFritsi < Formula
   desc "Text-based UI library"
   homepage "https://invisible-island.net/ncurses/announce.html"
-  version "6.5"
+  version "6.6"
 
-  url "https://ftpmirror.gnu.org/gnu/ncurses/ncurses-6.5.tar.gz"
-  mirror "https://invisible-mirror.net/archives/ncurses/ncurses-6.5.tar.gz"
-  mirror "ftp://ftp.invisible-island.net/ncurses/ncurses-6.5.tar.gz"
-  mirror "https://ftp.gnu.org/gnu/ncurses/ncurses-6.5.tar.gz"
-  sha256 "136d91bc269a9a5785e5f9e980bc76ab57428f604ce3e5a5a90cebc767971cc6"
+  url "https://ftpmirror.gnu.org/gnu/ncurses/ncurses-6.6.tar.gz"
+  mirror "https://invisible-mirror.net/archives/ncurses/ncurses-6.6.tar.gz"
+  mirror "ftp://ftp.invisible-island.net/ncurses/ncurses-6.6.tar.gz"
+  mirror "https://ftp.gnu.org/gnu/ncurses/ncurses-6.6.tar.gz"
+  sha256 "355b4cbbed880b0381a04c46617b7656e362585d52e9cf84a67e2009b749ff11"
 
   license "MIT"
 

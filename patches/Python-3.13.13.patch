@@ -1,7 +1,7 @@
-From 97b70b29cba9e6aa1b73322d89cc35970cc689c4 Mon Sep 17 00:00:00 2001
+From 3dece3a04e75716fff116b503f920aa943849029 Mon Sep 17 00:00:00 2001
 From: Daniel Fritsi <ffddani@gmail.com>
-Date: Wed, 24 Dec 2025 23:47:26 +0100
-Subject: [PATCH] Python 3.14.2 patching
+Date: Fri, 1 May 2026 10:55:33 +0200
+Subject: [PATCH] Python 3.13.13 patching
 
 ---
  Lib/idlelib/idle_test/test_colorizer.py | 15 +++++++++
@@ -13,18 +13,18 @@ Subject: [PATCH] Python 3.14.2 patching
  Lib/test/test_shutil.py                 |  2 ++
  Lib/test/test_signal.py                 | 14 +++++++--
  Lib/test/test_tools/test_freeze.py      |  1 +
- Lib/test/test_ttk/test_widgets.py       | 28 ++++++++++-------
+ Lib/test/test_ttk/test_widgets.py       | 23 ++++++++++----
  Modules/Setup                           | 17 +++++-----
  Modules/getaddrinfo.c                   |  3 ++
  Modules/getnameinfo.c                   |  3 ++
  Modules/socketmodule.c                  |  3 ++
  Modules/socketmodule.h                  |  3 ++
- configure                               |  8 +----
+ configure                               |  9 +-----
  configure.ac                            |  6 +---
- 17 files changed, 120 insertions(+), 66 deletions(-)
+ 17 files changed, 120 insertions(+), 62 deletions(-)
 
 diff --git a/Lib/idlelib/idle_test/test_colorizer.py b/Lib/idlelib/idle_test/test_colorizer.py
-index 40800df..4db8228 100644
+index 308bc38..579fd04 100644
 --- a/Lib/idlelib/idle_test/test_colorizer.py
 +++ b/Lib/idlelib/idle_test/test_colorizer.py
 @@ -1,4 +1,6 @@
@@ -34,7 +34,7 @@ index 40800df..4db8228 100644
  from idlelib import colorizer
  from test.support import requires
  import unittest
-@@ -55,6 +57,17 @@ source = textwrap.dedent("""\
+@@ -54,6 +56,17 @@ source = textwrap.dedent("""\
      """)
  
  
@@ -52,7 +52,7 @@ index 40800df..4db8228 100644
  def setUpModule():
      colorizer.idleConf.userCfg = testcfg
  
-@@ -172,6 +185,8 @@ class ColorDelegatorTest(unittest.TestCase):
+@@ -171,6 +184,8 @@ class ColorDelegatorTest(unittest.TestCase):
          root = cls.root = Tk()
          root.withdraw()
          text = cls.text = Text(root)
@@ -131,7 +131,7 @@ index 0f13363..e578044 100644
              # Without this, test write, writelines, and goto... fail.
              # The reasons and why macOS-specific are unclear.
 diff --git a/Lib/idlelib/idle_test/test_sidebar.py b/Lib/idlelib/idle_test/test_sidebar.py
-index 4157a4b..23bc89b 100644
+index 3e85456..239d8d5 100644
 --- a/Lib/idlelib/idle_test/test_sidebar.py
 +++ b/Lib/idlelib/idle_test/test_sidebar.py
 @@ -40,28 +40,22 @@ class LineNumbersTest(unittest.TestCase):
@@ -186,7 +186,7 @@ index 4157a4b..23bc89b 100644
  
      def get_selection(self):
          return tuple(map(str, self.text.tag_ranges('sel')))
-@@ -690,14 +687,7 @@ class ShellSidebarTest(unittest.TestCase):
+@@ -690,14 +687,7 @@ class ShellSidebarTest(unittest.TestCase, ExtraAssertions):
          last_lineno = get_end_linenumber(text)
          self.assertIsNotNone(text.dlineinfo(text.index(f'{last_lineno}.0')))
  
@@ -203,10 +203,10 @@ index 4157a4b..23bc89b 100644
          self.assertIsNone(text.dlineinfo(text.index(f'{last_lineno}.0')))
  
 diff --git a/Lib/test/test_mmap.py b/Lib/test/test_mmap.py
-index f468dda..bedce33 100644
+index 7f33db5..3e502d3 100644
 --- a/Lib/test/test_mmap.py
 +++ b/Lib/test/test_mmap.py
-@@ -10,6 +10,7 @@ import errno
+@@ -9,6 +9,7 @@ import errno
  import os
  import re
  import itertools
@@ -214,7 +214,7 @@ index f468dda..bedce33 100644
  import random
  import socket
  import string
-@@ -264,7 +265,10 @@ class MmapTests(unittest.TestCase):
+@@ -263,7 +264,10 @@ class MmapTests(unittest.TestCase):
                      m = mmap.mmap(f.fileno(), mapsize, prot=prot)
                  except PermissionError:
                      # on macOS 14, PROT_READ | PROT_EXEC is not allowed
@@ -227,10 +227,10 @@ index f468dda..bedce33 100644
                      self.assertRaises(TypeError, m.write, b"abcdef")
                      self.assertRaises(TypeError, m.write_byte, 0)
 diff --git a/Lib/test/test_posix.py b/Lib/test/test_posix.py
-index aad6fc6..ebc5908 100644
+index 36d90e8..52ab84f 100644
 --- a/Lib/test/test_posix.py
 +++ b/Lib/test/test_posix.py
-@@ -1245,7 +1245,7 @@ class PosixTester(unittest.TestCase):
+@@ -1257,7 +1257,7 @@ class PosixTester(unittest.TestCase):
      @unittest.skipUnless(hasattr(os, 'popen'), "test needs os.popen()")
      @support.requires_subprocess()
      def test_getgroups(self):
@@ -239,7 +239,7 @@ index aad6fc6..ebc5908 100644
              groups = idg.read().strip()
              ret = idg.close()
  
-@@ -1253,8 +1253,8 @@ class PosixTester(unittest.TestCase):
+@@ -1265,8 +1265,8 @@ class PosixTester(unittest.TestCase):
              idg_groups = set(int(g) for g in groups.split())
          except ValueError:
              idg_groups = set()
@@ -250,7 +250,7 @@ index aad6fc6..ebc5908 100644
  
          # Issues 16698: OS X ABIs prior to 10.6 have limits on getgroups()
          if sys.platform == 'darwin':
-@@ -1263,7 +1263,7 @@ class PosixTester(unittest.TestCase):
+@@ -1275,7 +1275,7 @@ class PosixTester(unittest.TestCase):
              if tuple(int(n) for n in dt.split('.')[0:2]) < (10, 6):
                  raise unittest.SkipTest("getgroups(2) is broken prior to 10.6")
  
@@ -260,10 +260,10 @@ index aad6fc6..ebc5908 100644
          # #10822/#26944 - It is implementation defined whether
          # posix.getgroups() includes the effective gid.
 diff --git a/Lib/test/test_shutil.py b/Lib/test/test_shutil.py
-index 62c80aa..a9d5db0 100644
+index 0e97325..4468827 100644
 --- a/Lib/test/test_shutil.py
 +++ b/Lib/test/test_shutil.py
-@@ -1749,6 +1749,8 @@ class TestArchives(BaseTest, unittest.TestCase):
+@@ -1753,6 +1753,8 @@ class TestArchives(BaseTest, unittest.TestCase):
              import platform
              if int(platform.mac_ver()[0].split('.')[0]) >= 11:
                  tar_cmd.insert(1, '--no-mac-metadata')
@@ -273,10 +273,10 @@ index 62c80aa..a9d5db0 100644
                                stdout=subprocess.DEVNULL)
  
 diff --git a/Lib/test/test_signal.py b/Lib/test/test_signal.py
-index 6d62d61..409271d 100644
+index e69b445..957bee2 100644
 --- a/Lib/test/test_signal.py
 +++ b/Lib/test/test_signal.py
-@@ -837,12 +837,16 @@ class ItimerTest(unittest.TestCase):
+@@ -842,12 +842,16 @@ class ItimerTest(unittest.TestCase):
          signal.signal(signal.SIGVTALRM, self.sig_vtalrm)
          signal.setitimer(self.itimer, 0.001, 0.001)
  
@@ -294,7 +294,7 @@ index 6d62d61..409271d 100644
  
          # virtual itimer should be (0.0, 0.0) now
          self.assertEqual(signal.getitimer(self.itimer), (0.0, 0.0))
-@@ -854,12 +858,16 @@ class ItimerTest(unittest.TestCase):
+@@ -859,12 +863,16 @@ class ItimerTest(unittest.TestCase):
          signal.signal(signal.SIGPROF, self.sig_prof)
          signal.setitimer(self.itimer, 0.2, 0.2)
  
@@ -312,7 +312,7 @@ index 6d62d61..409271d 100644
  
          # profiling itimer should be (0.0, 0.0) now
          self.assertEqual(signal.getitimer(self.itimer), (0.0, 0.0))
-@@ -1337,7 +1345,7 @@ class StressTest(unittest.TestCase):
+@@ -1342,7 +1350,7 @@ class StressTest(unittest.TestCase):
  
              expected_sigs += 2
              # Wait for handlers to run to avoid signal coalescing
@@ -334,10 +334,10 @@ index 0e7ed67..1826a4f 100644
          script = textwrap.dedent("""
              import sys
 diff --git a/Lib/test/test_ttk/test_widgets.py b/Lib/test/test_ttk/test_widgets.py
-index f33da2a..b6184e5 100644
+index f7c0e2e..9cf7baf 100644
 --- a/Lib/test/test_ttk/test_widgets.py
 +++ b/Lib/test/test_ttk/test_widgets.py
-@@ -14,6 +14,17 @@ from test.test_tkinter.widget_tests import (add_configure_tests,
+@@ -15,6 +15,17 @@ from test.test_tkinter.widget_tests import (add_standard_options,
  requires('gui')
  
  
@@ -355,28 +355,28 @@ index f33da2a..b6184e5 100644
  class StandardTtkOptionsTests(StandardOptionsTests):
  
      def test_configure_class(self):
-@@ -489,7 +500,7 @@ class ComboboxTest(EntryTest, unittest.TestCase):
+@@ -478,7 +489,7 @@ class ComboboxTest(EntryTest, unittest.TestCase):
      def _show_drop_down_listbox(self):
          width = self.combo.winfo_width()
          x, y = width - 5, 5
 -        if sys.platform != 'darwin':  # there's no down arrow on macOS
 +        if not is_macos_aqua(self.root):  # there's no down arrow on macOS
-             self.assertRegex(self.combo.identify(x, y), r'.*downarrow\z')
-         self.combo.event_generate('<Button-1>', x=x, y=y)
+             self.assertRegex(self.combo.identify(x, y), r'.*downarrow\Z')
+         self.combo.event_generate('<ButtonPress-1>', x=x, y=y)
          self.combo.event_generate('<ButtonRelease-1>', x=x, y=y)
-@@ -1011,9 +1022,9 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
+@@ -986,9 +997,9 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
      def test_configure_height(self):
          widget = self.create()
          if get_tk_patchlevel(self.root) < (8, 6, 15):
 -            self.checkIntegerParam(widget, 'height', 402, -402, 0)
 +            self.checkIntegerParam(widget, 'height', 100, -100, 0)
          else:
--            self.checkPixelsParam(widget, 'height', '10c', 402, -402, 0)
+-            self.checkPixelsParam(widget, 'height', '10c', 402, -402, 0, conv=False)
 +            self.checkPixelsParam(widget, 'height', '5c', 100, -100, 0, conv=False)
  
      def test_configure_width(self):
          widget = self.create()
-@@ -1036,7 +1047,7 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
+@@ -1011,7 +1022,7 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
  
          self.nb.pack()
          self.nb.update()
@@ -385,21 +385,16 @@ index f33da2a..b6184e5 100644
              tb_idx = "@20,5"
          else:
              tb_idx = "@5,5"
-@@ -1186,12 +1197,7 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
+@@ -1161,7 +1172,7 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
  
          self.nb.select(0)
  
--        if sys.platform == 'darwin':
--            focus_identify_as = ''
--        elif sys.platform == 'win32':
--            focus_identify_as = 'focus'
--        else:
--            focus_identify_as = 'focus' if tk_version < (9,0) else 'padding'
+-        focus_identify_as = 'focus' if sys.platform != 'darwin' else ''
 +        focus_identify_as = 'focus' if not is_macos_aqua(self.root) else ''
          self.assertEqual(self.nb.identify(5, 5), focus_identify_as)
          simulate_mouse_click(self.nb, 5, 5)
          self.nb.focus_force()
-@@ -1212,7 +1218,7 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
+@@ -1182,7 +1193,7 @@ class NotebookTest(AbstractWidgetTest, unittest.TestCase):
          simulate_mouse_click(self.nb, 5, 5)
          # on macOS Emacs-style keyboard shortcuts are region-dependent;
          # let's use the regular arrow keys instead
@@ -409,10 +404,10 @@ index f33da2a..b6184e5 100644
              end = '<Right>'
          else:
 diff --git a/Modules/Setup b/Modules/Setup
-index a066982..e0d49b6 100644
+index e4acf6b..8261a2c 100644
 --- a/Modules/Setup
 +++ b/Modules/Setup
-@@ -146,7 +146,7 @@ PYTHONPATH=$(COREPYTHONPATH)
+@@ -147,7 +147,7 @@ PYTHONPATH=$(COREPYTHONPATH)
  #_pickle _pickle.c
  #_queue _queuemodule.c
  #_random _randommodule.c
@@ -420,11 +415,11 @@ index a066982..e0d49b6 100644
 +_socket socketmodule.c $(EXT_COMPILER_FLAGS)
  #_statistics _statisticsmodule.c
  #_struct _struct.c
- #_types _typesmodule.c
-@@ -202,15 +202,16 @@ PYTHONPATH=$(COREPYTHONPATH)
+ #_typing _typingmodule.c
+@@ -200,15 +200,16 @@ PYTHONPATH=$(COREPYTHONPATH)
+ #_gdbm _gdbmmodule.c -lgdbm
  #_lzma _lzmamodule.c -llzma
  #_uuid _uuidmodule.c -luuid
- #_zstd _zstd/_zstdmodule.c -lzstd -I$(srcdir)/Modules/_zstd
 -#zlib  zlibmodule.c -lz
 +
 +zlib zlibmodule.c $(EXT_COMPILER_FLAGS) -lz
@@ -442,7 +437,7 @@ index a066982..e0d49b6 100644
  
  # To statically link OpenSSL:
  # _ssl _ssl.c $(OPENSSL_INCLUDES) $(OPENSSL_LDFLAGS) \
-@@ -231,7 +232,7 @@ PYTHONPATH=$(COREPYTHONPATH)
+@@ -229,7 +230,7 @@ PYTHONPATH=$(COREPYTHONPATH)
  # every system.
  
  # *** Always uncomment this (leave the leading underscore in!):
@@ -451,7 +446,7 @@ index a066982..e0d49b6 100644
  # *** Uncomment and edit to reflect where your Tcl/Tk libraries are:
  #	-L/usr/local/lib \
  # *** Uncomment and edit to reflect where your Tcl/Tk headers are:
-@@ -261,8 +262,8 @@ PYTHONPATH=$(COREPYTHONPATH)
+@@ -259,8 +260,8 @@ PYTHONPATH=$(COREPYTHONPATH)
  #	-lX11
  
  # Some system have -lcurses
@@ -463,7 +458,7 @@ index a066982..e0d49b6 100644
  # macOS specific module, needs SystemConfiguration and CoreFoundation framework
  # _scproxy _scproxy.c
 diff --git a/Modules/getaddrinfo.c b/Modules/getaddrinfo.c
-index de6f0bf..20f162a 100644
+index 6fb6062..93f4f78 100644
 --- a/Modules/getaddrinfo.c
 +++ b/Modules/getaddrinfo.c
 @@ -43,6 +43,9 @@
@@ -477,7 +472,7 @@ index de6f0bf..20f162a 100644
  #include <arpa/inet.h>
  #include <arpa/nameser.h>
 diff --git a/Modules/getnameinfo.c b/Modules/getnameinfo.c
-index 2a9034b..fc23877 100644
+index 335021f..c26d9aa 100644
 --- a/Modules/getnameinfo.c
 +++ b/Modules/getnameinfo.c
 @@ -37,6 +37,9 @@
@@ -491,10 +486,10 @@ index 2a9034b..fc23877 100644
  #include <arpa/inet.h>
  #include <arpa/nameser.h>
 diff --git a/Modules/socketmodule.c b/Modules/socketmodule.c
-index 1fbd6eb..401e31a 100644
+index becdf9a..f499ddc 100644
 --- a/Modules/socketmodule.c
 +++ b/Modules/socketmodule.c
-@@ -227,6 +227,9 @@ shutdown(how) -- shut down traffic in one or both directions\n\
+@@ -220,6 +220,9 @@ shutdown(how) -- shut down traffic in one or both directions\n\
  #undef _XOPEN_SOURCE
  #include <sys/socket.h>
  #include <sys/types.h>
@@ -505,7 +500,7 @@ index 1fbd6eb..401e31a 100644
  #ifdef _SS_ALIGNSIZE
  #define HAVE_GETADDRINFO 1
 diff --git a/Modules/socketmodule.h b/Modules/socketmodule.h
-index 63624d5..c27d19e 100644
+index 8480590..ff54f32 100644
 --- a/Modules/socketmodule.h
 +++ b/Modules/socketmodule.h
 @@ -7,6 +7,9 @@
@@ -519,10 +514,10 @@ index 63624d5..c27d19e 100644
  # include <netinet/tcp.h>
  
 diff --git a/configure b/configure
-index 46eb066..8b6fc8d 100755
+index 9ddb712..f108430 100755
 --- a/configure
 +++ b/configure
-@@ -15258,8 +15258,6 @@ if test "x$ac_cv_lib_ffi_ffi_call" = xyes
+@@ -14524,8 +14524,6 @@ if test "x$ac_cv_lib_ffi_ffi_call" = xyes
  then :
  
                  have_libffi=yes
@@ -531,25 +526,25 @@ index 46eb066..8b6fc8d 100755
  
  fi
  
-@@ -15397,8 +15395,6 @@ if test "x$ac_cv_lib_ffi_ffi_call" = xyes
+@@ -14655,8 +14653,6 @@ if test "x$ac_cv_lib_ffi_ffi_call" = xyes
  then :
  
            have_libffi=yes
 -          LIBFFI_CFLAGS=${LIBFFI_CFLAGS-""}
 -          LIBFFI_LIBS=${LIBFFI_LIBS-"-lffi"}
  
- else case e in #(
-   e) have_libffi=no ;;
-@@ -15479,8 +15475,6 @@ if test "x$ac_cv_lib_ffi_ffi_call" = xyes
+ else $as_nop
+   have_libffi=no
+@@ -14728,8 +14724,6 @@ if test "x$ac_cv_lib_ffi_ffi_call" = xyes
  then :
  
            have_libffi=yes
 -          LIBFFI_CFLAGS=${LIBFFI_CFLAGS-""}
 -          LIBFFI_LIBS=${LIBFFI_LIBS-"-lffi"}
  
- else case e in #(
-   e) have_libffi=no ;;
-@@ -15976,7 +15970,7 @@ esac
+ else $as_nop
+   have_libffi=no
+@@ -15134,7 +15128,7 @@ esac
     if test "$libmpdec_system" = Darwin; then
         # universal here means: build libmpdec with the same arch options
         # the python interpreter was built with
@@ -558,11 +553,19 @@ index 46eb066..8b6fc8d 100755
     elif test $ac_cv_sizeof_size_t -eq 8; then
         if test "$ac_cv_gcc_asm_for_x64" = yes; then
             libmpdec_machine=x64
+@@ -33426,7 +33420,6 @@ Platform \"$host\" with compiler \"$ac_cv_cc_name\" is not supported by the
+ CPython core team, see https://peps.python.org/pep-0011/ for more information.
+ " >&2;}
+ fi
+-
+ if test "$ac_cv_header_stdatomic_h" != "yes"; then
+   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Your compiler or platform does have a working C11 stdatomic.h. A future version of Python may require stdatomic.h." >&5
+ printf "%s\n" "$as_me: Your compiler or platform does have a working C11 stdatomic.h. A future version of Python may require stdatomic.h." >&6;}
 diff --git a/configure.ac b/configure.ac
-index bd4446e..4140e7e 100644
+index d9acfce..16c56a6 100644
 --- a/configure.ac
 +++ b/configure.ac
-@@ -4084,8 +4084,6 @@ AS_VAR_IF([ac_sys_system], [Darwin], [
+@@ -4080,8 +4080,6 @@ AS_VAR_IF([ac_sys_system], [Darwin], [
        AC_CHECK_LIB([ffi], [ffi_call], [
          dnl use ffi from SDK root
          have_libffi=yes
@@ -571,7 +574,7 @@ index bd4446e..4140e7e 100644
        ])
      ])
    ])
-@@ -4098,8 +4096,6 @@ AS_VAR_IF([have_libffi], [missing], [
+@@ -4094,8 +4092,6 @@ AS_VAR_IF([have_libffi], [missing], [
        AC_CHECK_HEADER([ffi.h], [
          AC_CHECK_LIB([ffi], [ffi_call], [
            have_libffi=yes
@@ -580,7 +583,7 @@ index bd4446e..4140e7e 100644
          ], [have_libffi=no])
        ])
      ])
-@@ -4269,7 +4265,7 @@ AS_VAR_IF(
+@@ -4224,7 +4220,7 @@ AS_VAR_IF(
     if test "$libmpdec_system" = Darwin; then
         # universal here means: build libmpdec with the same arch options
         # the python interpreter was built with
@@ -590,4 +593,4 @@ index bd4446e..4140e7e 100644
         if test "$ac_cv_gcc_asm_for_x64" = yes; then
             libmpdec_machine=x64
 -- 
-2.52.0
+2.54.0

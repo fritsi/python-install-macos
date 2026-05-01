@@ -1,10 +1,10 @@
 class SqliteFritsiWithOpenssl3 < Formula
   desc "Command-line interface for SQLite"
   homepage "https://sqlite.org/index.html"
-  version "3.51.1"
+  version "3.53.0"
 
-  url "https://sqlite.org/2025/sqlite-autoconf-3510100.tar.gz"
-  sha256 "4f2445cd70479724d32ad015ec7fd37fbb6f6130013bd4bfbc80c32beb42b7e0"
+  url "https://sqlite.org/2026/sqlite-autoconf-3530000.tar.gz"
+  sha256 "851e9b38192fe2ceaa65e0baa665e7fa06230c3d9bd1a6a9662d02380d73365a"
 
   license "blessing"
 
